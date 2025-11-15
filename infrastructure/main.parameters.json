@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "Aria"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "keyVaultName": {
+      "value": "tracklit-keyvault-prod"
+    },
+    "postgresServerName": {
+      "value": "tracklit-postgres-prod"
+    },
+    "redisCacheName": {
+      "value": "tracklit-redis-prod"
+    },
+    "appServicePlanSku": {
+      "value": "B2"
+    },
+    "dockerImageTag": {
+      "value": "latest"
+    },
+    "containerRegistryUrl": {
+      "value": "ghcr.io"
+    },
+    "containerRegistryUsername": {
+      "value": "your-github-username"
+    },
+    "containerRegistryPassword": {
+      "value": ""
+    },
+    "appInsightsWorkspaceId": {
+      "value": "tracklit-logs-workspace"
+    }
+  }
+}
