@@ -43,3 +43,25 @@ pytest-asyncio==0.25.2
 pytest-mock==3.14.0
 Pillow==11.0.0
 psutil==6.1.1
+
+# Video analysis and computer vision
+mediapipe==0.10.9
+opencv-python==4.8.1.78
+numpy==1.24.4
+
+# Analytics and data science
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Azure Communication Services (for notifications)
+azure-communication-email==1.0.0
+azure-communication-sms==1.0.1
+
+# Azure Blob Storage (for video uploads)
+azure-storage-blob==12.19.0
+
+# Azure Speech Services (for voice integration - optional)
+azure-cognitiveservices-speech==1.35.0
+
+# Azure Translator (for multi-language support)
+azure-ai-translation-text==1.0.0

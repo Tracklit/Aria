@@ -57,6 +57,13 @@ from database_extensions import (
     get_recent_context
 )
 
+# Import additional feature routers
+from additional_endpoints import (
+    webhook_router, social_router, analytics_router,
+    race_router, export_router, voice_router,
+    realtime_router, equipment_router, gamification_router
+)
+
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -102,6 +109,17 @@ async def parse_json_body(request: Request, call_next):
 
 # Include companion feature routers
 app.include_router(companion_router, prefix="/api/v1", tags=["Companion Features"])
+
+# Include additional feature routers
+app.include_router(webhook_router, prefix="/api/v1", tags=["Webhooks"])
+app.include_router(social_router, prefix="/api/v1", tags=["Social"])
+app.include_router(analytics_router, prefix="/api/v1", tags=["Analytics"])
+app.include_router(race_router, prefix="/api/v1", tags=["Race Management"])
+app.include_router(export_router, prefix="/api/v1", tags=["Data Export"])
+app.include_router(voice_router, prefix="/api/v1", tags=["Voice"])
+app.include_router(realtime_router, prefix="/api/v1", tags=["Real-time"])
+app.include_router(equipment_router, prefix="/api/v1", tags=["Equipment"])
+app.include_router(gamification_router, prefix="/api/v1", tags=["Gamification"])
 
 # =============================================================================
 # HEALTH CHECK ENDPOINTS
