@@ -519,6 +519,7 @@ The API integrates with Azure Application Insights for:
 
 - [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) - Development status
 - [New Features Documentation](docs/NEW_FEATURES_IMPLEMENTATION.md) - Complete feature guide (4,000+ lines of new code)
+- [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - **Complete Azure deployment guide (GitHub Actions, PowerShell, CLI, Docker)**
 - [Quick Deployment Guide](docs/QUICK_DEPLOYMENT.md) - Step-by-step deployment with examples
 - [Production Readiness](docs/PRODUCTION_READINESS_REPORT.md) - Deployment checklist
 - [Testing Guide](docs/TESTING.md) - Testing documentation
