@@ -3,22 +3,22 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "appName": {
-      "value": "Aria"
+      "value": "aria"
     },
     "environment": {
-      "value": "prod"
+      "value": "dev"
     },
     "location": {
-      "value": "eastus"
+      "value": "westus"
     },
     "keyVaultName": {
-      "value": "tracklit-keyvault-prod"
+      "value": "kv-tracklit-dev-kvnx2h"
     },
     "postgresServerName": {
-      "value": "tracklit-postgres-prod"
+      "value": "pg-tracklit-dev-kvnx2h"
     },
     "redisCacheName": {
-      "value": "tracklit-redis-prod"
+      "value": "redis-tracklit-dev-kvnx2h"
     },
     "appServicePlanSku": {
       "value": "B2"
@@ -36,7 +36,34 @@
       "value": ""
     },
     "appInsightsWorkspaceId": {
-      "value": "tracklit-logs-workspace"
+      "value": "log-tracklit-dev-kvnx2h"
+    },
+    "azureCommunicationConnectionString": {
+      "value": ""
+    },
+    "azureCommunicationFromEmail": {
+      "value": "noreply@aria.tracklit.app"
+    },
+    "azureCommunicationPhoneNumber": {
+      "value": ""
+    },
+    "storageAccountName": {
+      "value": "ariastoragekvnx2h"
+    },
+    "azureSpeechKey": {
+      "value": ""
+    },
+    "azureSpeechRegion": {
+      "value": "eastus"
+    },
+    "azureTranslatorKey": {
+      "value": ""
+    },
+    "azureTranslatorRegion": {
+      "value": "eastus"
+    },
+    "trackLitWebhookUrl": {
+      "value": "https://api.tracklit.app/webhooks/aria"
     }
   }
 }

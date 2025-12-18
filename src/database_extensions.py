@@ -7,7 +7,7 @@ import logging
 import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
-from database import db_pool
+from src.database import db_pool
 
 logger = logging.getLogger(__name__)
 

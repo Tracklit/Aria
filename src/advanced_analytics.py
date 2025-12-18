@@ -5,8 +5,8 @@ Performance predictions, trends, benchmarks, and insights
 from typing import Dict, Any, List, Optional, Tuple
 import logging
 from datetime import datetime, timedelta, date
-from database_extensions import get_training_sessions, get_progress_metrics
-from database import get_athlete_profile
+from src.database_extensions import get_training_sessions, get_progress_metrics
+from src.database import get_athlete_profile
 import numpy as np
 from scipy import stats
 
@@ -265,7 +265,7 @@ class AnalyticsService:
     ) -> Dict[str, Any]:
         """Get user's percentile ranking compared to similar athletes"""
         try:
-            from database import db_pool
+            from src.database import db_pool
             
             athlete = get_athlete_profile(user_id)
             if not athlete:

@@ -5,7 +5,7 @@ Track running shoes, spikes, and gear with mileage alerts and replacement recomm
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, date, timedelta
-from database import get_db_connection
+from src.database import get_db_connection
 import psycopg2.extras
 
 logger = logging.getLogger(__name__)

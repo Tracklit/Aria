@@ -10,8 +10,8 @@ from datetime import datetime, date, time
 import uuid
 import logging
 
-from database_extensions import *
-from rate_limit import apply_rate_limit
+from src.database_extensions import *
+from src.rate_limit import apply_rate_limit
 from cache_utils import (
     get_cached, set_cached, delete_cached, build_key, delete_pattern,
     invalidate_user_cache, invalidate_drills_cache, 

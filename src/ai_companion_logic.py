@@ -5,7 +5,7 @@ Proactive suggestion generation, pattern recognition, and intelligent recommenda
 from datetime import datetime, timedelta, date
 from typing import List, Dict, Any, Optional
 import logging
-from database_extensions import (
+from src.database_extensions import (
     get_training_sessions, 
     get_progress_analytics,
     get_injury_history,
@@ -20,7 +20,7 @@ from database_extensions import (
     search_drills,
     achieve_goal
 )
-from database import get_athlete_profile
+from src.database import get_athlete_profile
 
 logger = logging.getLogger(__name__)
 

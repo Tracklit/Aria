@@ -9,11 +9,11 @@ import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from dotenv import load_dotenv
-from database import (
+from src.database import (
     get_athlete_profile, create_athlete_profile, update_athlete_profile,
     get_user_subscription, update_user_subscription
 )
-from cache import cache
+from src.cache import cache
 
 load_dotenv()
 
@@ -381,7 +381,7 @@ def webhook_handler(event_type: str, payload: Dict[str, Any]) -> bool:
         
         elif event_type == "user.deleted":
             # Delete user from Aria (cascade will handle related data)
-            from database import delete_athlete_profile
+            from src.database import delete_athlete_profile
             deleted = delete_athlete_profile(user_id)
             cache.delete(f"athlete_profile:{user_id}")
             cache.delete(f"subscription:{user_id}")

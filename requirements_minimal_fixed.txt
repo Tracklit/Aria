@@ -1,0 +1,29 @@
+# Core API framework
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+python-dotenv==1.1.1
+pydantic==2.11.7
+
+# AI/ML
+openai==1.107.0
+
+# Database
+psycopg2-binary==2.9.10
+redis==5.2.0
+
+# Auth
+PyJWT==2.10.1
+python-jose[cryptography]==3.3.0
+
+# HTTP & Requests
+requests==2.32.3
+httpx==0.28.1
+
+# Azure Monitoring
+opencensus-ext-azure==1.1.13
+
+# Payment processing
+stripe==14.2.0
+
+# Multipart form data
+python-multipart==0.0.20

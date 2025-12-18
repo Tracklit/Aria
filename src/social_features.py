@@ -5,7 +5,7 @@ Athlete interactions, messaging, teams, and leaderboards
 from typing import Dict, Any, List, Optional
 import logging
 from datetime import datetime, timedelta
-from database import db_pool
+from src.database import db_pool
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ import io
 import zipfile
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-from database import get_db_connection
+from src.database import get_db_connection
 import psycopg2.extras
 
 logger = logging.getLogger(__name__)

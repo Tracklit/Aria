@@ -27,8 +27,8 @@ psycopg2-binary==2.9.10
 PyJWT==2.10.1
 python-jose[cryptography]==3.3.0
 opencensus-ext-azure==1.1.13
-opencensus-ext-requests==0.13.0
-stripe==11.8.0
+opencensus-ext-requests==0.8.0
+stripe==14.1.0
 requests==2.32.3
 python-multipart==0.0.20
 

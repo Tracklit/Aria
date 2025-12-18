@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>e55a3d58-a44c-4d00-a28b-d1b46a4d9846</id>
+  <author>N/A</author>
+  <deployer>Push-Deployer</deployer>
+  <authorEmail>N/A</authorEmail>
+  <message>Created via a push deployment</message>
+  <progress></progress>
+  <status>Failed</status>
+  <statusText></statusText>
+  <lastSuccessEndTime />
+  <receivedTime>2025-12-17T18:12:14.7044924Z</receivedTime>
+  <startTime>2025-12-17T18:12:16.6096605Z</startTime>
+  <endTime>2025-12-17T18:13:18.1385868Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>True</is_readonly>
+  <buildSummary>
+    <error>
+      <message>[18:12:59+0000] Collecting annotated-types==0.7.0 (from -r requirements.txt (line 1))
+[18:12:59+0000]   Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+[18:13:00+0000] Collecting anyio==4.10.0 (from -r requirements.txt (line 2))
+[18:13:00+0000]   Downloading anyio-4.10.0-py3-none-any.whl.metadata (4.0 kB)
+[18:13:00+0000] Collecting certifi==2025.8.3 (from -r requirements.txt (line 3))
+[18:13:00+0000]   Downloading certifi-2025.8.3-py3-none-any.whl.metadata (2.4 kB)
+[18:13:00+0000] Collecting click==8.2.1 (from -r requirements.txt (line 4))
+[18:13:00+0000]   Downloading click-8.2.1-py3-none-any.whl.metadata (2.5 kB)
+[18:13:00+0000] Collecting colorama==0.4.6 (from -r requirements.txt (line 5))
+[18:13:00+0000]   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+[18:13:00+0000] Collecting distro==1.9.0 (from -r requirements.txt (line 6))
+[18:13:00+0000]   Downloading distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+[18:13:00+0000] Collecting fastapi==0.116.1 (from -r requirements.txt (line 7))
+[18:13:00+0000]   Using cached fastapi-0.116.1-py3-none-any.whl.metadata (28 kB)
+[18:13:00+0000] Collecting h11==0.16.0 (from -r requirements.txt (line 8))
+[18:13:00+0000]   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+[18:13:00+0000] Collecting httpcore==1.0.9 (from -r requirements.txt (line 9))
+[18:13:00+0000]   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+[18:13:01+0000] Collecting httpx==0.28.1 (from -r requirements.txt (line 10))
+[18:13:01+0000]   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+[18:13:01+0000] Collecting idna==3.10 (from -r requirements.txt (line 11))
+[18:13:01+0000]   Downloading idna-3.10-py3-none-any.whl.metadata (10 kB)
+[18:13:02+0000] Collecting jiter==0.10.0 (from -r requirements.txt (line 12))
+[18:13:02+0000]   Downloading jiter-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.2 kB)
+[18:13:02+0000] Collecting openai==1.107.0 (from -r requirements.txt (line 13))
+[18:13:02+0000]   Using cached openai-1.107.0-py3-none-any.whl.metadata (29 kB)
+[18:13:03+0000] Collecting pydantic==2.11.7 (from -r requirements.txt (line 14))
+[18:13:03+0000]   Using cached pydantic-2.11.7-py3-none-any.whl.metadata (67 kB)
+[18:13:07+0000] Collecting pydantic_core==2.33.2 (from -r requirements.txt (line 15))
+[18:13:07+0000]   Downloading pydantic_core-2.33.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+[18:13:07+0000] Collecting python-dotenv==1.1.1 (from -r requirements.txt (line 16))
+[18:13:07+0000]   Using cached python_dotenv-1.1.1-py3-none-any.whl.metadata (24 kB)
+[18:13:07+0000] Collecting sniffio==1.3.1 (from -r requirements.txt (line 17))
+[18:13:07+0000]   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+[18:13:07+0000] Collecting starlette==0.47.3 (from -r requirements.txt (line 18))
+[18:13:07+0000]   Downloading starlette-0.47.3-py3-none-any.whl.metadata (6.2 kB)
+[18:13:08+0000] Collecting tqdm==4.67.1 (from -r requirements.txt (line 19))
+[18:13:08+0000]   Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+[18:13:08+0000]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.7/57.7 kB 4.9 MB/s eta 0:00:00
+[18:13:08+0000] Collecting typing-inspection==0.4.1 (from -r requirements.txt (line 20))
+[18:13:08+0000]   Downloading typing_inspection-0.4.1-py3-none-any.whl.metadata (2.6 kB)
+[18:13:08+0000] Collecting typing_extensions==4.15.0 (from -r requirements.txt (line 21))
+[18:13:08+0000]   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+[18:13:08+0000] Collecting uvicorn==0.35.0 (from -r requirements.txt (line 22))
+[18:13:08+0000]   Using cached uvicorn-0.35.0-py3-none-any.whl.metadata (6.5 kB)
+[18:13:08+0000] Collecting redis==5.2.0 (from -r requirements.txt (line 25))
+[18:13:08+0000]   Using cached redis-5.2.0-py3-none-any.whl.metadata (9.1 kB)
+[18:13:09+0000] Collecting psycopg2-binary==2.9.10 (from -r requirements.txt (line 26))
+[18:13:09+0000]   Using cached psycopg2_binary-2.9.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+[18:13:09+0000] Collecting PyJWT==2.10.1 (from -r requirements.txt (line 27))
+[18:13:09+0000]   Using cached PyJWT-2.10.1-py3-none-any.whl.metadata (4.0 kB)
+[18:13:09+0000] Collecting python-jose==3.3.0 (from python-jose[cryptography]==3.3.0-&gt;-r requirements.txt (line 28))
+[18:13:09+0000]   Using cached python_jose-3.3.0-py2.py3-none-any.whl.metadata (5.4 kB)
+[18:13:09+0000] Collecting opencensus-ext-azure==1.1.13 (from -r requirements.txt (line 29))
+[18:13:09+0000]   Using cached opencensus_ext_azure-1.1.13-py2.py3-none-any.whl.metadata (16 kB)
+ERROR: Could not find a version that satisfies the requirement opencensus-ext-requests==0.13.0 (from versions: 0.1.0, 0.1.1, 0.1.2, 0.7.1, 0.7.2, 0.7.3, 0.7.4, 0.7.5, 0.7.6, 0.8.0)
+ERROR: No matching distribution found for opencensus-ext-requests==0.13.0
+
+[notice] A new release of pip is available: 24.0 -&gt; 25.3
+[notice] To update, run: pip install --upgrade pip </message>
+      <timestamp>2025-12-17 18:13:11</timestamp>
+      <exitCode>1</exitCode>
+      <recommendation>Please review your requirements.txt</recommendation>
+      <urlToGetMoreInformation>https://aka.ms/troubleshoot-python</urlToGetMoreInformation>
+    </error>
+  </buildSummary>
+</deployment>

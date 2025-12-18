@@ -14,7 +14,7 @@ from notifications import notification_service
 from video_analysis import video_analysis_service
 from social_features import *
 from advanced_analytics import analytics_service
-from rate_limit import apply_rate_limit
+from src.rate_limit import apply_rate_limit
 
 logger = logging.getLogger(__name__)
 
