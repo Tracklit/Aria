@@ -16,9 +16,9 @@ import stripe
 load_dotenv()
 
 # Import production modules
-from auth_middleware import require_auth, optional_auth, require_roles, auth_manager
-from observability import observability, ObservabilityMiddleware, logger, track_performance
-from database import (
+from src.auth_middleware import require_auth, optional_auth, require_roles
+from src.observability import observability, ObservabilityMiddleware, logger, track_performance
+from src.database import (
     db_pool, get_athlete_profile, get_user_subscription, update_user_subscription,
     track_query_usage, get_monthly_usage, create_athlete_profile, update_athlete_profile,
     delete_athlete_profile, update_athlete_mood, get_knowledge_items, get_knowledge_item_by_id,
@@ -37,12 +37,12 @@ logger.info(f"STRIPE_SECRET_KEY: {'SET' if os.getenv('STRIPE_SECRET_KEY') else '
 logger.info("=====================================")
 
 # NOW import cache and rate limiter (after environment is loaded)
-from cache import cache
-from rate_limit import rate_limiter, apply_rate_limit, RATE_LIMITS, SUBSCRIPTION_LIMITS
+from src.cache import cache
+from src.rate_limit import rate_limiter, apply_rate_limit, RATE_LIMITS, SUBSCRIPTION_LIMITS
 
 # Import wearable integration
 try:
-    from wearable_integration import wearable_integrator
+    from src.wearable_integration import wearable_integrator
     WEARABLE_INTEGRATION_AVAILABLE = True
     logger.info("Wearable integration loaded successfully")
 except ImportError:
