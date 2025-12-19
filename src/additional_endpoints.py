@@ -9,8 +9,6 @@ from datetime import datetime, date
 import logging
 import json
 
-logger = logging.getLogger(__name__)
-
 # Import services
 from src.notifications import notification_service
 try:
@@ -23,6 +21,8 @@ except ImportError as e:
 from src.social_features import *
 from src.advanced_analytics import analytics_service
 from src.rate_limit import apply_rate_limit
+
+logger = logging.getLogger(__name__)
 
 # Create routers
 webhook_router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
