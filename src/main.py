@@ -65,10 +65,11 @@ from src.additional_endpoints import (
 )
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+from src.keyvault_helper import get_env_with_keyvault_resolution
+client = OpenAI(api_key=get_env_with_keyvault_resolution("OPENAI_API_KEY"))
 
 # Initialize Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
 
 # Allowed origins for TrackLit integration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "https://tracklit.app,https://www.tracklit.app,https://api.tracklit.app").split(",")
