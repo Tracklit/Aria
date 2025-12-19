@@ -47,7 +47,7 @@ psutil==6.1.1
 
 # Video analysis and computer vision
 mediapipe==0.10.9
-opencv-python==4.8.1.78
+opencv-python-headless==4.8.1.78
 numpy==1.24.4
 
 # Analytics and data science
