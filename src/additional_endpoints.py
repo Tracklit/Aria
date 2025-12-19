@@ -11,7 +11,13 @@ import json
 
 # Import services
 from src.notifications import notification_service
-from src.video_analysis import video_analysis_service
+try:
+    from src.video_analysis import video_analysis_service
+    VIDEO_ANALYSIS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Video analysis not available: {e}")
+    video_analysis_service = None
+    VIDEO_ANALYSIS_AVAILABLE = False
 from src.social_features import *
 from src.advanced_analytics import analytics_service
 from src.rate_limit import apply_rate_limit
@@ -381,6 +387,12 @@ async def analyze_video_endpoint(
     video: UploadFile = File(...)
 ):
     """Analyze video with pose estimation and biomechanics"""
+    if not VIDEO_ANALYSIS_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Video analysis is not available. Install opencv-python-headless and mediapipe."
+        )
+    
     try:
         video_data = await video.read()
         result = await video_analysis_service.analyze_video_full(

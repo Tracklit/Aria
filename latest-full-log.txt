@@ -1,0 +1,150 @@
+2025-12-18T23:39:49.5838265Z Using packages from virtual environment antenv located at /tmp/8de3e8a17e8487c/antenv.
+2025-12-18T23:39:49.5841188Z Updated PYTHONPATH to '.:/opt/startup/app_logs:/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages'
+2025-12-18T23:39:50.4566613Z Traceback (most recent call last):
+2025-12-18T23:39:50.4567203Z   File "/tmp/8de3e8a17e8487c/antenv/bin/uvicorn", line 8, in <module>
+2025-12-18T23:39:50.4571687Z     sys.exit(main())
+2025-12-18T23:39:50.4571775Z              ^^^^^^
+2025-12-18T23:39:50.4571810Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1442, in __call__
+2025-12-18T23:39:50.4571839Z     return self.main(*args, **kwargs)
+2025-12-18T23:39:50.4571889Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4571918Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1363, in main
+2025-12-18T23:39:50.4573422Z     rv = self.invoke(ctx)
+2025-12-18T23:39:50.4573486Z          ^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4573516Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1226, in invoke
+2025-12-18T23:39:50.4578272Z     return ctx.invoke(self.callback, **ctx.params)
+2025-12-18T23:39:50.4578349Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4578380Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 794, in invoke
+2025-12-18T23:39:50.4578685Z     return callback(*args, **kwargs)
+2025-12-18T23:39:50.4578722Z            ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4578751Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/main.py", line 413, in main
+2025-12-18T23:39:50.4579680Z     run(
+2025-12-18T23:39:50.4579743Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/main.py", line 580, in run
+2025-12-18T23:39:50.4580788Z     server.run()
+2025-12-18T23:39:50.4580983Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 67, in run
+2025-12-18T23:39:50.4581441Z     return asyncio.run(self.serve(sockets=sockets))
+2025-12-18T23:39:50.4581763Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4581820Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/runners.py", line 190, in run
+2025-12-18T23:39:50.4582488Z     return runner.run(main)
+2025-12-18T23:39:50.4582846Z            ^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4582886Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/runners.py", line 118, in run
+2025-12-18T23:39:50.4583406Z     return self._loop.run_until_complete(task)
+2025-12-18T23:39:50.4583744Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4583783Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+2025-12-18T23:39:50.4585907Z     return future.result()
+2025-12-18T23:39:50.4586104Z            ^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4586142Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 71, in serve
+2025-12-18T23:39:50.4586668Z     await self._serve(sockets)
+2025-12-18T23:39:50.4668425Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 78, in _serve
+2025-12-18T23:39:50.4668621Z     config.load()
+2025-12-18T23:39:50.4668658Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/config.py", line 436, in load
+2025-12-18T23:39:50.4668682Z     self.loaded_app = import_from_string(self.app)
+2025-12-18T23:39:50.4668708Z                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4668762Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/importer.py", line 22, in import_from_string
+2025-12-18T23:39:50.4668786Z     raise exc from None
+2025-12-18T23:39:50.4668826Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
+2025-12-18T23:39:50.4668849Z     module = importlib.import_module(module_str)
+2025-12-18T23:39:50.4668872Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4668897Z   File "/opt/python/3.11.14/lib/python3.11/importlib/__init__.py", line 126, in import_module
+2025-12-18T23:39:50.4668937Z     return _bootstrap._gcd_import(name[level:], package, level)
+2025-12-18T23:39:50.4668961Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:39:50.4668985Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+2025-12-18T23:39:50.4669009Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+2025-12-18T23:39:50.4669033Z   File "<frozen importlib._bootstrap>", line 1126, in _find_and_load_unlocked
+2025-12-18T23:39:50.4669057Z   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+2025-12-18T23:39:50.4669097Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+2025-12-18T23:39:50.4669121Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+2025-12-18T23:39:50.4669144Z   File "<frozen importlib._bootstrap>", line 1140, in _find_and_load_unlocked
+2025-12-18T23:39:50.4669166Z ModuleNotFoundError: No module named 'src'
+2025-12-18T23:40:04.8495481Z    _____                               
+2025-12-18T23:40:04.8495832Z   /  _  \ __________ _________   ____  
+2025-12-18T23:40:04.8495852Z  /  /_\  \\___   /  |  \_  __ \_/ __ \ 
+2025-12-18T23:40:04.8495923Z /    |    \/    /|  |  /|  | \/\  ___/ 
+2025-12-18T23:40:04.8495941Z \____|__  /_____ \____/ |__|    \___  >
+2025-12-18T23:40:04.8495955Z         \/      \/                  \/ 
+2025-12-18T23:40:04.8495970Z A P P   S E R V I C E   O N   L I N U X
+2025-12-18T23:40:04.8495984Z 
+2025-12-18T23:40:04.8495999Z Documentation    : http://aka.ms/webapp-linux
+2025-12-18T23:40:04.8496016Z Python quickstart: https://aka.ms/python-qs
+2025-12-18T23:40:04.8496031Z Python version   : 3.11.14
+2025-12-18T23:40:04.8496046Z Instance Name    : lw0mdlwk0000RL
+2025-12-18T23:40:04.8496063Z Instance Id      : 8b490c4f50653849dca061a82470b861b1dbfc5ccd2f7d24a917d0acfe80cc05
+2025-12-18T23:40:04.8496076Z 
+2025-12-18T23:40:04.8496092Z Note: Any data outside '/home' is not persisted
+2025-12-18T23:40:05.7556409Z Starting OpenBSD Secure Shell server: sshd.
+2025-12-18T23:40:05.7654479Z WEBSITES_INCLUDE_CLOUD_CERTS is not set to true.
+2025-12-18T23:40:05.7965284Z Updating certificates in /etc/ssl/certs...
+2025-12-18T23:40:14.8838589Z rehash: warning: skipping duplicate certificate in azl_Sectigo_Public_Server_Authentication_Root_E46.pem
+2025-12-18T23:40:14.8930918Z rehash: warning: skipping duplicate certificate in azl_Sectigo_Public_Server_Authentication_Root_R46.pem
+2025-12-18T23:40:14.9013349Z rehash: warning: skipping duplicate certificate in azl_SSL.com_TLS_ECC_Root_CA_2022.pem
+2025-12-18T23:40:14.9027771Z rehash: warning: skipping duplicate certificate in azl_SSL.com_TLS_RSA_Root_CA_2022.pem
+2025-12-18T23:40:14.9326823Z 4 added, 0 removed; done.
+2025-12-18T23:40:14.9327201Z Running hooks in /etc/ca-certificates/update.d...
+2025-12-18T23:40:14.9342525Z done.
+2025-12-18T23:40:14.9444137Z CA certificates copied and updated successfully.
+2025-12-18T23:40:15.0043390Z Site's appCommandLine: uvicorn src.main:app --host 0.0.0.0 --port 8000
+2025-12-18T23:40:15.1561178Z Starting periodic command scheduler: cron.
+2025-12-18T23:40:15.1637112Z Launching oryx with: create-script -appPath /home/site/wwwroot -output /opt/startup/startup.sh -virtualEnvName antenv -defaultApp /opt/defaultsite -userStartupCommand 'uvicorn src.main:app --host 0.0.0.0 --port 8000'
+2025-12-18T23:40:15.1844767Z Found build manifest file at '/home/site/wwwroot/oryx-manifest.toml'. Deserializing it...
+2025-12-18T23:40:15.1931105Z Build Operation ID: b2659c6fd1b491fd
+2025-12-18T23:40:15.1942218Z Output is compressed. Extracting it...
+2025-12-18T23:40:15.1942548Z Oryx Version: 0.2.20251017.2, Commit: 482d4c55e818733ab33b9d2131f9dc485a21fd03, ReleaseTagName: 20251017.2
+2025-12-18T23:40:15.1950472Z Extracting '/home/site/wwwroot/output.tar.gz' to directory '/tmp/8de3e8a17e8487c'...
+2025-12-18T23:40:40.4627354Z App path is set to '/tmp/8de3e8a17e8487c'
+2025-12-18T23:40:40.4869854Z Writing output script to '/opt/startup/startup.sh'
+2025-12-18T23:40:40.5440631Z Using packages from virtual environment antenv located at /tmp/8de3e8a17e8487c/antenv.
+2025-12-18T23:40:40.5441070Z Updated PYTHONPATH to '.:/opt/startup/app_logs:/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages'
+2025-12-18T23:40:41.2061213Z Traceback (most recent call last):
+2025-12-18T23:40:41.2061660Z   File "/tmp/8de3e8a17e8487c/antenv/bin/uvicorn", line 8, in <module>
+2025-12-18T23:40:41.2066623Z     sys.exit(main())
+2025-12-18T23:40:41.2066767Z              ^^^^^^
+2025-12-18T23:40:41.2066795Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1442, in __call__
+2025-12-18T23:40:41.2066814Z     return self.main(*args, **kwargs)
+2025-12-18T23:40:41.2066831Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2066851Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1363, in main
+2025-12-18T23:40:41.2135801Z     rv = self.invoke(ctx)
+2025-12-18T23:40:41.2136030Z          ^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2136052Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 1226, in invoke
+2025-12-18T23:40:41.2139054Z     return ctx.invoke(self.callback, **ctx.params)
+2025-12-18T23:40:41.2139112Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2139131Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/click/core.py", line 794, in invoke
+2025-12-18T23:40:41.2140690Z     return callback(*args, **kwargs)
+2025-12-18T23:40:41.2140726Z            ^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2140745Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/main.py", line 413, in main
+2025-12-18T23:40:41.2143095Z     run(
+2025-12-18T23:40:41.2143157Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/main.py", line 580, in run
+2025-12-18T23:40:41.2143174Z     server.run()
+2025-12-18T23:40:41.2143192Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 67, in run
+2025-12-18T23:40:41.2143251Z     return asyncio.run(self.serve(sockets=sockets))
+2025-12-18T23:40:41.2145391Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2145443Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/runners.py", line 190, in run
+2025-12-18T23:40:41.2145460Z     return runner.run(main)
+2025-12-18T23:40:41.2145477Z            ^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2145494Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/runners.py", line 118, in run
+2025-12-18T23:40:41.2145511Z     return self._loop.run_until_complete(task)
+2025-12-18T23:40:41.2145546Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2145564Z   File "/opt/python/3.11.14/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+2025-12-18T23:40:41.2148413Z     return future.result()
+2025-12-18T23:40:41.2148449Z            ^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2148468Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 71, in serve
+2025-12-18T23:40:41.2148484Z     await self._serve(sockets)
+2025-12-18T23:40:41.2148502Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/server.py", line 78, in _serve
+2025-12-18T23:40:41.2148517Z     config.load()
+2025-12-18T23:40:41.2148535Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/config.py", line 436, in load
+2025-12-18T23:40:41.2150373Z     self.loaded_app = import_from_string(self.app)
+2025-12-18T23:40:41.2150421Z                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2150441Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/importer.py", line 22, in import_from_string
+2025-12-18T23:40:41.2150456Z     raise exc from None
+2025-12-18T23:40:41.2150475Z   File "/tmp/8de3e8a17e8487c/antenv/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
+2025-12-18T23:40:41.2150491Z     module = importlib.import_module(module_str)
+2025-12-18T23:40:41.2150506Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2150524Z   File "/opt/python/3.11.14/lib/python3.11/importlib/__init__.py", line 126, in import_module
+2025-12-18T23:40:41.2152539Z     return _bootstrap._gcd_import(name[level:], package, level)
+2025-12-18T23:40:41.2152576Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-12-18T23:40:41.2152594Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+2025-12-18T23:40:41.2152629Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+2025-12-18T23:40:41.2152646Z   File "<frozen importlib._bootstrap>", line 1126, in _find_and_load_unlocked
+2025-12-18T23:40:41.2152663Z   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+2025-12-18T23:40:41.2152679Z   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+2025-12-18T23:40:41.2152695Z   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+2025-12-18T23:40:41.2152711Z   File "<frozen importlib._bootstrap>", line 1140, in _find_and_load_unlocked
+2025-12-18T23:40:41.2152726Z ModuleNotFoundError: No module named 'src'

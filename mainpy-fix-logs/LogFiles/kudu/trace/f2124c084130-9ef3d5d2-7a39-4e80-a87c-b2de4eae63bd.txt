@@ -1,0 +1,4 @@
+2025-12-17T18:29:47  Incoming Request, url: /dump, method: GET, type: request, pid: 772,1,32, Host: aria-dev-api.scm.azurewebsites.net, User-Agent: AZURECLI/2.67.0 (MSI), Accept-Encoding: identity, Authorization: Bea..., x-ms-client-request-id: 5ab8d681-db76-11f0-a058-088e904feb3e, X-ARR-LOG-ID: 5ab8d681-db76-11f0-a058-088e904feb3e, CLIENT-IP: 52.167.115.14:7753, X-SITE-DEPLOYMENT-ID: aria-dev-api, WAS-DEFAULT-HOSTNAME: aria-dev-api.scm.azurewebsites.net, X-Forwarded-Proto: https, X-AppService-Proto: https, X-Forwarded-TlsVersion: 1.3, X-WAWS-Unencoded-URL: /dump, X-Client-IP: 52.167.115.14, X-Client-Port: 7753
+2025-12-17T18:29:48    Outgoing response, type: response, statusCode: 200, statusText: OK
+2025-12-17T18:29:48  Done Incoming Request, elapsed: 741 ms
+

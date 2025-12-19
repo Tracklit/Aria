@@ -1,0 +1,6 @@
+<step title="Incoming Request" date="2025-12-19T01:00:42.320" instance="8b490c" url="/api/settings/branch" method="GET" type="request" pid="768,1,18" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="Azure-WebSites-Controller/106.0.7.121" Authorization="Bas..." x-ms-request-id="bc5b4710-1a25-423b-bdeb-93afb5b184bd" X-ARR-LOG-ID="bc5b4710-1a25-423b-bdeb-93afb5b184bd" CLIENT-IP="40.112.243.121:15435" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-MS-PLATFORM-INTERNAL="True" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/settings/branch" X-Client-IP="40.112.243.121" X-Client-Port="15435" >
+  <step title="Cleanup Xml Logs" date="2025-12-19T01:00:42.331" >
+    <step title="Cleanup Infos" date="2025-12-19T01:00:42.461" totalFiles="379" totalCleanup="219" /><!-- duration: 58ms -->
+  </step><!-- duration: 219ms -->
+  <step title="Outgoing response" date="2025-12-19T01:00:42.590" type="response" statusCode="200" statusText="OK" /><!-- duration: 51ms -->
+</step><!-- duration: 330ms -->

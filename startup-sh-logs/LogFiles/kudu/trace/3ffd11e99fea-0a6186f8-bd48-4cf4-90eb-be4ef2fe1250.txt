@@ -1,0 +1,19 @@
+2025-12-17T20:44:51  Incoming Request, url: /api/zipdeploy?isAsync=true, method: POST, type: request, pid: 768,1,20, Accept: */*, Host: aria-dev-api.scm.azurewebsites.net, User-Agent: AZURECLI/2.67.0 (MSI), Accept-Encoding: gzip, deflate, Authorization: Bea..., Cache-Control: no-cache, Content-Type: application/octet-stream, Content-Length: 155912, x-ms-client-request-id: 37729059-db89-11f0-a320-088e904feb3e, x-ms-artifact-checksum: 8db4544116c98d245d335dc7fbe7159fb7fecd8546aea2fc98a1ecb9fad62955, X-ARR-LOG-ID: 37729059-db89-11f0-a320-088e904feb3e, CLIENT-IP: 52.177.6.190:11794, X-SITE-DEPLOYMENT-ID: aria-dev-api, WAS-DEFAULT-HOSTNAME: aria-dev-api.scm.azurewebsites.net, X-Forwarded-Proto: https, X-AppService-Proto: https, X-Forwarded-TlsVersion: 1.3, X-WAWS-Unencoded-URL: /api/zipdeploy?isAsync=true, X-Client-IP: 52.177.6.190, X-Client-Port: 11794
+2025-12-17T20:44:51    ZipPushDeploy
+2025-12-17T20:44:51      ZipDeploy. Extract zip. Remote build.
+2025-12-17T20:44:51      None repository commit
+2025-12-17T20:44:51        Commit id: 3d2891af-bde2-4244-90f0-81c815b11051, Message: N/A, AuthorName: N/A, AuthorEmail: N/A
+2025-12-17T20:44:51      Done None repository commit
+2025-12-17T20:44:51      Starting PushDeployAsync
+2025-12-17T20:44:51      Writing artifact to /tmp/zipdeploy/d63f4c2e-f0fb-433b-946f-4a6694cd0d8d.zip
+2025-12-17T20:44:51        Writing multipart request body to /tmp/zipdeploy/d63f4c2e-f0fb-433b-946f-4a6694cd0d8d.zip
+2025-12-17T20:44:51      Done Writing artifact to /tmp/zipdeploy/d63f4c2e-f0fb-433b-946f-4a6694cd0d8d.zip
+2025-12-17T20:44:51      Removing previous build artifact's manifest file
+2025-12-17T20:44:51        Start deployment in the background
+2025-12-17T20:44:51          Acquiring Deployment Lock
+2025-12-17T20:44:51          Acquired Deployment Lock
+2025-12-17T20:44:52        Done Start deployment in the background
+2025-12-17T20:44:52      Done ZipPushDeploy
+2025-12-17T20:44:52      Outgoing response, type: response, statusCode: 202, statusText: Accepted
+2025-12-17T20:44:52    Done Incoming Request, elapsed: 641 ms
+

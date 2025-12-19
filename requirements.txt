@@ -45,9 +45,9 @@ pytest-mock==3.14.0
 Pillow==11.0.0
 psutil==6.1.1
 
-# Video analysis and computer vision
-mediapipe==0.10.9
-opencv-python-headless==4.8.1.78
+# Video analysis and computer vision (optional - disabled for Azure deployment)
+# mediapipe==0.10.9
+# opencv-python-headless==4.8.1.78
 numpy==1.24.4
 
 # Analytics and data science
