@@ -1,6 +1,7 @@
 # rate_limit.py
 import time
 import json
+import functools
 from typing import Optional, Dict, Any
 from fastapi import Request, HTTPException
 from src.cache import cache
@@ -457,6 +458,7 @@ RATE_LIMITS = {
 def apply_rate_limit(endpoint: str):
     """Decorator to apply enhanced rate limiting with subscription support to endpoints"""
     def decorator(func):
+        @functools.wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             # Check rate limit with subscription support
             rate_status = rate_limiter.check_rate_limit(request, endpoint)
