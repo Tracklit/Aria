@@ -11,6 +11,10 @@ import json
 
 # Import services
 from src.notifications import notification_service
+
+# Initialize logger first
+logger = logging.getLogger(__name__)
+
 try:
     from src.video_analysis import video_analysis_service
     VIDEO_ANALYSIS_AVAILABLE = True
@@ -18,11 +22,10 @@ except ImportError as e:
     logger.warning(f"Video analysis not available: {e}")
     video_analysis_service = None
     VIDEO_ANALYSIS_AVAILABLE = False
+
 from src.social_features import *
 from src.advanced_analytics import analytics_service
 from src.rate_limit import apply_rate_limit
-
-logger = logging.getLogger(__name__)
 
 # Create routers
 webhook_router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
