@@ -1624,7 +1624,7 @@ async def health_check():
     
     # Check Redis/Cache
     try:
-        from cache_utils import is_cache_healthy, get_cache_stats
+        from src.cache_utils import is_cache_healthy, get_cache_stats
         cache_healthy = is_cache_healthy()
         health_status["services"]["cache"] = {
             "status": "healthy" if cache_healthy else "unhealthy",
@@ -1639,12 +1639,12 @@ async def health_check():
     
     # Check Database
     try:
-        from database_extensions import db_pool
-        conn = db_pool.getconn()
+        from src.database import db_pool
+        conn = db_pool.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
         cursor.close()
-        db_pool.putconn(conn)
+        db_pool.return_connection(conn)
         health_status["services"]["database"] = {"status": "healthy"}
     except Exception as e:
         health_status["services"]["database"] = {"status": "unhealthy", "error": str(e)}
