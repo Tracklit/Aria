@@ -13,6 +13,12 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+# Debug logging
+print(f"[APP.PY] Current directory: {current_dir}", flush=True)
+print(f"[APP.PY] Files in current dir: {os.listdir(current_dir)[:20]}", flush=True)
+print(f"[APP.PY] sys.path: {sys.path[:5]}", flush=True)
+print(f"[APP.PY] src directory exists: {os.path.exists(os.path.join(current_dir, 'src'))}", flush=True)
+
 # Now import the actual FastAPI application from src.main
 from src.main import app
 
