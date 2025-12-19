@@ -278,6 +278,15 @@ class DatabasePool:
 # Initialize global database pool
 db_pool = DatabasePool()
 
+# Legacy function for backwards compatibility
+def get_db_connection():
+    """
+    Get a database connection from the pool.
+    IMPORTANT: Caller must return the connection using db_pool.return_connection(conn)
+    or use the context manager db_pool.get_cursor() instead.
+    """
+    return db_pool.get_connection()
+
 # Database utility functions for Aria specific operations
 
 def get_athlete_profile(user_id: str) -> Optional[Dict]:
