@@ -20,6 +20,7 @@ tqdm==4.67.1
 typing-inspection==0.4.1
 typing_extensions==4.15.0
 uvicorn==0.35.0
+gunicorn==23.0.0
 
 # Production dependencies
 redis==5.2.0
