@@ -16,8 +16,8 @@ from src.keyvault_helper import get_env_with_keyvault_resolution
 
 logger = logging.getLogger(__name__)
 
-# Database configuration from environment (with Key Vault resolution)
-DATABASE_URL = get_env_with_keyvault_resolution("DATABASE_URL")
+# Database configuration from environment
+# Note: DATABASE_URL with Key Vault references is resolved at runtime in _get_connection_params
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "tracklit")
@@ -41,9 +41,11 @@ class DatabasePool:
     
     def _get_connection_params(self) -> Dict[str, Any]:
         """Build connection parameters from environment"""
-        if DATABASE_URL:
+        # Resolve Key Vault references at runtime, not at module load
+        database_url = get_env_with_keyvault_resolution("DATABASE_URL")
+        if database_url:
             # Parse DATABASE_URL if provided
-            return {"dsn": DATABASE_URL}
+            return {"dsn": database_url}
         elif all([DB_HOST, DB_USER, DB_PASSWORD]):
             # Build from individual parameters
             return {
