@@ -222,6 +222,41 @@ async def startup_check():
         )
 
 # =============================================================================
+# TEST ENDPOINT FOR OPENAI (NO RATE LIMIT)
+# =============================================================================
+
+@app.post("/test/openai")
+async def test_openai(question: str):
+    """Simple test endpoint to verify OpenAI integration without rate limiting"""
+    try:
+        messages = [
+            {"role": "system", "content": "You are a helpful sprint coaching assistant. Answer in 2 sentences or less."},
+            {"role": "user", "content": question}
+        ]
+        
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=100
+        )
+        
+        answer = response.choices[0].message.content
+        
+        return {
+            "success": True,
+            "question": question,
+            "answer": answer,
+            "model": "gpt-4o",
+            "tokens": response.usage.total_tokens if response.usage else 0
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+# =============================================================================
 # PYDANTIC MODELS
 # =============================================================================
 
