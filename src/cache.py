@@ -4,6 +4,7 @@ import json
 import os
 from typing import Any, Optional
 import logging
+from src.keyvault_helper import get_env_with_keyvault_resolution
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +17,7 @@ class AriaCache:
         try:
             # Support multiple Redis configuration methods
             # Method 1: Full Redis URL (Azure format: rediss://...)
-            redis_url = os.getenv("REDIS_URL") or os.getenv("REDIS_CONNECTION_STRING")
+            redis_url = get_env_with_keyvault_resolution("REDIS_URL") or get_env_with_keyvault_resolution("REDIS_CONNECTION_STRING")
             
             if redis_url:
                 logger.info(f"Using Redis URL configuration")

@@ -12,11 +12,12 @@ import psycopg2
 from psycopg2 import pool, extras
 from psycopg2.extensions import connection as Connection
 import json
+from src.keyvault_helper import get_env_with_keyvault_resolution
 
 logger = logging.getLogger(__name__)
 
-# Database configuration from environment
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Database configuration from environment (with Key Vault resolution)
+DATABASE_URL = get_env_with_keyvault_resolution("DATABASE_URL")
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "tracklit")
