@@ -18,7 +18,7 @@ from src.cache_utils import (
     invalidate_progress_cache, invalidate_achievements_cache,
     invalidate_mental_cache
 )
-from ai_companion_logic import (
+from src.ai_companion_logic import (
     generate_proactive_suggestions,
     analyze_training_patterns,
     recommend_drills_for_user,

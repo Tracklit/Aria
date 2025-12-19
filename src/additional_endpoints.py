@@ -10,10 +10,10 @@ import logging
 import json
 
 # Import services
-from notifications import notification_service
-from video_analysis import video_analysis_service
-from social_features import *
-from advanced_analytics import analytics_service
+from src.notifications import notification_service
+from src.video_analysis import video_analysis_service
+from src.social_features import *
+from src.advanced_analytics import analytics_service
 from src.rate_limit import apply_rate_limit
 
 logger = logging.getLogger(__name__)
@@ -405,7 +405,7 @@ async def analyze_video_endpoint(
 # RACE MANAGEMENT ENDPOINTS
 # =============================================================================
 
-from race_management import (
+from src.race_management import (
     register_race, get_user_races, get_prep_plan, get_race_checklist,
     update_checklist_progress, record_race_result, get_race_results,
     analyze_race_performance, create_warmup_routine, get_warmup_routines
@@ -474,7 +474,7 @@ async def get_results_endpoint(request: Request, user_id: str):
 # DATA EXPORT ENDPOINTS
 # =============================================================================
 
-from data_export import export_user_data, import_user_data, delete_user_data, request_data_deletion, get_data_access_logs
+from src.data_export import export_user_data, import_user_data, delete_user_data, request_data_deletion, get_data_access_logs
 
 @export_router.get("/{user_id}/export")
 @apply_rate_limit("general")
@@ -511,7 +511,7 @@ async def get_access_logs_endpoint(request: Request, user_id: str):
 # EQUIPMENT TRACKING ENDPOINTS
 # =============================================================================
 
-from equipment_tracking import (
+from src.equipment_tracking import (
     add_equipment, log_equipment_usage, get_user_equipment,
     get_equipment_alerts, retire_equipment, get_equipment_analytics
 )
@@ -570,7 +570,7 @@ async def equipment_analytics_endpoint(request: Request, user_id: str):
 # GAMIFICATION ENDPOINTS
 # =============================================================================
 
-from gamification import (
+from src.gamification import (
     award_xp, get_user_level_info, update_streak, get_user_achievements,
     create_virtual_race, register_for_virtual_race, get_active_virtual_races
 )
