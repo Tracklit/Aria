@@ -12,7 +12,7 @@ import logging
 
 from src.database_extensions import *
 from src.rate_limit import apply_rate_limit
-from cache_utils import (
+from src.cache_utils import (
     get_cached, set_cached, delete_cached, build_key, delete_pattern,
     invalidate_user_cache, invalidate_drills_cache, 
     invalidate_progress_cache, invalidate_achievements_cache,
