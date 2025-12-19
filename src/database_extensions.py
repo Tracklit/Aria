@@ -541,6 +541,9 @@ def get_progress_analytics(user_id: str, metric_type: Optional[str] = None, days
     
     return db_pool.execute_many(query, params)
 
+# Alias for backwards compatibility
+get_progress_metrics = get_progress_analytics
+
 # =============================================================================
 # CALENDAR & SCHEDULING FUNCTIONS
 # =============================================================================
