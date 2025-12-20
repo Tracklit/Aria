@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 import os
 from dotenv import load_dotenv
 from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential
 import requests
 from datetime import datetime, timezone, timedelta
 import json
@@ -64,10 +65,13 @@ from src.additional_endpoints import (
     realtime_router, equipment_router, gamification_router
 )
 
-# Initialize Azure OpenAI client
+# Initialize Azure OpenAI client with Managed Identity
 from src.keyvault_helper import get_env_with_keyvault_resolution
+
+# Use DefaultAzureCredential for managed identity authentication
+azure_credential = DefaultAzureCredential()
 client = AzureOpenAI(
-    api_key=get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY"),
+    azure_ad_token_provider=lambda: azure_credential.get_token("https://cognitiveservices.azure.com/.default").token,
     api_version="2024-02-15-preview",
     azure_endpoint=get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
 )
