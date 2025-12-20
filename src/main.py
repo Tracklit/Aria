@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AzureOpenAI
 import requests
 from datetime import datetime, timezone, timedelta
 import json
@@ -64,9 +64,16 @@ from src.additional_endpoints import (
     realtime_router, equipment_router, gamification_router
 )
 
-# Initialize OpenAI client
+# Initialize Azure OpenAI client
 from src.keyvault_helper import get_env_with_keyvault_resolution
-client = OpenAI(api_key=get_env_with_keyvault_resolution("OPENAI_API_KEY"))
+client = AzureOpenAI(
+    api_key=get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY"),
+    api_version="2024-02-15-preview",
+    azure_endpoint=get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
+)
+
+# Get the deployment name for Azure OpenAI
+AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
 
 # Initialize Stripe
 stripe.api_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
@@ -236,7 +243,7 @@ async def test_openai(question: str):
         ]
         
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7,
             max_tokens=100
@@ -770,7 +777,7 @@ Badges: {badges}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -835,7 +842,7 @@ Badges: {user.get('badges', [])}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -873,7 +880,7 @@ Competition Date: {req.competition_date}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -948,7 +955,7 @@ This objective data should take priority over subjective sleep reporting.
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -1364,7 +1371,7 @@ Warnings: {', '.join(wearable_insights.get('warnings', []))}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
