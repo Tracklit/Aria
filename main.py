@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AzureOpenAI
+from azure.identity import DefaultAzureCredential
 import requests
 from datetime import datetime, timezone, timedelta
 import json
@@ -49,11 +50,22 @@ except ImportError:
     WEARABLE_INTEGRATION_AVAILABLE = False
     logger.warning("Wearable integration not available - create wearable_integration.py to enable")
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize Azure OpenAI client with Managed Identity
+from src.keyvault_helper import get_env_with_keyvault_resolution
+
+# Use DefaultAzureCredential for managed identity authentication
+azure_credential = DefaultAzureCredential()
+client = AzureOpenAI(
+    azure_ad_token_provider=lambda: azure_credential.get_token("https://cognitiveservices.azure.com/.default").token,
+    api_version="2024-02-15-preview",
+    azure_endpoint=get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
+)
+
+# Get the deployment name for Azure OpenAI
+AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
 
 # Initialize Stripe
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
 
 # Allowed origins for TrackLit integration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "https://tracklit.app,https://www.tracklit.app,https://api.tracklit.app").split(",")
@@ -682,7 +694,7 @@ Badges: {badges}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -736,7 +748,7 @@ Badges: {user.get('badges', [])}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -774,7 +786,7 @@ Competition Date: {req.competition_date}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -849,7 +861,7 @@ This objective data should take priority over subjective sleep reporting.
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
@@ -1265,7 +1277,7 @@ Warnings: {', '.join(wearable_insights.get('warnings', []))}
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=AZURE_OPENAI_DEPLOYMENT,
             messages=messages,
             temperature=0.7
         )
