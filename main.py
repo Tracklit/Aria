@@ -50,13 +50,11 @@ except ImportError:
     WEARABLE_INTEGRATION_AVAILABLE = False
     logger.warning("Wearable integration not available - create wearable_integration.py to enable")
 
-# Initialize Azure OpenAI client with Managed Identity
+# Initialize Azure OpenAI client with API Key (simpler for now)
 from keyvault_helper import get_env_with_keyvault_resolution
 
-# Use DefaultAzureCredential for managed identity authentication
-azure_credential = DefaultAzureCredential()
 client = AzureOpenAI(
-    azure_ad_token_provider=lambda: azure_credential.get_token("https://cognitiveservices.azure.com/.default").token,
+    api_key=get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY"),
     api_version="2024-02-15-preview",
     azure_endpoint=get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
 )
