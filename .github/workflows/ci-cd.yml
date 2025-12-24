@@ -14,7 +14,7 @@ on:
 env:
   PYTHON_VERSION: '3.11'
   DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/aria
+  IMAGE_NAME: tracklit/aria
 
 jobs:
   # =============================================================================
