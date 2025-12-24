@@ -304,8 +304,7 @@ def get_athlete_profile(user_id: str) -> Optional[Dict]:
             u.id,
             u.email,
             u.role,
-            u.first_name,
-            u.last_name,
+            u.name,
             ap.date_of_birth,
             ap.gender,
             ap.height_cm,
@@ -314,7 +313,7 @@ def get_athlete_profile(user_id: str) -> Optional[Dict]:
             ap.preferences
         FROM users u
         LEFT JOIN athlete_profiles ap ON u.id = ap.user_id
-        WHERE u.id = %s AND u.is_active = true
+        WHERE u.id = %s
     """
     return db_pool.execute_one(query, (user_id,))
 
