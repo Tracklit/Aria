@@ -97,8 +97,15 @@ def ensure_ai_available():
             detail="AI service is currently unavailable. Please check Azure OpenAI configuration."
         )
 
-# Initialize Stripe
-stripe.api_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
+# Initialize Stripe with graceful fallback
+try:
+    stripe_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
+    if stripe_key:
+        stripe.api_key = stripe_key
+    else:
+        logger.warning("Stripe API key not found - payment features will be unavailable")
+except Exception as e:
+    logger.warning(f"Failed to initialize Stripe: {e}")
 
 # Allowed origins for TrackLit integration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "https://tracklit.app,https://www.tracklit.app,https://api.tracklit.app").split(",")
