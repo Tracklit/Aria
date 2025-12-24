@@ -79,6 +79,9 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           JWT_SECRET: test_jwt_secret_for_ci
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_DEPLOYMENT: gpt-4o
         run: |
           pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
       
