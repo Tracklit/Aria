@@ -14,7 +14,7 @@ on:
 env:
   PYTHON_VERSION: '3.11'
   DOCKER_REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/Aria
+  IMAGE_NAME: ${{ github.repository }}/aria
 
 jobs:
   # =============================================================================
@@ -82,6 +82,7 @@ jobs:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_DEPLOYMENT: gpt-4o
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
         run: |
           pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
         continue-on-error: true
