@@ -1,0 +1,63 @@
+<step title="Incoming Request" date="2025-12-17T22:58:25.476" instance="8b490c" url="/api/publish?type=zip&amp;async=False" method="POST" type="request" pid="768,1,14" Accept="*/*" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Content-Length="201157" x-ms-client-request-id="dfcbc5d1-db9b-11f0-bf87-088e904feb3e" x-ms-artifact-checksum="599dfebb14ac66c8d5419ea9948f407138e4449fb5673d992f185cccbb7eb5bb" X-ARR-LOG-ID="dfcbc5d1-db9b-11f0-bf87-088e904feb3e" CLIENT-IP="52.177.6.198:44224" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?type=zip&amp;async=False" X-Client-IP="52.177.6.198" X-Client-Port="44224" >
+  <step title="Cleanup Xml Logs" date="2025-12-17T22:58:25.484" >
+    <step title="Cleanup Infos" date="2025-12-17T22:58:25.507" totalFiles="268" totalCleanup="108" /><!-- duration: 8ms -->
+  </step><!-- duration: 49ms -->
+  <step title="OneDeploy" date="2025-12-17T22:58:25.605" >
+    <step title="None repository commit" date="2025-12-17T22:58:25.638" >
+      <step title="Commit id: 8ed16953-46b4-4609-8775-e0ce3dfddc35" date="2025-12-17T22:58:25.654" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 10ms -->
+    </step><!-- duration: 36ms -->
+    <step title="Starting PushDeployAsync" date="2025-12-17T22:58:25.686" /><!-- duration: 18ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/fddfcb46-fe9e-4465-8bf0-d9dcb5210469.zip" date="2025-12-17T22:58:25.785" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/fddfcb46-fe9e-4465-8bf0-d9dcb5210469.zip" date="2025-12-17T22:58:25.805" /><!-- duration: 11ms -->
+    </step><!-- duration: 172ms -->
+    <step title="Attempting to fetch target branch HEAD" date="2025-12-17T22:58:25.997" /><!-- duration: 9ms -->
+    <step title="Acquiring Deployment Lock" date="2025-12-17T22:58:26.019" /><!-- duration: 18ms -->
+    <step title="Acquired Deployment Lock" date="2025-12-17T22:58:26.147" /><!-- duration: 3ms -->
+    <step title="Performing fetch based deployment" date="2025-12-17T22:58:26.171" >
+      <step title="Creating temporary deployment" date="2025-12-17T22:58:26.175" /><!-- duration: 186ms -->
+      <step title="Releasing Deployment Lock" date="2025-12-17T22:58:27.765" /><!-- duration: 33ms -->
+      <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file /tmp/zipdeploy/fddfcb46-fe9e-4465-8bf0-d9dcb5210469.zip (0.19 MB) to /tmp/zipdeploy/extracted" date="2025-12-17T22:58:28.010" >
+        <step title="ChmodRecursive Process exited with total time taken in ms: 81" date="2025-12-17T22:58:28.309" /><!-- duration: 11ms -->
+      </step><!-- duration: 321ms -->
+      <step title="None repository commit" date="2025-12-17T22:58:28.341" >
+        <step title="Commit id: 8ed16953-46b4-4609-8775-e0ce3dfddc35" date="2025-12-17T22:58:28.351" Message="OneDeploy" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 17ms -->
+      </step><!-- duration: 38ms -->
+      <step title="Deployment timer started" date="2025-12-17T22:58:30.392" >
+        <step title="DeploymentManager.Deploy(id:8ed16953-46b4-4609-8775-e0ce3dfddc35)" date="2025-12-17T22:58:30.450" >
+          <step title="Collecting changeset information" date="2025-12-17T22:58:30.491" /><!-- duration: 213ms -->
+          <step title="Updating submodules" date="2025-12-17T22:58:30.734" /><!-- duration: 1221ms -->
+          <step title="Determining deployment builder" date="2025-12-17T22:58:32.312" >
+            <step title="Builder is OryxBuilder" date="2025-12-17T22:58:32.323" /><!-- duration: 9ms -->
+          </step><!-- duration: 30ms -->
+          <step title="PreDeployment: context.CleanOutputPath False" date="2025-12-17T22:58:32.425" >
+            <step title="PreDeployment: context.OutputPath /home/site/wwwroot" date="2025-12-17T22:58:32.613" >
+              <step title="Building" date="2025-12-17T22:58:32.968" >
+                <step title="Executing external process" date="2025-12-17T22:58:33.462" type="process" path="bash" arguments="-c &quot;oryx build /tmp/zipdeploy/extracted -o /home/site/wwwroot --platform python --platform-version 3.11 -p virtualenv_name=antenv --log-file /tmp/build-debug.log  -i /tmp/8de3dbfcd2d3359 --compress-destination-dir | tee /tmp/oryx-build.log ; exit $PIPESTATUS &quot;" >
+                  <step title="Cpu: python(1286,56.370s)+ts(1287,0.120s)+build.sh(1285,0.000s)+build.sh(1284,0.000s)+build.sh(1189,0.070s)+oryx(1170,5.120s)+tee(1171,0.000s)+bash(1169,0.000s)=total(61.670s)" date="2025-12-17T23:00:00.680" /><!-- duration: 5ms -->
+                  <step title="bash: no io activity for 61s, prev-cpu=-1.000s, current-cpu=61.670s" date="2025-12-17T23:00:00.700" /><!-- duration: 5ms -->
+                  <step title="Cpu: python(1286,114.240s)+ts(1287,0.120s)+build.sh(1285,0.000s)+build.sh(1284,0.000s)+build.sh(1189,0.070s)+oryx(1170,5.150s)+tee(1171,0.000s)+bash(1169,0.000s)=total(119.580s)" date="2025-12-17T23:01:00.961" /><!-- duration: 7ms -->
+                  <step title="bash: no io activity for 121s, prev-cpu=61.670s, current-cpu=119.580s" date="2025-12-17T23:01:00.982" /><!-- duration: 12ms -->
+                  <step title="Cpu: gzip(1436,54.540s)+sh(1433,0.000s)+tar(1432,1.690s)+build.sh(1189,0.090s)+oryx(1170,5.440s)+tee(1171,0.000s)+bash(1169,0.000s)=total(61.740s)" date="2025-12-17T23:02:30.331" /><!-- duration: 29ms -->
+                  <step title="bash: no io activity for 61s, prev-cpu=-1.000s, current-cpu=61.740s" date="2025-12-17T23:02:30.372" /><!-- duration: 10ms -->
+                  <step title="Cpu: gzip(1436,100.620s)+sh(1433,0.000s)+tar(1432,3.180s)+build.sh(1189,0.090s)+oryx(1170,5.480s)+tee(1171,0.000s)+bash(1169,0.000s)=total(109.370s)" date="2025-12-17T23:03:30.879" /><!-- duration: 22ms -->
+                  <step title="bash: no io activity for 121s, prev-cpu=61.740s, current-cpu=109.370s" date="2025-12-17T23:03:30.908" /><!-- duration: 3ms -->
+                </step><!-- duration: 325570ms -->
+                <step title="Using PythonDeploymentLogParser" date="2025-12-17T23:03:59.580" /><!-- duration: 4ms -->
+                <step title="Modified file to trigger a restart of the app container." date="2025-12-17T23:04:00.998" /><!-- duration: 3ms -->
+                <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-12-17T23:04:01.008" /><!-- duration: 17ms -->
+                <step title="Purge deployment items" date="2025-12-17T23:04:02.235" >
+                  <step title="Remove temp-0fcc, Pending, received at 12/17/2025 22:58:26" date="2025-12-17T23:04:02.313" /><!-- duration: 3ms -->
+                  <step title="Remove temp-fbaa, Pending, received at 12/17/2025 22:35:42" date="2025-12-17T23:04:02.378" /><!-- duration: 3ms -->
+                </step><!-- duration: 148ms -->
+              </step><!-- duration: 329501ms -->
+            </step><!-- duration: 329859ms -->
+            <step title="Cleaning up temp files" date="2025-12-17T23:04:02.482" /><!-- duration: 2408ms -->
+            <step title="Cleaning up temp files" date="2025-12-17T23:04:04.896" /><!-- duration: 514ms -->
+            <step title="Reloading status file with latest updates" date="2025-12-17T23:04:05.453" >
+              <step title="WebHooksManager.PublishEventAsync: PostDeployment" date="2025-12-17T23:04:05.456" /><!-- duration: 93ms -->
+            </step><!-- duration: 100ms -->
+            <step title="Cleaning up temporary deployment - fetch deployment was successful" date="2025-12-17T23:04:05.559" /><!-- duration: 3ms -->
+          </step><!-- duration: 333185ms -->
+        </step><!-- duration: 335188ms -->
+        <step title="Outgoing response" date="2025-12-17T23:04:05.658" type="response" statusCode="200" statusText="OK" /><!-- duration: 4ms -->
+      </step><!-- duration: 335272ms -->

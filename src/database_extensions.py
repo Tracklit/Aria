@@ -393,12 +393,35 @@ def save_conversation(
     context: Optional[Dict] = None
 ) -> Optional[int]:
     """Save a conversation message"""
+    # Find or create conversation
+    conv_query = """
+        SELECT id FROM sprinthia_conversations 
+        WHERE user_id = %s AND title = %s
+    """
+    conv_result = db_pool.execute_one(conv_query, (int(user_id) if user_id.isdigit() else None, session_id))
+    
+    if conv_result:
+        conversation_id = conv_result.get("id")
+    else:
+        # Create new conversation
+        create_conv_query = """
+            INSERT INTO sprinthia_conversations (user_id, title)
+            VALUES (%s, %s)
+            RETURNING id
+        """
+        conv_result = db_pool.execute_one(create_conv_query, (int(user_id) if user_id.isdigit() else None, session_id))
+        conversation_id = conv_result.get("id") if conv_result else None
+    
+    if not conversation_id:
+        return None
+    
+    # Save message
     query = """
-        INSERT INTO conversations (user_id, session_id, role, message, context)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO sprinthia_messages (conversation_id, role, content)
+        VALUES (%s, %s, %s)
         RETURNING id
     """
-    result = db_pool.execute_one(query, (user_id, session_id, role, message, json.dumps(context) if context else None))
+    result = db_pool.execute_one(query, (conversation_id, role, message))
     return result.get("id") if result else None
 
 def get_conversation_history(
@@ -409,22 +432,24 @@ def get_conversation_history(
     """Get conversation history for a user"""
     if session_id:
         query = """
-            SELECT id, session_id, role, message, context, created_at
-            FROM conversations
-            WHERE user_id = %s AND session_id = %s
-            ORDER BY created_at DESC
+            SELECT m.id, c.title as session_id, m.role, m.content as message, m.created_at
+            FROM sprinthia_messages m
+            JOIN sprinthia_conversations c ON m.conversation_id = c.id
+            WHERE c.user_id = %s AND c.title = %s
+            ORDER BY m.created_at DESC
             LIMIT %s
         """
-        params = (user_id, session_id, limit)
+        params = (int(user_id) if user_id.isdigit() else None, session_id, limit)
     else:
         query = """
-            SELECT id, session_id, role, message, context, created_at
-            FROM conversations
-            WHERE user_id = %s
-            ORDER BY created_at DESC
+            SELECT m.id, c.title as session_id, m.role, m.content as message, m.created_at
+            FROM sprinthia_messages m
+            JOIN sprinthia_conversations c ON m.conversation_id = c.id
+            WHERE c.user_id = %s
+            ORDER BY m.created_at DESC
             LIMIT %s
         """
-        params = (user_id, limit)
+        params = (int(user_id) if user_id.isdigit() else None, limit)
     
     return db_pool.execute_many(query, params)
 

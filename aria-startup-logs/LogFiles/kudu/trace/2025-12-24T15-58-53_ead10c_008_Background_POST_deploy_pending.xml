@@ -1,0 +1,32 @@
+<step title="BackgroundTrace" date="2025-12-24T15:58:53.874" instance="ead10c" url="/deploy" method="POST" >
+  <step title="Cleanup Xml Logs" date="2025-12-24T15:58:53.876" >
+    <step title="Cleanup Infos" date="2025-12-24T15:58:53.901" totalFiles="761" totalCleanup="601" /><!-- duration: 9ms -->
+  </step><!-- duration: 37ms -->
+  <step title="Creating temporary deployment - FetchDeploymentManager" date="2025-12-24T15:58:55.445" /><!-- duration: 120ms -->
+  <step title="Creating temporary deployment" date="2025-12-24T15:58:55.702" /><!-- duration: 1277ms -->
+  <step title="Performing fetch based deployment" date="2025-12-24T15:58:58.691" >
+    <step title="Deployment timer started" date="2025-12-24T16:05:48.538" >
+      <step title="DeploymentManager.Deploy(id:50bca9fc7c6bd2a8dc1debb9fa4d93171f15f988)" date="2025-12-24T16:05:48.575" >
+        <step title="Collecting changeset information" date="2025-12-24T16:05:48.614" /><!-- duration: 136ms -->
+        <step title="Updating submodules" date="2025-12-24T16:05:48.755" /><!-- duration: 1167ms -->
+        <step title="Determining deployment builder" date="2025-12-24T16:05:50.171" >
+          <step title="Builder is OryxBuilder" date="2025-12-24T16:05:50.192" /><!-- duration: 12ms -->
+        </step><!-- duration: 43ms -->
+        <step title="PreDeployment: context.CleanOutputPath False" date="2025-12-24T16:05:50.308" >
+          <step title="PreDeployment: context.OutputPath /home/site/wwwroot" date="2025-12-24T16:05:50.556" >
+            <step title="Building" date="2025-12-24T16:05:50.752" >
+              <step title="Executing external process" date="2025-12-24T16:05:51.094" type="process" path="bash" arguments="-c &quot;oryx build /home/site/repository -o /home/site/wwwroot --platform python --platform-version 3.11 -p virtualenv_name=antenv --log-file /tmp/build-debug.log  -i /tmp/8de43064eb3b06a --compress-destination-dir | tee /tmp/oryx-build.log ; exit $PIPESTATUS &quot;" >
+                <step title="Cpu: rsync(11454,1.590s)+rsync(11453,0.240s)+rsync(11452,8.360s)+build.sh(11448,0.010s)+oryx(11420,5.990s)+tee(11421,0.000s)+bash(11419,0.000s)=total(16.190s)" date="2025-12-24T16:07:19.746" /><!-- duration: 39ms -->
+                <step title="bash: no io activity for 61s, prev-cpu=-1.000s, current-cpu=16.190s" date="2025-12-24T16:07:19.807" /><!-- duration: 180ms -->
+                <step title="Cpu: rsync(11454,1.990s)+rsync(11453,0.270s)+rsync(11452,10.150s)+build.sh(11448,0.010s)+oryx(11420,6.190s)+tee(11421,0.000s)+bash(11419,0.000s)=total(18.610s)" date="2025-12-24T16:08:20.834" /><!-- duration: 38ms -->
+                <step title="bash: no io activity for 122s, prev-cpu=16.190s, current-cpu=18.610s" date="2025-12-24T16:08:20.903" /><!-- duration: 40ms -->
+                <step title="Cpu: rsync(11454,2.680s)+rsync(11453,0.320s)+rsync(11452,12.840s)+build.sh(11448,0.010s)+oryx(11420,6.240s)+tee(11421,0.000s)+bash(11419,0.000s)=total(22.090s)" date="2025-12-24T16:09:21.483" /><!-- duration: 32ms -->
+                <step title="bash: no io activity for 183s, prev-cpu=18.610s, current-cpu=22.090s" date="2025-12-24T16:09:21.564" /><!-- duration: 30ms -->
+                <step title="Cpu: rsync(11454,4.180s)+rsync(11453,0.500s)+rsync(11452,19.880s)+build.sh(11448,0.010s)+oryx(11420,6.290s)+tee(11421,0.000s)+bash(11419,0.000s)=total(30.860s)" date="2025-12-24T16:10:21.789" /><!-- duration: 16ms -->
+                <step title="bash: no io activity for 243s, prev-cpu=22.090s, current-cpu=30.860s" date="2025-12-24T16:10:21.819" /><!-- duration: 27ms -->
+                <step title="Cpu: python(11618,47.520s)+ts(11619,0.130s)+build.sh(11617,0.000s)+build.sh(11616,0.000s)+build.sh(11448,0.070s)+oryx(11420,6.540s)+tee(11421,0.000s)+bash(11419,0.000s)=total(54.260s)" date="2025-12-24T16:11:49.260" /><!-- duration: 11ms -->
+                <step title="bash: no io activity for 60s, prev-cpu=-1.000s, current-cpu=54.260s" date="2025-12-24T16:11:49.298" /><!-- duration: 21ms -->
+                <step title="Cpu: python(11618,78.660s)+ts(11619,0.130s)+build.sh(11617,0.000s)+build.sh(11616,0.000s)+build.sh(11448,0.070s)+oryx(11420,6.590s)+tee(11421,0.000s)+bash(11419,0.000s)=total(85.430s)" date="2025-12-24T16:12:50.392" /><!-- duration: 57ms -->
+                <step title="bash: no io activity for 121s, prev-cpu=54.260s, current-cpu=85.430s" date="2025-12-24T16:12:50.531" /><!-- duration: 172ms -->
+                <step title="Cpu: python(11618,92.280s)+ts(11619,0.130s)+build.sh(11617,0.000s)+build.sh(11616,0.000s)+build.sh(11448,0.070s)+oryx(11420,6.640s)+tee(11421,0.000s)+bash(11419,0.000s)=total(99.110s)" date="2025-12-24T16:13:51.549" /><!-- duration: 78ms -->
+                <step title="bash: no io activity for 182s, prev-cpu=85.430s, current-cpu=99.110s" date="2025-12-24T16:13:51.688" /><!-- duration: 32ms -->

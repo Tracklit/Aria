@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>f667b071dc3822ecd93de3ba794c55807905d16b</id>
+  <author>antonyrugama</author>
+  <deployer>GitHub</deployer>
+  <authorEmail>33127079+antonyrugama@users.noreply.github.com</authorEmail>
+  <message>Switch Azure OpenAI to API key authentication</message>
+  <progress></progress>
+  <status>Success</status>
+  <statusText></statusText>
+  <lastSuccessEndTime>2025-12-24T02:23:05.093388Z</lastSuccessEndTime>
+  <receivedTime>2025-12-24T02:10:53.938544Z</receivedTime>
+  <startTime>2025-12-24T02:10:55.4355889Z</startTime>
+  <endTime>2025-12-24T02:23:05.093388Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>False</is_readonly>
+  <buildSummary />
+</deployment>

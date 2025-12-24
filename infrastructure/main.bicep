@@ -311,7 +311,7 @@ resource webApp 'Microsoft.Web/sites@2023-01-01' = {
         // TrackLit Integration
         {
           name: 'TRACKLIT_API_URL'
-          value: 'https://api.tracklit.app'
+          value: 'https://app-tracklit-dev-kvnx2h.azurewebsites.net'
         }
         {
           name: 'TRACKLIT_API_KEY'

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>temp-7db6f97a</id>
+  <author>N/A</author>
+  <deployer>GitHub</deployer>
+  <authorEmail>N/A</authorEmail>
+  <message>Fetch from https://github.com/Tracklit/Aria</message>
+  <progress>Fetching changes.</progress>
+  <status>Pending</status>
+  <statusText>Receiving changes.</statusText>
+  <lastSuccessEndTime />
+  <receivedTime>2025-12-24T02:07:35.5113959Z</receivedTime>
+  <startTime>2025-12-24T02:07:35.5113959Z</startTime>
+  <endTime />
+  <complete>False</complete>
+  <is_temp>True</is_temp>
+  <is_readonly>False</is_readonly>
+  <buildSummary />
+</deployment>

@@ -1,0 +1,27 @@
+<step title="Incoming Request" date="2025-12-19T01:32:26.816" instance="8b490c" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="768,1,31" Accept="*/*" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Content-Length="181015" x-ms-client-request-id="8f022fa9-dc7a-11f0-8469-088e904feb3e" x-ms-artifact-checksum="e192111a0c58d1cf6585260ad2ff056bbcd45b68e99c91728639c04939d4870a" X-ARR-LOG-ID="8f022fa9-dc7a-11f0-8469-088e904feb3e" CLIENT-IP="52.167.112.163:28679" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="52.167.112.163" X-Client-Port="28679" >
+  <step title="Cleanup Xml Logs" date="2025-12-19T01:32:26.819" >
+    <step title="Cleanup Infos" date="2025-12-19T01:32:26.844" totalFiles="471" totalCleanup="311" /><!-- duration: 13ms -->
+  </step><!-- duration: 51ms -->
+  <step title="ZipPushDeploy" date="2025-12-19T01:32:26.909" >
+    <step title="ZipDeploy. Extract zip. Remote build." date="2025-12-19T01:32:26.919" /><!-- duration: 11ms -->
+    <step title="None repository commit" date="2025-12-19T01:32:26.941" >
+      <step title="Commit id: 4fa68ed5-3f54-426f-af77-12022fd37c0e" date="2025-12-19T01:32:26.950" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 10ms -->
+    </step><!-- duration: 30ms -->
+    <step title="Starting PushDeployAsync" date="2025-12-19T01:32:26.989" /><!-- duration: 10ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/82303223-aa9b-4781-814c-47ce9ba40cbf.zip" date="2025-12-19T01:32:27.049" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/82303223-aa9b-4781-814c-47ce9ba40cbf.zip" date="2025-12-19T01:32:27.069" /><!-- duration: 11ms -->
+    </step><!-- duration: 81ms -->
+    <step title="Removing previous build artifact&apos;s manifest file" date="2025-12-19T01:32:27.142" >
+      <step title="None repository commit" date="2025-12-19T01:32:27.160" >
+        <step title="Commit id: 4fa68ed5-3f54-426f-af77-12022fd37c0e" date="2025-12-19T01:32:27.172" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 10ms -->
+      </step><!-- duration: 31ms -->
+      <step title="Start deployment in the background" date="2025-12-19T01:32:27.210" >
+        <step title="None repository commit" date="2025-12-19T01:32:27.263" >
+          <step title="Commit id: 4fa68ed5-3f54-426f-af77-12022fd37c0e" date="2025-12-19T01:32:27.282" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 9ms -->
+        </step><!-- duration: 30ms -->
+        <step title="Acquiring Deployment Lock" date="2025-12-19T01:32:27.302" /><!-- duration: 10ms -->
+        <step title="Acquired Deployment Lock" date="2025-12-19T01:32:27.373" /><!-- duration: 11ms -->
+      </step><!-- duration: 392ms -->
+    </step><!-- duration: 481ms -->
+    <step title="Outgoing response" date="2025-12-19T01:32:27.634" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 10ms -->
+  </step><!-- duration: 747ms -->

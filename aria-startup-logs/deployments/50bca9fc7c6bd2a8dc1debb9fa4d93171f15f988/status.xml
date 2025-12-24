@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>50bca9fc7c6bd2a8dc1debb9fa4d93171f15f988</id>
+  <author>antonyrugama</author>
+  <deployer>GitHub</deployer>
+  <authorEmail>33127079+antonyrugama@users.noreply.github.com</authorEmail>
+  <message>Fix database schema mismatch - use 'name' column instead of first_name/last_name</message>
+  <progress></progress>
+  <status>Failed</status>
+  <statusText>Deployment has been stopped due to SCM container restart. The restart can happen due to a management operation on site. Do not perform a management operation and a deployment operation in quick succession. Adding a small delay can help avoid any conflicts.</statusText>
+  <lastSuccessEndTime />
+  <receivedTime>2025-12-24T16:05:48.6782214Z</receivedTime>
+  <startTime>2025-12-24T16:05:50.088661Z</startTime>
+  <endTime>2025-12-24T16:13:30.7295733Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>False</is_readonly>
+  <buildSummary />
+</deployment>

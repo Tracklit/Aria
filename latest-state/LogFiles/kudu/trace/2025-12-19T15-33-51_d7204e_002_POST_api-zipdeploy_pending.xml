@@ -1,0 +1,24 @@
+<step title="Incoming Request" date="2025-12-19T15:33:51.837" instance="d7204e" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="769,1,5" Accept="*/*" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Content-Length="182385" x-ms-client-request-id="1a1b8868-dcf0-11f0-8818-088e904feb3e" x-ms-artifact-checksum="c052ccd33a5fb985c3f908d255306c3408257d75509e732d7fd061abe27141b8" X-ARR-LOG-ID="1a1b8868-dcf0-11f0-8818-088e904feb3e" CLIENT-IP="190.113.103.183:30499" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="190.113.103.183" X-Client-Port="30499" >
+  <step title="ZipPushDeploy" date="2025-12-19T15:33:56.076" >
+    <step title="ZipDeploy. Extract zip. Remote build." date="2025-12-19T15:33:56.087" /><!-- duration: 20ms -->
+    <step title="None repository commit" date="2025-12-19T15:33:56.137" >
+      <step title="Commit id: 4034f132-0c40-47d7-ba47-aa9c6787f11b" date="2025-12-19T15:33:56.156" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 11ms -->
+    </step><!-- duration: 79ms -->
+    <step title="Starting PushDeployAsync" date="2025-12-19T15:33:56.236" /><!-- duration: 10ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/27fd6a4e-98b7-48ce-84b6-3481efeda6fa.zip" date="2025-12-19T15:33:56.332" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/27fd6a4e-98b7-48ce-84b6-3481efeda6fa.zip" date="2025-12-19T15:33:56.374" /><!-- duration: 47ms -->
+    </step><!-- duration: 535ms -->
+    <step title="Removing previous build artifact&apos;s manifest file" date="2025-12-19T15:33:56.904" >
+      <step title="None repository commit" date="2025-12-19T15:33:56.954" >
+        <step title="Commit id: 4034f132-0c40-47d7-ba47-aa9c6787f11b" date="2025-12-19T15:33:56.991" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 13ms -->
+      </step><!-- duration: 80ms -->
+      <step title="Start deployment in the background" date="2025-12-19T15:33:57.063" >
+        <step title="None repository commit" date="2025-12-19T15:33:57.457" >
+          <step title="Commit id: 4034f132-0c40-47d7-ba47-aa9c6787f11b" date="2025-12-19T15:33:57.467" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 17ms -->
+        </step><!-- duration: 75ms -->
+        <step title="Acquiring Deployment Lock" date="2025-12-19T15:33:57.543" /><!-- duration: 17ms -->
+        <step title="Acquired Deployment Lock" date="2025-12-19T15:33:57.770" /><!-- duration: 37ms -->
+      </step><!-- duration: 1657ms -->
+    </step><!-- duration: 1866ms -->
+    <step title="Outgoing response" date="2025-12-19T15:33:58.831" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 45ms -->
+  </step><!-- duration: 2812ms -->

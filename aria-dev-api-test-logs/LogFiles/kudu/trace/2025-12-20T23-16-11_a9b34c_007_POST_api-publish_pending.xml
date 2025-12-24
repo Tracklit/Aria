@@ -1,0 +1,68 @@
+<step title="Incoming Request" date="2025-12-20T23:16:11.557" instance="a9b34c" url="/api/publish?type=zip" method="POST" type="request" pid="768,1,33" Accept="*/*" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Content-Length="195465" x-ms-client-request-id="d9330578-ddf9-11f0-b42e-088e904feb3e" x-ms-artifact-checksum="4bc2f866aaa2501aa9259ff89a521b511aacf341e5b570e9924569bc70f7a7b0" X-ARR-LOG-ID="d9330578-ddf9-11f0-b42e-088e904feb3e" CLIENT-IP="190.113.103.183:30536" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/publish?type=zip" X-Client-IP="190.113.103.183" X-Client-Port="30536" >
+  <step title="Cleanup Xml Logs" date="2025-12-20T23:16:11.559" >
+    <step title="Cleanup Infos" date="2025-12-20T23:16:11.575" totalFiles="719" totalCleanup="559" /><!-- duration: 5ms -->
+  </step><!-- duration: 23ms -->
+  <step title="OneDeploy" date="2025-12-20T23:16:11.596" >
+    <step title="None repository commit" date="2025-12-20T23:16:11.601" >
+      <step title="Commit id: 6ddd9c06-6442-4a06-be2a-1e52629f27ff" date="2025-12-20T23:16:11.603" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 2ms -->
+    </step><!-- duration: 7ms -->
+    <step title="Starting PushDeployAsync" date="2025-12-20T23:16:11.610" /><!-- duration: 2ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/63918a41-9224-40b9-a11f-4d5303809dd5.zip" date="2025-12-20T23:16:11.617" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/63918a41-9224-40b9-a11f-4d5303809dd5.zip" date="2025-12-20T23:16:11.619" /><!-- duration: 7ms -->
+    </step><!-- duration: 27ms -->
+    <step title="Removing previous build artifact&apos;s manifest file" date="2025-12-20T23:16:11.648" >
+      <step title="None repository commit" date="2025-12-20T23:16:11.652" >
+        <step title="Commit id: 6ddd9c06-6442-4a06-be2a-1e52629f27ff" date="2025-12-20T23:16:11.656" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 2ms -->
+      </step><!-- duration: 8ms -->
+      <step title="Attempting to fetch target branch HEAD" date="2025-12-20T23:16:11.663" /><!-- duration: 4ms -->
+      <step title="Acquiring Deployment Lock" date="2025-12-20T23:16:11.670" /><!-- duration: 3ms -->
+      <step title="Acquired Deployment Lock" date="2025-12-20T23:16:11.724" /><!-- duration: 3ms -->
+      <step title="None repository commit" date="2025-12-20T23:16:11.737" >
+        <step title="Commit id: 6ddd9c06-6442-4a06-be2a-1e52629f27ff" date="2025-12-20T23:16:11.740" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 4ms -->
+      </step><!-- duration: 9ms -->
+      <step title="Performing fetch based deployment" date="2025-12-20T23:16:11.753" >
+        <step title="Creating temporary deployment" date="2025-12-20T23:16:11.755" /><!-- duration: 119ms -->
+        <step title="Releasing Deployment Lock" date="2025-12-20T23:16:13.021" /><!-- duration: 4ms -->
+        <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file /tmp/zipdeploy/63918a41-9224-40b9-a11f-4d5303809dd5.zip (0.19 MB) to /tmp/zipdeploy/extracted" date="2025-12-20T23:16:13.048" >
+          <step title="ChmodRecursive Process exited with total time taken in ms: 61" date="2025-12-20T23:16:13.151" /><!-- duration: 3ms -->
+        </step><!-- duration: 109ms -->
+        <step title="None repository commit" date="2025-12-20T23:16:13.169" >
+          <step title="Commit id: 6ddd9c06-6442-4a06-be2a-1e52629f27ff" date="2025-12-20T23:16:13.172" Message="OneDeploy" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 3ms -->
+        </step><!-- duration: 8ms -->
+        <step title="None repository commit" date="2025-12-20T23:16:15.180" >
+          <step title="Commit id: 6ddd9c06-6442-4a06-be2a-1e52629f27ff" date="2025-12-20T23:16:15.185" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 3ms -->
+        </step><!-- duration: 11ms -->
+        <step title="Deployment timer started" date="2025-12-20T23:16:15.195" >
+          <step title="DeploymentManager.Deploy(id:6ddd9c06-6442-4a06-be2a-1e52629f27ff)" date="2025-12-20T23:16:15.200" >
+            <step title="Collecting changeset information" date="2025-12-20T23:16:15.222" /><!-- duration: 80ms -->
+            <step title="Updating submodules" date="2025-12-20T23:16:15.307" /><!-- duration: 1120ms -->
+            <step title="Determining deployment builder" date="2025-12-20T23:16:16.652" >
+              <step title="Builder is OryxBuilder" date="2025-12-20T23:16:16.654" /><!-- duration: 5ms -->
+            </step><!-- duration: 10ms -->
+            <step title="PreDeployment: context.CleanOutputPath False" date="2025-12-20T23:16:16.714" >
+              <step title="PreDeployment: context.OutputPath /home/site/wwwroot" date="2025-12-20T23:16:16.861" >
+                <step title="Building" date="2025-12-20T23:16:17.014" >
+                  <step title="Executing external process" date="2025-12-20T23:16:17.305" type="process" path="bash" arguments="-c &quot;oryx build /tmp/zipdeploy/extracted -o /home/site/wwwroot --platform python --platform-version 3.11 -p virtualenv_name=antenv --log-file /tmp/build-debug.log  -i /tmp/8de401dc6cc2e64 --compress-destination-dir | tee /tmp/oryx-build.log ; exit $PIPESTATUS &quot;" >
+                    <step title="Cpu: python(1450,54.190s)+ts(1451,0.090s)+build.sh(1449,0.000s)+build.sh(1448,0.000s)+build.sh(1365,0.040s)+oryx(1346,3.880s)+tee(1347,0.000s)+bash(1345,0.000s)=total(58.200s)" date="2025-12-20T23:17:33.571" /><!-- duration: 19ms -->
+                    <step title="bash: no io activity for 60s, prev-cpu=-1.000s, current-cpu=58.200s" date="2025-12-20T23:17:33.653" /><!-- duration: 13ms -->
+                    <step title="Cpu: gzip(1512,57.970s)+sh(1511,0.000s)+tar(1510,1.770s)+build.sh(1365,0.040s)+oryx(1346,4.200s)+tee(1347,0.000s)+bash(1345,0.000s)=total(63.980s)" date="2025-12-20T23:19:28.020" /><!-- duration: 20ms -->
+                    <step title="bash: no io activity for 60s, prev-cpu=-1.000s, current-cpu=63.980s" date="2025-12-20T23:19:28.070" /><!-- duration: 11ms -->
+                  </step><!-- duration: 193600ms -->
+                  <step title="Using PythonDeploymentLogParser" date="2025-12-20T23:19:31.368" /><!-- duration: 3ms -->
+                  <step title="Modified file to trigger a restart of the app container." date="2025-12-20T23:19:32.720" /><!-- duration: 3ms -->
+                  <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-12-20T23:19:32.728" /><!-- duration: 7ms -->
+                  <step title="Purge deployment items" date="2025-12-20T23:19:33.831" >
+                    <step title="Remove 69a18c0f-, Success, received at 12/19/2025 20:13:43" date="2025-12-20T23:19:33.889" /><!-- duration: 3ms -->
+                  </step><!-- duration: 64ms -->
+                </step><!-- duration: 196957ms -->
+              </step><!-- duration: 197114ms -->
+              <step title="Cleaning up temp files" date="2025-12-20T23:19:33.978" /><!-- duration: 3244ms -->
+              <step title="Cleaning up temp files" date="2025-12-20T23:19:37.226" /><!-- duration: 503ms -->
+              <step title="Reloading status file with latest updates" date="2025-12-20T23:19:37.761" >
+                <step title="WebHooksManager.PublishEventAsync: PostDeployment" date="2025-12-20T23:19:37.764" /><!-- duration: 27ms -->
+              </step><!-- duration: 32ms -->
+              <step title="Cleaning up temporary deployment - fetch deployment was successful" date="2025-12-20T23:19:37.802" /><!-- duration: 10ms -->
+            </step><!-- duration: 201156ms -->
+          </step><!-- duration: 202676ms -->
+          <step title="Outgoing response" date="2025-12-20T23:19:37.892" type="response" statusCode="200" statusText="OK" /><!-- duration: 3ms -->
+        </step><!-- duration: 202702ms -->
