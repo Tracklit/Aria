@@ -68,14 +68,34 @@ from src.additional_endpoints import (
 # Initialize Azure OpenAI client with API Key (simpler authentication)
 from src.keyvault_helper import get_env_with_keyvault_resolution
 
-client = AzureOpenAI(
-    api_key=get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY"),
-    api_version="2024-02-15-preview",
-    azure_endpoint=get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
-)
+# Initialize client with graceful fallback for testing
+try:
+    api_key = get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY")
+    endpoint = get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
+    if api_key and endpoint:
+        client = AzureOpenAI(
+            api_key=api_key,
+            api_version="2024-02-15-preview",
+            azure_endpoint=endpoint
+        )
+        AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
+    else:
+        client = None
+        AZURE_OPENAI_DEPLOYMENT = None
+        logger.warning("Azure OpenAI credentials not found - AI features will be unavailable")
+except Exception as e:
+    client = None
+    AZURE_OPENAI_DEPLOYMENT = None
+    logger.warning(f"Failed to initialize Azure OpenAI client: {e}")
 
-# Get the deployment name for Azure OpenAI
-AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
+# Helper function to check if AI is available
+def ensure_ai_available():
+    """Raise an error if Azure OpenAI client is not initialized"""
+    if client is None or AZURE_OPENAI_DEPLOYMENT is None:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service is currently unavailable. Please check Azure OpenAI configuration."
+        )
 
 # Initialize Stripe
 stripe.api_key = get_env_with_keyvault_resolution("STRIPE_SECRET_KEY")
@@ -238,6 +258,7 @@ async def startup_check():
 @app.post("/test/openai")
 async def test_openai(question: str):
     """Simple test endpoint to verify OpenAI integration without rate limiting"""
+    ensure_ai_available()
     try:
         messages = [
             {"role": "system", "content": "You are a helpful sprint coaching assistant. Answer in 2 sentences or less."},
@@ -717,6 +738,9 @@ async def cancel_subscription(request: Request, user_data: dict):
 @app.post("/ask", response_model=AskResponse)
 @apply_rate_limit("ask")
 async def ask_aria(request: Request, req: AskRequest):
+    # Ensure Azure OpenAI is available
+    ensure_ai_available()
+    
     try:
         # Generate or use session ID for conversation continuity
         import uuid
