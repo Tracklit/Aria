@@ -65,24 +65,26 @@ from src.additional_endpoints import (
     realtime_router, equipment_router, gamification_router
 )
 
-# Initialize Azure OpenAI client with API Key (simpler authentication)
+# Initialize Azure OpenAI client with Azure AD (Managed Identity)
 from src.keyvault_helper import get_env_with_keyvault_resolution
+from azure.identity import DefaultAzureCredential
 
 # Initialize client with graceful fallback for testing
 try:
-    api_key = get_env_with_keyvault_resolution("AZURE_OPENAI_API_KEY")
     endpoint = get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
-    if api_key and endpoint:
+    if endpoint:
+        # Use Azure AD authentication (Managed Identity)
+        credential = DefaultAzureCredential()
         client = AzureOpenAI(
-            api_key=api_key,
-            api_version="2024-02-15-preview",
-            azure_endpoint=endpoint
+            azure_endpoint=endpoint,
+            azure_ad_token_provider=lambda: credential.get_token("https://cognitiveservices.azure.com/.default").token,
+            api_version="2024-02-15-preview"
         )
         AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
     else:
         client = None
         AZURE_OPENAI_DEPLOYMENT = None
-        logger.warning("Azure OpenAI credentials not found - AI features will be unavailable")
+        logger.warning("Azure OpenAI endpoint not found - AI features will be unavailable")
 except Exception as e:
     client = None
     AZURE_OPENAI_DEPLOYMENT = None
