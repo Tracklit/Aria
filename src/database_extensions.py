@@ -409,7 +409,7 @@ def save_conversation(
             VALUES (%s, %s)
             RETURNING id
         """
-        conv_result = db_pool.execute_one(create_conv_query, (int(user_id) if user_id.isdigit() else None, session_id))
+        conv_result = db_pool.execute_insert_returning(create_conv_query, (int(user_id) if user_id.isdigit() else None, session_id))
         conversation_id = conv_result.get("id") if conv_result else None
     
     if not conversation_id:
@@ -421,7 +421,7 @@ def save_conversation(
         VALUES (%s, %s, %s)
         RETURNING id
     """
-    result = db_pool.execute_one(query, (conversation_id, role, message))
+    result = db_pool.execute_insert_returning(query, (conversation_id, role, message))
     return result.get("id") if result else None
 
 def get_conversation_history(
