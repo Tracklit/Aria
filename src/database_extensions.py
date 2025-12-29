@@ -451,7 +451,7 @@ def get_conversation_history(
         """
         params = (int(user_id) if user_id.isdigit() else None, limit)
     
-    return db_pool.execute_many(query, params)
+    return db_pool.execute_query(query, params)
 
 def get_recent_context(user_id: str, hours: int = 24) -> List[Dict]:
     """Get recent conversation context for continuity"""
@@ -463,7 +463,7 @@ def get_recent_context(user_id: str, hours: int = 24) -> List[Dict]:
         ORDER BY created_at DESC
         LIMIT 10
     """
-    return db_pool.execute_many(query, (user_id, hours))
+    return db_pool.execute_query(query, (user_id, hours))
 
 # =============================================================================
 # TRAINING SESSION FUNCTIONS
@@ -526,7 +526,7 @@ def get_training_sessions(
         """
         params = (user_id, limit)
     
-    return db_pool.execute_many(query, params)
+    return db_pool.execute_query(query, params)
 
 # =============================================================================
 # PROGRESS & ANALYTICS FUNCTIONS
@@ -564,7 +564,7 @@ def get_progress_analytics(user_id: str, metric_type: Optional[str] = None, days
         """
         params = (user_id, days)
     
-    return db_pool.execute_many(query, params)
+    return db_pool.execute_query(query, params)
 
 # Alias for backwards compatibility
 get_progress_metrics = get_progress_analytics
@@ -597,7 +597,7 @@ def get_calendar_events(user_id: str, start_date: str, end_date: str) -> List[Di
         WHERE user_id = %s AND event_date BETWEEN %s AND %s
         ORDER BY event_date ASC, event_time ASC
     """
-    return db_pool.execute_many(query, (user_id, start_date, end_date))
+    return db_pool.execute_query(query, (user_id, start_date, end_date))
 
 def update_event_completion(event_id: int, completed: bool, result_notes: Optional[str] = None) -> bool:
     """Mark event as completed"""
@@ -648,7 +648,7 @@ def get_injury_history(user_id: str, include_recovered: bool = False) -> List[Di
     else:
         query = "SELECT * FROM injuries WHERE user_id = %s AND status != 'recovered' ORDER BY onset_date DESC"
     
-    return db_pool.execute_many(query, (user_id,))
+    return db_pool.execute_query(query, (user_id,))
 
 def get_pain_history(user_id: str, days: int = 30) -> List[Dict]:
     """Get pain history"""
@@ -659,7 +659,7 @@ def get_pain_history(user_id: str, days: int = 30) -> List[Dict]:
         WHERE pl.user_id = %s AND pl.log_date >= CURRENT_DATE - INTERVAL '%s days'
         ORDER BY pl.log_date DESC
     """
-    return db_pool.execute_many(query, (user_id, days))
+    return db_pool.execute_query(query, (user_id, days))
 
 # =============================================================================
 # DRILL LIBRARY FUNCTIONS
@@ -675,7 +675,7 @@ def get_recommended_drills(user_id: str, limit: int = 10) -> List[Dict]:
         ORDER BY dr.priority DESC, dr.created_at DESC
         LIMIT %s
     """
-    return db_pool.execute_many(query, (user_id, limit))
+    return db_pool.execute_query(query, (user_id, limit))
 
 def add_drill_recommendation(user_id: str, drill_id: int, reason: str, 
                             recommended_by: str = 'ai', priority: int = 0) -> Optional[int]:
@@ -707,7 +707,7 @@ def search_drills(category: Optional[str] = None, difficulty: Optional[str] = No
     where_clause = " AND ".join(conditions) if conditions else "TRUE"
     query = f"SELECT * FROM drills_library WHERE {where_clause} ORDER BY drill_name"
     
-    return db_pool.execute_many(query, tuple(params))
+    return db_pool.execute_query(query, tuple(params))
 
 # =============================================================================
 # GOALS TRACKING FUNCTIONS
@@ -752,7 +752,7 @@ def get_active_goals(user_id: str) -> List[Dict]:
         WHERE user_id = %s AND status = 'active'
         ORDER BY priority DESC, target_date ASC
     """
-    return db_pool.execute_many(query, (user_id,))
+    return db_pool.execute_query(query, (user_id,))
 
 def achieve_goal(goal_id: int) -> bool:
     """Mark goal as achieved"""
@@ -852,10 +852,10 @@ def get_mental_exercises(exercise_type: Optional[str] = None) -> List[Dict]:
     """Get mental exercises"""
     if exercise_type:
         query = "SELECT * FROM mental_exercises WHERE exercise_type = %s ORDER BY exercise_name"
-        return db_pool.execute_many(query, (exercise_type,))
+        return db_pool.execute_query(query, (exercise_type,))
     else:
         query = "SELECT * FROM mental_exercises ORDER BY exercise_type, exercise_name"
-        return db_pool.execute_many(query)
+        return db_pool.execute_query(query)
 
 # =============================================================================
 # PROACTIVE ENGAGEMENT FUNCTIONS
@@ -878,7 +878,7 @@ def get_pending_check_ins(user_id: str) -> List[Dict]:
         WHERE user_id = %s AND status = 'pending' AND scheduled_for <= NOW()
         ORDER BY scheduled_for ASC
     """
-    return db_pool.execute_many(query, (user_id,))
+    return db_pool.execute_query(query, (user_id,))
 
 def create_proactive_suggestion(user_id: str, suggestion_type: str, suggestion_text: str, 
                                reason: str, priority: int = 0) -> Optional[int]:
@@ -899,7 +899,7 @@ def get_proactive_suggestions(user_id: str, limit: int = 5) -> List[Dict]:
         ORDER BY priority DESC, created_at DESC
         LIMIT %s
     """
-    return db_pool.execute_many(query, (user_id, limit))
+    return db_pool.execute_query(query, (user_id, limit))
 
 # =============================================================================
 # ACHIEVEMENTS FUNCTIONS
@@ -923,7 +923,7 @@ def get_recent_achievements(user_id: str, days: int = 30) -> List[Dict]:
         WHERE user_id = %s AND earned_at >= NOW() - INTERVAL '%s days'
         ORDER BY earned_at DESC
     """
-    return db_pool.execute_many(query, (user_id, days))
+    return db_pool.execute_query(query, (user_id, days))
 
 # =============================================================================
 # VOICE INTERACTION FUNCTIONS
@@ -942,5 +942,6 @@ def log_voice_interaction(user_id: str, audio_url: str, transcription: str,
     """
     result = db_pool.execute_one(query, (user_id, audio_url, transcription, response_text, response_audio_url, duration))
     return result.get("id") if result else None
+
 
 
