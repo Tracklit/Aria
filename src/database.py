@@ -316,7 +316,7 @@ def get_athlete_profile(user_id: str) -> Optional[Dict]:
             u.streak_count,
             u.badges,
             u.coach_mode,
-            ap.date_of_birth,
+            u.date_of_birth,
             ap.height_cm,
             ap.weight_kg,
             ap.primary_events,
