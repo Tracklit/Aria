@@ -818,14 +818,25 @@ Badges: {badges}
         )
 
         content = response.choices[0].message.content
-        response_data = eval(content)
+        
+        # Parse JSON response from AI
+        import json
+        try:
+            response_data = json.loads(content)
+        except json.JSONDecodeError:
+            # If AI didn't return JSON, create a simple response
+            response_data = {
+                "question": req.user_input,
+                "answer": content,
+                "conversation_id": session_id
+            }
         
         # Save AI response to conversation history
         save_conversation(
             user_id=req.user_id,
             session_id=session_id,
             role="assistant",
-            message=response_data.get("response", content)
+            message=response_data.get("response", response_data.get("answer", content))
         )
         
         await track_usage_internal(req.user_id, "ask", len(content) // 4)
