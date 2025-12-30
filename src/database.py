@@ -316,13 +316,8 @@ def get_athlete_profile(user_id: str) -> Optional[Dict]:
             u.streak_count,
             u.badges,
             u.coach_mode,
-            u.date_of_birth,
-            ap.height_cm,
-            ap.weight_kg,
-            ap.primary_events,
-            ap.preferences
+            u.date_of_birth
         FROM users u
-        LEFT JOIN athlete_profiles ap ON u.id = ap.user_id
         WHERE u.id = %s
     """
     return db_pool.execute_one(query, (user_id,))
