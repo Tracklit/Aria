@@ -456,11 +456,12 @@ def get_conversation_history(
 def get_recent_context(user_id: str, hours: int = 24) -> List[Dict]:
     """Get recent conversation context for continuity"""
     query = """
-        SELECT role, message, context, created_at
-        FROM conversations
-        WHERE user_id = %s 
-        AND created_at >= NOW() - INTERVAL '%s hours'
-        ORDER BY created_at DESC
+        SELECT m.role, m.content as message, m.created_at
+        FROM sprinthia_messages m
+        JOIN sprinthia_conversations c ON m.conversation_id = c.id
+        WHERE c.user_id = %s 
+        AND m.created_at >= NOW() - INTERVAL '%s hours'
+        ORDER BY m.created_at DESC
         LIMIT 10
     """
     return db_pool.execute_query(query, (user_id, hours))
