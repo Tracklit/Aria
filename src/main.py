@@ -824,11 +824,11 @@ Badges: {badges}
         try:
             response_data = json.loads(content)
         except json.JSONDecodeError:
-            # If AI didn't return JSON, create a simple response
+            # If AI didn't return JSON, wrap the text response in expected format
             response_data = {
-                "question": req.user_input,
-                "answer": content,
-                "conversation_id": session_id
+                "analysis": req.user_input,
+                "recommendation": content,
+                "bibliography": None
             }
         
         # Save AI response to conversation history
@@ -836,13 +836,11 @@ Badges: {badges}
             user_id=req.user_id,
             session_id=session_id,
             role="assistant",
-            message=response_data.get("response", response_data.get("answer", content))
+            message=response_data.get("recommendation", content)
         )
         
         await track_usage_internal(req.user_id, "ask", len(content) // 4)
 
-        # Add session_id to response for client to use in next request
-        response_data["session_id"] = session_id
         return AskResponse(**response_data)
 
     except Exception as e:
