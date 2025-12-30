@@ -13,6 +13,11 @@
    ```bash
    cp .env.example .env
    # Edit .env with your API keys and database credentials
+   
+   # IMPORTANT: Azure OpenAI Configuration
+   # This application uses Managed Identity authentication for Azure OpenAI
+   # DO NOT set AZURE_OPENAI_API_KEY in your environment
+   # See docs/AZURE_OPENAI_SETUP.md for complete setup instructions
    ```
 
 3. **Set Up Database**
@@ -275,6 +280,7 @@ docker logs aria-redis
 ## 📚 Documentation
 
 - **[COMPANION_API.md](docs/COMPANION_API.md)** - Complete API endpoint reference
+- **[AZURE_OPENAI_SETUP.md](docs/AZURE_OPENAI_SETUP.md)** - Azure OpenAI managed identity setup guide
 - **[AI_COMPANION_IMPLEMENTATION.md](docs/AI_COMPANION_IMPLEMENTATION.md)** - Technical implementation details
 - **[BACKGROUND_TASKS_CACHING.md](docs/BACKGROUND_TASKS_CACHING.md)** - Setup, monitoring, troubleshooting
 - **[QUICK_SETUP_GUIDE.md](docs/QUICK_SETUP_GUIDE.md)** - Step-by-step setup instructions

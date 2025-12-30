@@ -51,6 +51,7 @@ coverage.json
 *.log
 logs/
 *.log.*
+app-logs/
 
 # Celery
 celerybeat-schedule

@@ -110,7 +110,7 @@ Aria is an advanced AI companion for sprint athletes that goes beyond simple Q&A
 - Python 3.11+
 - PostgreSQL 14+
 - Redis 7.0+
-- OpenAI API key
+- Azure OpenAI (with managed identity authentication)
 - Azure Communication Services (for notifications)
 - Azure Blob Storage (for video uploads)
 - (Optional) Azure Application Insights
@@ -240,8 +240,11 @@ REDIS_HOST=your-redis-host
 REDIS_PORT=6380
 REDIS_PASSWORD=your-redis-password
 
-# OpenAI
-OPENAI_API_KEY=sk-your-api-key
+# Azure OpenAI (Managed Identity - NO API KEY REQUIRED)
+# See docs/AZURE_OPENAI_SETUP.md for complete setup instructions
+AZURE_OPENAI_ENDPOINT=https://your-openai-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+# IMPORTANT: DO NOT SET AZURE_OPENAI_API_KEY - managed identity is used automatically
 
 # Authentication
 JWT_SECRET=your-jwt-secret

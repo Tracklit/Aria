@@ -1,9 +1,0 @@
-<step title="Incoming Request" date="2025-12-22T18:13:09.563" instance="9158b8" url="/api/deployments/latest" method="GET" type="request" pid="772,1,19" Accept="*/*" Host="aria-api-8883.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." x-ms-client-request-id="a80f8387-df61-11f0-b05d-088e904feb3e" X-ARR-LOG-ID="a80f8387-df61-11f0-b05d-088e904feb3e" CLIENT-IP="52.167.112.163:52111" X-SITE-DEPLOYMENT-ID="aria-api-8883" WAS-DEFAULT-HOSTNAME="aria-api-8883.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/latest" X-Client-IP="52.167.112.163" X-Client-Port="52111" >
-  <step title="Cleanup Xml Logs" date="2025-12-22T18:13:09.602" /><!-- duration: 21ms -->
-  <step title="DeploymentService.GetResult" date="2025-12-22T18:13:09.670" >
-    <step title="DeploymentService.GetLatestDeployment" date="2025-12-22T18:13:09.680" >
-      <step title="DeploymentManager.GetResults" date="2025-12-22T18:13:09.690" /><!-- duration: 237ms -->
-    </step><!-- duration: 277ms -->
-  </step><!-- duration: 297ms -->
-  <step title="Outgoing response" date="2025-12-22T18:13:10.033" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 19ms -->
-</step><!-- duration: 501ms -->
