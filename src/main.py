@@ -303,6 +303,8 @@ async def test_openai(question: str):
 class AskRequest(BaseModel):
     user_id: str
     user_input: str
+    system_prompt: Optional[str] = None
+    conversation_history: Optional[List[Dict]] = None
 
 class AskResponse(BaseModel):
     analysis: str
@@ -763,16 +765,7 @@ async def ask_aria(request: Request, req: AskRequest):
             message=req.user_input
         )
         
-        # Get recent conversation context (last 24 hours)
-        recent_context = get_recent_context(req.user_id, hours=24)
-        context_summary = ""
-        if recent_context:
-            context_summary = "\n\nRECENT CONVERSATION CONTEXT:\n"
-            context_summary += "\n".join([
-                f"- [{c.get('created_at', 'recent')}] {c['role']}: {c['message'][:100]}..." 
-                for c in recent_context[-5:]  # Last 5 messages
-            ])
-        
+        # Get user profile for context
         user = get_athlete_profile(req.user_id)
         mood = user.get("mood", "neutral")
         streak = user.get("streak_count", 0)
@@ -803,13 +796,42 @@ Training Days/Week: {user.get('training_days_per_week', 'not set')}
 Mood: {mood}
 Streak: {streak}
 Badges: {badges}
-{context_summary}
 """
 
-        messages = [
-            {"role": "system", "content": f"{ARIA_PROMPT}\n\nCoaching Style: {tone_instruction}\n{mood_extra}\n{mood_flag}\n\nUse the recent conversation context to maintain continuity and remember what you've discussed."},
-            {"role": "user", "content": f"{user_context}\nQuestion: {req.user_input}"}
-        ]
+        # Build messages array with proper OpenAI format
+        messages = []
+        
+        # 1. Add system prompt (custom or default)
+        if req.system_prompt:
+            # Use custom system prompt from request
+            messages.append({"role": "system", "content": req.system_prompt})
+        else:
+            # Use default Aria prompt with coaching style and mood adjustments
+            system_content = f"{ARIA_PROMPT}\n\nCoaching Style: {tone_instruction}\n{mood_extra}\n{mood_flag}"
+            messages.append({"role": "system", "content": system_content})
+        
+        # 2. Add conversation history as individual messages (if provided)
+        if req.conversation_history:
+            for msg in req.conversation_history:
+                messages.append({
+                    "role": msg.get("role", "user"),
+                    "content": msg.get("content", "")
+                })
+        else:
+            # Fallback: Get recent context from database if no history provided
+            recent_context = get_recent_context(req.user_id, hours=24)
+            if recent_context:
+                for c in recent_context[-5:]:  # Last 5 messages
+                    messages.append({
+                        "role": c.get("role", "user"),
+                        "content": c.get("message", "")
+                    })
+        
+        # 3. Add user context as a system message (for athlete profile info)
+        messages.append({"role": "system", "content": f"Current athlete context:\n{user_context}"})
+        
+        # 4. Add current user message
+        messages.append({"role": "user", "content": req.user_input})
 
         response = client.chat.completions.create(
             model=AZURE_OPENAI_DEPLOYMENT,
