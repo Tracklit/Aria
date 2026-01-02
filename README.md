@@ -83,6 +83,14 @@ Aria is an advanced AI companion for sprint athletes that goes beyond simple Q&A
 - 🔗 **Webhooks** - TrackLit platform integration
 - 🎉 **Smart Triggers** - Achievements, training reminders, injury alerts
 
+#### **🎤 Voice Integration (Azure Speech Services)**
+- 🗣️ **Speech Recognition** - Convert voice to text for hands-free coaching
+- 🔊 **Speech Synthesis** - AI-powered text-to-speech responses
+- 🌐 **Translation** - Multi-language support for global athletes
+- 🎯 **Voice Conversations** - Process voice input and respond with audio
+- 🔍 **Language Detection** - Auto-detect spoken language
+- ✅ **Status Monitoring** - Real-time service availability checks
+
 #### **Background Automation**
 - ⏰ **6 Scheduled Tasks** - Automatic analysis every 6 hours, daily, and weekly
 - 🤖 **Celery Integration** - Processes all active users automatically in background
@@ -334,6 +342,14 @@ Once running, visit:
 - `POST /api/v1/export/{user_id}/request-deletion` - Request data deletion
 - `GET /api/v1/export/{user_id}/access-logs` - Get access logs
 
+#### Voice Integration
+- `GET /api/v1/voice/status` - Check voice services availability
+- `POST /api/v1/voice/transcribe` - Speech-to-text conversion
+- `POST /api/v1/voice/synthesize` - Text-to-speech conversion
+- `POST /api/v1/voice/detect-language` - Auto-detect spoken language
+- `POST /api/v1/voice/translate` - Translate text to target language
+- `POST /api/v1/voice/conversation` - Full voice conversation (transcribe + AI response + synthesize)
+
 #### Webhooks
 - `POST /api/v1/webhooks/receive` - Receive TrackLit webhook
 - `POST /api/v1/webhooks/send-test` - Send test webhook
@@ -522,7 +538,8 @@ The API integrates with Azure Application Insights for:
 
 - [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) - Development status
 - [New Features Documentation](docs/NEW_FEATURES_IMPLEMENTATION.md) - Complete feature guide (4,000+ lines of new code)
-- [**🚨 INFRASTRUCTURE ISSUES & FIXES**](INFRASTRUCTURE_ISSUES_AND_FIXES.md) - **CRITICAL: Missing Azure services & config**
+- [**� Docker Deployment Guide**](docs/DOCKER_DEPLOYMENT.md) - **CRITICAL: Docker-based deployment workflow (rebuild & push required)**
+- [**�🚨 INFRASTRUCTURE ISSUES & FIXES**](INFRASTRUCTURE_ISSUES_AND_FIXES.md) - **CRITICAL: Missing Azure services & config**
 - [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - **Complete Azure deployment guide (GitHub Actions, PowerShell, CLI, Docker)**
 - [Quick Deployment Guide](docs/QUICK_DEPLOYMENT.md) - Step-by-step deployment with examples
 - [Production Readiness](docs/PRODUCTION_READINESS_REPORT.md) - Deployment checklist
@@ -574,6 +591,6 @@ For bugs and feature requests, please open an issue on GitHub.
 
 **Built with ❤️ by the Aria Team**
 
-**Version**: 0.2.0  
+**Version**: 0.2.1  
 **Status**: Production Ready  
-**Last Updated**: November 15, 2025
+**Last Updated**: January 2, 2026

@@ -19,6 +19,41 @@ This guide will walk you through deploying Aria to Azure using the TrackLit infr
 
 ---
 
+## 🐳 IMPORTANT: Docker-Based Deployment
+
+**Aria runs as a Docker container on Azure App Service**. This means:
+
+- ⚠️ **ZIP file deployments will NOT update the running code**
+- ✅ **Code changes require rebuilding and pushing the Docker image**
+- 📦 **The container image is stored in Azure Container Registry**
+
+### Deployment Methods:
+
+**Method 1: Docker Image (Required for Code Changes)**
+```bash
+# 1. Login to Azure Container Registry
+az acr login --name tracklitdevkvnx2h
+
+# 2. Build new Docker image
+docker build -t tracklitdevkvnx2h.azurecr.io/aria-app:latest .
+
+# 3. Push to registry
+docker push tracklitdevkvnx2h.azurecr.io/aria-app:latest
+
+# 4. Force app to pull new image
+az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
+az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
+```
+
+**Method 2: Configuration Changes Only**
+```bash
+# For environment variables or app settings (no code changes)
+az webapp config appsettings set --name aria-dev-api --resource-group rg-tracklit-dev --settings KEY=VALUE
+az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
+```
+
+---
+
 ## Step 1: Environment Setup (5 minutes)
 
 ### 1.1 Clone Repository
@@ -47,6 +82,14 @@ OPENAI_API_KEY=sk-...
 STRIPE_SECRET_KEY=sk_live_...
 TERRA_API_KEY=...
 TERRA_DEV_ID=...
+
+# Voice Integration (Azure Speech Services)
+AZURE_SPEECH_KEY=<your-speech-key>
+AZURE_SPEECH_REGION=westus
+SPEECH_LANGUAGE=en-US
+SPEECH_VOICE_NAME=en-US-AriaNeural
+AZURE_TRANSLATOR_KEY=<your-translator-key>
+AZURE_TRANSLATOR_REGION=westus
 ```
 
 **Generate JWT Secret**:
@@ -447,16 +490,45 @@ Use this checklist for each deployment:
 - [ ] GitHub secrets configured
 - [ ] Bicep parameters updated
 - [ ] Code committed and pushed
+- [ ] **Docker image built and pushed to ACR** (for code changes)
 - [ ] GitHub Actions workflow succeeded
+- [ ] **App stopped and started to pull new image** (for code changes)
 - [ ] Health checks passing
 - [ ] Smoke tests successful
 - [ ] Application Insights receiving data
 - [ ] Logs streaming correctly
 - [ ] TrackLit integration verified
+- [ ] Voice integration status verified (`/api/v1/voice/status`)
 - [ ] Documentation updated
 
 ---
 
-**Last Updated**: 2025-01-21  
-**Version**: 1.0  
-**Deployment Time**: ~30 minutes
+## 🔍 Voice Integration Verification
+
+After deployment, verify voice integration:
+
+```bash
+# Check voice status endpoint
+curl https://aria-dev-api.azurewebsites.net/api/v1/voice/status
+```
+
+Expected response:
+```json
+{
+  "speech_recognition": true,
+  "speech_synthesis": true,
+  "translation": true,
+  "available": true
+}
+```
+
+If `available: false`, check:
+1. Azure Speech Services credentials in app settings
+2. Application logs for voice integration errors
+3. Voice integration module import in startup logs
+
+---
+
+**Last Updated**: 2026-01-02  
+**Version**: 1.1  
+**Deployment Time**: ~30 minutes (code changes ~5 minutes extra for Docker build)
