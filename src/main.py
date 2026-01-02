@@ -58,6 +58,15 @@ from src.database_extensions import (
     get_recent_context
 )
 
+# Import voice integration
+try:
+    from src.voice_integration import voice_integration
+    VOICE_INTEGRATION_AVAILABLE = voice_integration.is_available()
+    logger.info(f"Voice integration loaded: {VOICE_INTEGRATION_AVAILABLE}")
+except ImportError as e:
+    VOICE_INTEGRATION_AVAILABLE = {"speech_recognition": False, "speech_synthesis": False, "translation": False}
+    logger.warning(f"Voice integration not available: {e}")
+
 # Import additional feature routers
 from src.additional_endpoints import (
     webhook_router, social_router, analytics_router,
@@ -1787,6 +1796,215 @@ async def health_check():
     }
     
     return health_status
+
+# =============================================================================
+# VOICE INTERACTION ENDPOINTS
+# =============================================================================
+
+class TranscribeRequest(BaseModel):
+    """Request model for audio transcription"""
+    language: Optional[str] = None  # e.g., "en-US", "es-ES"
+
+class SynthesizeRequest(BaseModel):
+    """Request model for speech synthesis"""
+    text: str
+    voice_name: Optional[str] = None
+    language: Optional[str] = None
+
+class VoiceConversationRequest(BaseModel):
+    """Request model for complete voice conversation"""
+    user_id: str
+    language: Optional[str] = None
+    response_language: Optional[str] = None
+
+@app.post("/voice/transcribe", tags=["Voice"])
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    language: Optional[str] = None
+):
+    """
+    Convert speech audio to text using Azure Speech Services
+    
+    - **audio**: Audio file (WAV, MP3, OGG, FLAC)
+    - **language**: Optional language code (e.g., "en-US", "es-ES")
+    
+    Returns transcribed text with confidence score and metadata
+    """
+    if not VOICE_INTEGRATION_AVAILABLE.get("speech_recognition"):
+        raise HTTPException(
+            status_code=503,
+            detail="Speech recognition service not available. Check AZURE_SPEECH_KEY configuration."
+        )
+    
+    try:
+        # Read audio file
+        audio_data = await audio.read()
+        
+        # Transcribe
+        text, confidence, metadata = voice_integration.transcribe_audio(
+            audio_data,
+            language=language
+        )
+        
+        return {
+            "text": text,
+            "confidence": confidence,
+            "metadata": metadata,
+            "success": True
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@app.post("/voice/synthesize", tags=["Voice"])
+async def synthesize_speech(request: SynthesizeRequest):
+    """
+    Convert text to speech audio using Azure Speech Services
+    
+    - **text**: Text to convert to speech
+    - **voice_name**: Optional voice (e.g., "en-US-AriaNeural")
+    - **language**: Optional language code
+    
+    Returns audio file (MP3 format) with metadata
+    """
+    if not VOICE_INTEGRATION_AVAILABLE.get("speech_synthesis"):
+        raise HTTPException(
+            status_code=503,
+            detail="Speech synthesis service not available. Check AZURE_SPEECH_KEY configuration."
+        )
+    
+    try:
+        # Synthesize speech
+        audio_data, metadata = voice_integration.synthesize_speech(
+            request.text,
+            voice_name=request.voice_name,
+            language=request.language
+        )
+        
+        # Return audio as base64 for JSON response
+        audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+        
+        return {
+            "audio_base64": audio_base64,
+            "metadata": metadata,
+            "success": True
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Synthesis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Synthesis failed: {str(e)}")
+
+@app.post("/voice/ask", tags=["Voice"])
+async def ask_voice(
+    audio: UploadFile = File(...),
+    user_id: str = Form(...),
+    language: Optional[str] = Form(None),
+    response_language: Optional[str] = Form(None)
+):
+    """
+    Complete voice conversation: audio -> text -> AI response -> voice
+    
+    - **audio**: Audio file with user's question
+    - **user_id**: User identifier
+    - **language**: Optional input language
+    - **response_language**: Optional response language
+    
+    Returns AI response as both text and audio
+    """
+    if not VOICE_INTEGRATION_AVAILABLE.get("speech_recognition"):
+        raise HTTPException(
+            status_code=503,
+            detail="Voice conversation service not available. Check AZURE_SPEECH_KEY configuration."
+        )
+    
+    ensure_ai_available()
+    
+    try:
+        # Read audio file
+        audio_data = await audio.read()
+        
+        # Step 1: Transcribe audio to text
+        result = voice_integration.process_voice_conversation(
+            audio_data,
+            user_language=language,
+            response_language=response_language
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=400, detail=result["metadata"].get("error", "Transcription failed"))
+        
+        user_input = result["text"]
+        transcription_metadata = result["metadata"]
+        
+        # Step 2: Get AI response (reuse existing /ask logic)
+        context = get_recent_context(user_id)
+        context_summary = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context[-5:]])
+        
+        messages = [
+            {"role": "system", "content": f"You are Aria, a supportive AI running coach. {context_summary}"},
+            {"role": "user", "content": user_input}
+        ]
+        
+        response = client.chat.completions.create(
+            model=AZURE_OPENAI_DEPLOYMENT,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Save conversation
+        save_conversation(
+            user_id=user_id,
+            user_message=user_input,
+            assistant_message=ai_response,
+            context={"voice": True, "transcription": transcription_metadata}
+        )
+        
+        # Step 3: Synthesize response to audio (if synthesis available)
+        audio_response = None
+        if VOICE_INTEGRATION_AVAILABLE.get("speech_synthesis"):
+            try:
+                audio_data, audio_metadata = voice_integration.synthesize_speech(
+                    ai_response,
+                    language=response_language or language
+                )
+                audio_response = {
+                    "audio_base64": base64.b64encode(audio_data).decode('utf-8'),
+                    "metadata": audio_metadata
+                }
+            except Exception as e:
+                logger.warning(f"Speech synthesis failed: {e}")
+        
+        return {
+            "user_input": user_input,
+            "ai_response": ai_response,
+            "transcription_metadata": transcription_metadata,
+            "audio_response": audio_response,
+            "success": True
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Voice conversation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Voice conversation failed: {str(e)}")
+
+@app.get("/voice/status", tags=["Voice"])
+async def voice_status():
+    """Check availability of voice services"""
+    return {
+        "available": VOICE_INTEGRATION_AVAILABLE,
+        "speech_recognition": VOICE_INTEGRATION_AVAILABLE.get("speech_recognition", False),
+        "speech_synthesis": VOICE_INTEGRATION_AVAILABLE.get("speech_synthesis", False),
+        "translation": VOICE_INTEGRATION_AVAILABLE.get("translation", False)
+    }
 
 # =============================================================================
 # STARTUP MESSAGE

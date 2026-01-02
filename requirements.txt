@@ -39,6 +39,10 @@ python-multipart==0.0.20
 celery==5.4.0
 kombu==5.4.2
 
+# Azure Speech and Translation Services
+azure-cognitiveservices-speech==1.40.0
+azure-ai-translation-text==1.0.0
+
 # Testing dependencies
 pytest==8.3.4
 pytest-cov==6.0.0

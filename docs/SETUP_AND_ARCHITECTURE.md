@@ -281,6 +281,7 @@ docker logs aria-redis
 
 - **[COMPANION_API.md](docs/COMPANION_API.md)** - Complete API endpoint reference
 - **[AZURE_OPENAI_SETUP.md](docs/AZURE_OPENAI_SETUP.md)** - Azure OpenAI managed identity setup guide
+- **[VOICE_FEATURES.md](docs/VOICE_FEATURES.md)** - Voice interaction features and API documentation
 - **[AI_COMPANION_IMPLEMENTATION.md](docs/AI_COMPANION_IMPLEMENTATION.md)** - Technical implementation details
 - **[BACKGROUND_TASKS_CACHING.md](docs/BACKGROUND_TASKS_CACHING.md)** - Setup, monitoring, troubleshooting
 - **[QUICK_SETUP_GUIDE.md](docs/QUICK_SETUP_GUIDE.md)** - Step-by-step setup instructions
@@ -322,8 +323,8 @@ pytest --cov=src tests/
 - [x] Phase 1: Database schema + API endpoints
 - [x] Phase 2: AI logic + conversation memory
 - [x] Phase 3: Background tasks + caching
-- [ ] Phase 4: Comprehensive test suite (12-15 hours)
-- [ ] Phase 5: Azure Speech Services integration (10-12 hours)
+- [x] Phase 4: Comprehensive test suite (3,900+ lines, 10 test files)
+- [x] Phase 5: Azure Speech Services integration (voice features)
 - [ ] Phase 6: Production optimization (8-10 hours)
 
 ## 📞 Support
