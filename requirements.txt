@@ -67,8 +67,4 @@ azure-communication-sms==1.0.1
 # Azure Blob Storage (for video uploads)
 azure-storage-blob==12.19.0
 
-# Azure Speech Services (for voice integration - optional)
-azure-cognitiveservices-speech==1.35.0
-
-# Azure Translator (for multi-language support)
-azure-ai-translation-text==1.0.0
+# Multi-language support already included above with Speech Services

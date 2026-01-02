@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 import logging
 import json
+import base64
 
 # Import services
 from src.notifications import notification_service
@@ -641,11 +642,122 @@ async def get_virtual_races_endpoint(request: Request):
     races = get_active_virtual_races()
     return {"races": races, "count": len(races)}
 
-# Voice and Real-time routers are placeholders - would need Azure Speech Services and WebSocket implementation
+# Voice integration with Azure Speech Services
+try:
+    from src.voice_integration import voice_integration
+    VOICE_AVAILABLE = True
+    logger.info("Voice integration loaded successfully")
+except ImportError as e:
+    VOICE_AVAILABLE = False
+    voice_integration = None
+    logger.warning(f"Voice integration import failed: {e}")
+except Exception as e:
+    VOICE_AVAILABLE = False
+    voice_integration = None
+    logger.error(f"Voice integration initialization failed: {e}")
+
 @voice_router.get("/status")
 async def voice_status():
-    """Voice integration status"""
-    return {"status": "not_implemented", "message": "Voice integration requires Azure Speech Services"}
+    """Voice integration status - check if Azure Speech Services are available"""
+    if not VOICE_AVAILABLE or voice_integration is None:
+        return {
+            "speech_recognition": False,
+            "speech_synthesis": False,
+            "translation": False,
+            "message": "Voice integration module not available",
+            "available": False
+        }
+    
+    status = voice_integration.is_available()
+    status["available"] = True
+    return status
+
+@voice_router.post("/transcribe")
+async def transcribe_voice(
+    audio: UploadFile = File(...),
+    language: Optional[str] = None
+):
+    """
+    Transcribe speech from audio file to text
+    
+    - **audio**: Audio file (WAV, MP3, OGG, FLAC)
+    - **language**: Optional language code (e.g., "en-US", "es-ES")
+    """
+    if not VOICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Voice integration not available")
+    
+    # Read audio file
+    audio_data = await audio.read()
+    
+    try:
+        result = voice_integration.transcribe_audio(audio_data, language)
+        return {
+            "text": result["text"],
+            "confidence": result["confidence"],
+            "language": result["language"],
+            "duration_ms": result["duration_ms"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@voice_router.post("/synthesize")
+async def synthesize_voice(
+    text: str = Form(...),
+    voice_name: Optional[str] = Form(None),
+    language: Optional[str] = Form(None)
+):
+    """
+    Convert text to speech audio
+    
+    - **text**: Text to convert to speech
+    - **voice_name**: Optional Azure voice name (e.g., "en-US-AriaNeural")
+    - **language**: Optional language code
+    """
+    if not VOICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Voice integration not available")
+    
+    try:
+        result = voice_integration.synthesize_speech(text, voice_name, language)
+        return {
+            "audio_base64": base64.b64encode(result["audio"]).decode("utf-8"),
+            "voice_name": result["voice_name"],
+            "language": result["language"],
+            "size_bytes": result["size_bytes"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech synthesis failed: {str(e)}")
+
+@voice_router.post("/ask")
+async def voice_ask(
+    audio: UploadFile = File(...),
+    user_id: str = Form(...),
+    language: Optional[str] = Form(None),
+    response_language: Optional[str] = Form(None)
+):
+    """
+    Complete voice conversation: transcribe audio, get AI response, synthesize speech
+    
+    - **audio**: User's voice message
+    - **user_id**: User identifier
+    - **language**: Input language code
+    - **response_language**: Output language code (for translation)
+    """
+    if not VOICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Voice integration not available")
+    
+    # Read audio file
+    audio_data = await audio.read()
+    
+    try:
+        result = voice_integration.process_voice_conversation(
+            audio_data,
+            user_id,
+            language,
+            response_language
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice conversation failed: {str(e)}")
 
 @realtime_router.get("/status")
 async def realtime_status():
