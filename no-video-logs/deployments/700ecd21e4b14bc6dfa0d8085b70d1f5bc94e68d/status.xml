@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>700ecd21e4b14bc6dfa0d8085b70d1f5bc94e68d</id>
+  <author>antonyrugama</author>
+  <deployer>GitHub</deployer>
+  <authorEmail>33127079+antonyrugama@users.noreply.github.com</authorEmail>
+  <message>Add debug logging to app.py</message>
+  <progress></progress>
+  <status>Success</status>
+  <statusText></statusText>
+  <lastSuccessEndTime>2025-12-19T01:16:58.6081622Z</lastSuccessEndTime>
+  <receivedTime>2025-12-19T01:01:10.0567314Z</receivedTime>
+  <startTime>2025-12-19T01:09:35.6112587Z</startTime>
+  <endTime>2025-12-19T01:16:58.6081622Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>False</is_readonly>
+  <buildSummary />
+</deployment>

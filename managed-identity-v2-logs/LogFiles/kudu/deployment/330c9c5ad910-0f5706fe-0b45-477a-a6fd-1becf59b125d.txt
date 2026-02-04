@@ -1,0 +1,359 @@
+2025-12-19T23:06:18  Fetching changes.
+2025-12-19T23:06:18    Starting  LocalZipHandler
+2025-12-19T23:06:18    Cleaning up temp folders from previous zip deployments and extracting pushed zip file /tmp/zipdeploy/00c4c4c7-bf9b-42f2-9d59-dd87fe7fefbd.zip (0.17 MB) to /tmp/zipdeploy/extracted
+2025-12-19T23:06:22  Updating submodules.
+2025-12-19T23:06:22  Preparing deployment for commit id 'f91fca1c-b'.
+2025-12-19T23:06:22  PreDeployment: context.CleanOutputPath False
+2025-12-19T23:06:23  PreDeployment: context.OutputPath /home/site/wwwroot
+2025-12-19T23:06:23  Repository path is /tmp/zipdeploy/extracted
+2025-12-19T23:06:23  Running oryx build...
+2025-12-19T23:06:23    Command: oryx build /tmp/zipdeploy/extracted -o /home/site/wwwroot --platform python --platform-version 3.11 -p virtualenv_name=antenv --log-file /tmp/build-debug.log  -i /tmp/8de3f533a5f3b49 --compress-destination-dir | tee /tmp/oryx-build.log
+2025-12-19T23:06:26    Operation performed by Microsoft Oryx, https://github.com/Microsoft/Oryx
+2025-12-19T23:06:26    You can report issues at https://github.com/Microsoft/Oryx/issues
+2025-12-19T23:06:26    
+2025-12-19T23:06:26    Oryx Version: 0.2.20251022.1+bef98bc7139feefaa74be16de9d835e2c85385d4, Commit: bef98bc7139feefaa74be16de9d835e2c85385d4, ReleaseTagName: 20251022.1
+2025-12-19T23:06:26    
+2025-12-19T23:06:26    Build Operation ID: d51059602966daac
+2025-12-19T23:06:26    Repository Commit : f91fca1c-bcec-431d-ae83-84e9d04b89ae
+2025-12-19T23:06:26    OS Type           : bullseye
+2025-12-19T23:06:26    Image Type        : githubactions
+2025-12-19T23:06:26    
+2025-12-19T23:06:26    Primary SDK Storage URL: https://oryx-cdn.microsoft.io
+2025-12-19T23:06:26    Backup SDK Storage URL: 
+2025-12-19T23:06:26    Detecting platforms...
+2025-12-19T23:06:26    External SDK provider is enabled.
+2025-12-19T23:06:26    Requesting metadata for platform python from external SDK provider
+2025-12-19T23:06:29    Requesting metadata for platform python from external SDK provider
+2025-12-19T23:06:29    Detected following platforms:
+2025-12-19T23:06:29      python: 3.11.14
+2025-12-19T23:06:30    
+2025-12-19T23:06:30    Using intermediate directory '/tmp/8de3f533a5f3b49'.
+2025-12-19T23:06:30    
+2025-12-19T23:06:30    Copying files to the intermediate directory...
+2025-12-19T23:06:30    Done in 0 sec(s).
+2025-12-19T23:06:30    
+2025-12-19T23:06:30    Source directory     : /tmp/8de3f533a5f3b49
+2025-12-19T23:06:30    Destination directory: /home/site/wwwroot
+2025-12-19T23:06:30    
+2025-12-19T23:06:31    Python Version: /tmp/oryx/platforms/python/3.11.14/bin/python3.11
+2025-12-19T23:06:31    Creating directory for command manifest file if it does not exist
+2025-12-19T23:06:31    Removing existing manifest file
+2025-12-19T23:06:31    Python Virtual Environment: antenv
+2025-12-19T23:06:31    Creating virtual environment...
+2025-12-19T23:06:31    Executing: /tmp/oryx/platforms/python/3.11.14/bin/python3.11 -m venv antenv --copies --system-site-packages
+2025-12-19T23:06:50    Activating virtual environment...
+2025-12-19T23:06:50    Running pip install...
+2025-12-19T23:09:50    [15:06:52-0800] Collecting annotated-types==0.7.0 (from -r requirements.txt (line 1))
+2025-12-19T23:09:51    [15:06:52-0800]   Using cached annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+2025-12-19T23:09:51    [15:06:52-0800] Collecting anyio==4.10.0 (from -r requirements.txt (line 2))
+2025-12-19T23:09:51    [15:06:52-0800]   Using cached anyio-4.10.0-py3-none-any.whl.metadata (4.0 kB)
+2025-12-19T23:09:51    [15:06:52-0800] Collecting certifi==2025.8.3 (from -r requirements.txt (line 3))
+2025-12-19T23:09:51    [15:06:52-0800]   Using cached certifi-2025.8.3-py3-none-any.whl.metadata (2.4 kB)
+2025-12-19T23:09:51    [15:06:52-0800] Collecting click==8.2.1 (from -r requirements.txt (line 4))
+2025-12-19T23:09:51    [15:06:52-0800]   Using cached click-8.2.1-py3-none-any.whl.metadata (2.5 kB)
+2025-12-19T23:09:51    [15:06:53-0800] Collecting colorama==0.4.6 (from -r requirements.txt (line 5))
+2025-12-19T23:09:51    [15:06:53-0800]   Using cached colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2025-12-19T23:09:51    [15:06:53-0800] Collecting distro==1.9.0 (from -r requirements.txt (line 6))
+2025-12-19T23:09:51    [15:06:53-0800]   Using cached distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+2025-12-19T23:09:51    [15:06:53-0800] Collecting fastapi==0.116.1 (from -r requirements.txt (line 7))
+2025-12-19T23:09:51    [15:06:53-0800]   Using cached fastapi-0.116.1-py3-none-any.whl.metadata (28 kB)
+2025-12-19T23:09:51    [15:06:53-0800] Collecting h11==0.16.0 (from -r requirements.txt (line 8))
+2025-12-19T23:09:51    [15:06:53-0800]   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2025-12-19T23:09:52    [15:06:53-0800] Collecting httpcore==1.0.9 (from -r requirements.txt (line 9))
+2025-12-19T23:09:52    [15:06:53-0800]   Using cached httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2025-12-19T23:09:52    [15:06:53-0800] Collecting httpx==0.28.1 (from -r requirements.txt (line 10))
+2025-12-19T23:09:52    [15:06:53-0800]   Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2025-12-19T23:09:52    [15:06:53-0800] Collecting idna==3.10 (from -r requirements.txt (line 11))
+2025-12-19T23:09:52    [15:06:54-0800]   Using cached idna-3.10-py3-none-any.whl.metadata (10 kB)
+2025-12-19T23:09:52    [15:06:54-0800] Collecting jiter==0.10.0 (from -r requirements.txt (line 12))
+2025-12-19T23:09:52    [15:06:54-0800]   Using cached jiter-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.2 kB)
+2025-12-19T23:09:52    [15:06:55-0800] Collecting openai==1.107.0 (from -r requirements.txt (line 13))
+2025-12-19T23:09:52    [15:06:55-0800]   Using cached openai-1.107.0-py3-none-any.whl.metadata (29 kB)
+2025-12-19T23:09:52    [15:06:56-0800] Collecting pydantic==2.11.7 (from -r requirements.txt (line 14))
+2025-12-19T23:09:52    [15:06:56-0800]   Using cached pydantic-2.11.7-py3-none-any.whl.metadata (67 kB)
+2025-12-19T23:09:53    [15:07:03-0800] Collecting pydantic_core==2.33.2 (from -r requirements.txt (line 15))
+2025-12-19T23:09:53    [15:07:03-0800]   Using cached pydantic_core-2.33.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+2025-12-19T23:09:53    [15:07:03-0800] Collecting python-dotenv==1.1.1 (from -r requirements.txt (line 16))
+2025-12-19T23:09:53    [15:07:03-0800]   Using cached python_dotenv-1.1.1-py3-none-any.whl.metadata (24 kB)
+2025-12-19T23:09:53    [15:07:03-0800] Collecting sniffio==1.3.1 (from -r requirements.txt (line 17))
+2025-12-19T23:09:53    [15:07:03-0800]   Using cached sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+2025-12-19T23:09:53    [15:07:04-0800] Collecting starlette==0.47.3 (from -r requirements.txt (line 18))
+2025-12-19T23:09:53    [15:07:04-0800]   Using cached starlette-0.47.3-py3-none-any.whl.metadata (6.2 kB)
+2025-12-19T23:09:53    [15:07:04-0800] Collecting tqdm==4.67.1 (from -r requirements.txt (line 19))
+2025-12-19T23:09:53    [15:07:04-0800]   Using cached tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+2025-12-19T23:09:53    [15:07:04-0800] Collecting typing-inspection==0.4.1 (from -r requirements.txt (line 20))
+2025-12-19T23:09:53    [15:07:04-0800]   Using cached typing_inspection-0.4.1-py3-none-any.whl.metadata (2.6 kB)
+2025-12-19T23:09:53    [15:07:04-0800] Collecting typing_extensions==4.15.0 (from -r requirements.txt (line 21))
+2025-12-19T23:09:53    [15:07:04-0800]   Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+2025-12-19T23:09:54    [15:07:04-0800] Collecting uvicorn==0.35.0 (from -r requirements.txt (line 22))
+2025-12-19T23:09:54    [15:07:04-0800]   Using cached uvicorn-0.35.0-py3-none-any.whl.metadata (6.5 kB)
+2025-12-19T23:09:54    [15:07:04-0800] Collecting gunicorn==23.0.0 (from -r requirements.txt (line 23))
+2025-12-19T23:09:54    [15:07:04-0800]   Using cached gunicorn-23.0.0-py3-none-any.whl.metadata (4.4 kB)
+2025-12-19T23:09:54    [15:07:05-0800] Collecting redis==5.2.0 (from -r requirements.txt (line 26))
+2025-12-19T23:09:54    [15:07:05-0800]   Using cached redis-5.2.0-py3-none-any.whl.metadata (9.1 kB)
+2025-12-19T23:09:54    [15:07:05-0800] Collecting psycopg2-binary==2.9.10 (from -r requirements.txt (line 27))
+2025-12-19T23:09:54    [15:07:05-0800]   Using cached psycopg2_binary-2.9.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+2025-12-19T23:09:54    [15:07:06-0800] Collecting PyJWT==2.10.1 (from -r requirements.txt (line 28))
+2025-12-19T23:09:54    [15:07:06-0800]   Using cached PyJWT-2.10.1-py3-none-any.whl.metadata (4.0 kB)
+2025-12-19T23:09:54    [15:07:06-0800] Collecting python-jose==3.3.0 (from python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-19T23:09:54    [15:07:06-0800]   Using cached python_jose-3.3.0-py2.py3-none-any.whl.metadata (5.4 kB)
+2025-12-19T23:09:55    [15:07:06-0800] Collecting opencensus-ext-azure==1.1.13 (from -r requirements.txt (line 30))
+2025-12-19T23:09:55    [15:07:06-0800]   Using cached opencensus_ext_azure-1.1.13-py2.py3-none-any.whl.metadata (16 kB)
+2025-12-19T23:09:55    [15:07:06-0800] Collecting opencensus-ext-requests==0.8.0 (from -r requirements.txt (line 31))
+2025-12-19T23:09:55    [15:07:06-0800]   Using cached opencensus_ext_requests-0.8.0-py2.py3-none-any.whl.metadata (2.6 kB)
+2025-12-19T23:09:55    [15:07:06-0800] Collecting azure-keyvault-secrets==4.9.0 (from -r requirements.txt (line 32))
+2025-12-19T23:09:55    [15:07:06-0800]   Using cached azure_keyvault_secrets-4.9.0-py3-none-any.whl.metadata (29 kB)
+2025-12-19T23:09:55    [15:07:06-0800] Collecting stripe==14.1.0 (from -r requirements.txt (line 33))
+2025-12-19T23:09:55    [15:07:06-0800]   Using cached stripe-14.1.0-py3-none-any.whl.metadata (18 kB)
+2025-12-19T23:09:55    [15:07:07-0800] Collecting requests==2.32.3 (from -r requirements.txt (line 34))
+2025-12-19T23:09:55    [15:07:07-0800]   Using cached requests-2.32.3-py3-none-any.whl.metadata (4.6 kB)
+2025-12-19T23:09:55    [15:07:07-0800] Collecting python-multipart==0.0.20 (from -r requirements.txt (line 35))
+2025-12-19T23:09:55    [15:07:07-0800]   Using cached python_multipart-0.0.20-py3-none-any.whl.metadata (1.8 kB)
+2025-12-19T23:09:55    [15:07:07-0800] Collecting celery==5.4.0 (from -r requirements.txt (line 38))
+2025-12-19T23:09:55    [15:07:07-0800]   Using cached celery-5.4.0-py3-none-any.whl.metadata (21 kB)
+2025-12-19T23:09:55    [15:07:07-0800] Collecting kombu==5.4.2 (from -r requirements.txt (line 39))
+2025-12-19T23:09:55    [15:07:07-0800]   Using cached kombu-5.4.2-py3-none-any.whl.metadata (3.2 kB)
+2025-12-19T23:09:55    [15:07:08-0800] Collecting pytest==8.3.4 (from -r requirements.txt (line 42))
+2025-12-19T23:09:55    [15:07:08-0800]   Using cached pytest-8.3.4-py3-none-any.whl.metadata (7.5 kB)
+2025-12-19T23:09:55    [15:07:08-0800] Collecting pytest-cov==6.0.0 (from -r requirements.txt (line 43))
+2025-12-19T23:09:55    [15:07:08-0800]   Using cached pytest_cov-6.0.0-py3-none-any.whl.metadata (27 kB)
+2025-12-19T23:09:56    [15:07:08-0800] Collecting pytest-asyncio==0.25.2 (from -r requirements.txt (line 44))
+2025-12-19T23:09:56    [15:07:08-0800]   Using cached pytest_asyncio-0.25.2-py3-none-any.whl.metadata (3.9 kB)
+2025-12-19T23:09:56    [15:07:08-0800] Collecting pytest-mock==3.14.0 (from -r requirements.txt (line 45))
+2025-12-19T23:09:56    [15:07:08-0800]   Using cached pytest_mock-3.14.0-py3-none-any.whl.metadata (3.8 kB)
+2025-12-19T23:09:56    [15:07:10-0800] Collecting Pillow==11.0.0 (from -r requirements.txt (line 46))
+2025-12-19T23:09:56    [15:07:10-0800]   Using cached pillow-11.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+2025-12-19T23:09:56    [15:07:11-0800] Collecting psutil==6.1.1 (from -r requirements.txt (line 47))
+2025-12-19T23:09:56    [15:07:11-0800]   Using cached psutil-6.1.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (22 kB)
+2025-12-19T23:09:56    [15:07:13-0800] Collecting numpy==1.24.4 (from -r requirements.txt (line 52))
+2025-12-19T23:09:56    [15:07:13-0800]   Using cached numpy-1.24.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.6 kB)
+2025-12-19T23:09:56    [15:07:14-0800] Collecting scipy==1.11.4 (from -r requirements.txt (line 55))
+2025-12-19T23:09:56    [15:07:14-0800]   Using cached scipy-1.11.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (60 kB)
+2025-12-19T23:09:56    [15:07:15-0800] Collecting scikit-learn==1.3.2 (from -r requirements.txt (line 56))
+2025-12-19T23:09:56    [15:07:15-0800]   Using cached scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (11 kB)
+2025-12-19T23:09:56    [15:07:16-0800] Collecting azure-communication-email==1.0.0 (from -r requirements.txt (line 59))
+2025-12-19T23:09:56    [15:07:16-0800]   Using cached azure_communication_email-1.0.0-py3-none-any.whl.metadata (10 kB)
+2025-12-19T23:09:56    [15:07:16-0800] Collecting azure-communication-sms==1.0.1 (from -r requirements.txt (line 60))
+2025-12-19T23:09:56    [15:07:16-0800]   Using cached azure_communication_sms-1.0.1-py2.py3-none-any.whl.metadata (8.6 kB)
+2025-12-19T23:09:56    [15:07:16-0800] Collecting azure-storage-blob==12.19.0 (from -r requirements.txt (line 63))
+2025-12-19T23:09:57    [15:07:16-0800]   Using cached azure_storage_blob-12.19.0-py3-none-any.whl.metadata (26 kB)
+2025-12-19T23:09:57    [15:07:16-0800] Collecting azure-cognitiveservices-speech==1.35.0 (from -r requirements.txt (line 66))
+2025-12-19T23:09:57    [15:07:16-0800]   Using cached azure_cognitiveservices_speech-1.35.0-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+2025-12-19T23:09:57    [15:07:16-0800] Collecting azure-ai-translation-text==1.0.0 (from -r requirements.txt (line 69))
+2025-12-19T23:09:57    [15:07:16-0800]   Using cached azure_ai_translation_text-1.0.0-py3-none-any.whl.metadata (18 kB)
+2025-12-19T23:09:57    [15:07:20-0800] Collecting packaging (from gunicorn==23.0.0->-r requirements.txt (line 23))
+2025-12-19T23:09:57    [15:07:20-0800]   Using cached packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+2025-12-19T23:09:57    [15:07:20-0800] Collecting ecdsa!=0.15 (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-19T23:09:57    [15:07:20-0800]   Using cached ecdsa-0.19.1-py2.py3-none-any.whl.metadata (29 kB)
+2025-12-19T23:09:57    [15:07:21-0800] Collecting rsa (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-19T23:09:57    [15:07:21-0800]   Using cached rsa-4.9.1-py3-none-any.whl.metadata (5.6 kB)
+2025-12-19T23:09:57    [15:07:21-0800] Collecting pyasn1 (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-19T23:09:57    [15:07:21-0800]   Using cached pyasn1-0.6.1-py3-none-any.whl.metadata (8.4 kB)
+2025-12-19T23:09:57    [15:07:21-0800] Collecting azure-core<2.0.0,>=1.12.0 (from opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:09:57    [15:07:21-0800]   Using cached azure_core-1.37.0-py3-none-any.whl.metadata (47 kB)
+2025-12-19T23:09:58    [15:07:22-0800] Collecting azure-identity<2.0.0,>=1.5.0 (from opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:09:58    [15:07:22-0800]   Using cached azure_identity-1.25.1-py3-none-any.whl.metadata (88 kB)
+2025-12-19T23:09:58    [15:07:22-0800] Collecting opencensus<1.0.0,>=0.11.4 (from opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:09:58    [15:07:22-0800]   Using cached opencensus-0.11.4-py2.py3-none-any.whl.metadata (12 kB)
+2025-12-19T23:09:58    [15:07:24-0800] Collecting wrapt<2.0.0,>=1.0.0 (from opencensus-ext-requests==0.8.0->-r requirements.txt (line 31))
+2025-12-19T23:09:58    [15:07:24-0800]   Using cached wrapt-1.17.3-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.4 kB)
+2025-12-19T23:09:58    [15:07:25-0800] Collecting isodate>=0.6.1 (from azure-keyvault-secrets==4.9.0->-r requirements.txt (line 32))
+2025-12-19T23:09:58    [15:07:25-0800]   Using cached isodate-0.7.2-py3-none-any.whl.metadata (11 kB)
+2025-12-19T23:09:58    [15:07:27-0800] Collecting charset-normalizer<4,>=2 (from requests==2.32.3->-r requirements.txt (line 34))
+2025-12-19T23:09:58    [15:07:27-0800]   Using cached charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+2025-12-19T23:09:58    [15:07:28-0800] Collecting urllib3<3,>=1.21.1 (from requests==2.32.3->-r requirements.txt (line 34))
+2025-12-19T23:09:58    [15:07:28-0800]   Using cached urllib3-2.6.2-py3-none-any.whl.metadata (6.6 kB)
+2025-12-19T23:09:58    [15:07:29-0800] Collecting billiard<5.0,>=4.2.0 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:58    [15:07:29-0800]   Using cached billiard-4.2.4-py3-none-any.whl.metadata (4.8 kB)
+2025-12-19T23:09:58    [15:07:30-0800] Collecting vine<6.0,>=5.1.0 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:30-0800]   Using cached vine-5.1.0-py3-none-any.whl.metadata (2.7 kB)
+2025-12-19T23:09:59    [15:07:30-0800] Collecting click-didyoumean>=0.3.0 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:30-0800]   Using cached click_didyoumean-0.3.1-py3-none-any.whl.metadata (3.9 kB)
+2025-12-19T23:09:59    [15:07:30-0800] Collecting click-repl>=0.2.0 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:30-0800]   Using cached click_repl-0.3.0-py3-none-any.whl.metadata (3.6 kB)
+2025-12-19T23:09:59    [15:07:31-0800] Collecting click-plugins>=1.1.1 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:31-0800]   Using cached click_plugins-1.1.1.2-py2.py3-none-any.whl.metadata (6.5 kB)
+2025-12-19T23:09:59    [15:07:31-0800] Collecting tzdata>=2022.7 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:31-0800]   Using cached tzdata-2025.3-py2.py3-none-any.whl.metadata (1.4 kB)
+2025-12-19T23:09:59    [15:07:31-0800] Collecting python-dateutil>=2.8.2 (from celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:09:59    [15:07:31-0800]   Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+2025-12-19T23:09:59    [15:07:32-0800] Collecting amqp<6.0.0,>=5.1.1 (from kombu==5.4.2->-r requirements.txt (line 39))
+2025-12-19T23:09:59    [15:07:32-0800]   Using cached amqp-5.3.1-py3-none-any.whl.metadata (8.9 kB)
+2025-12-19T23:09:59    [15:07:32-0800] Collecting iniconfig (from pytest==8.3.4->-r requirements.txt (line 42))
+2025-12-19T23:09:59    [15:07:32-0800]   Using cached iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+2025-12-19T23:09:59    [15:07:32-0800] Collecting pluggy<2,>=1.5 (from pytest==8.3.4->-r requirements.txt (line 42))
+2025-12-19T23:09:59    [15:07:32-0800]   Using cached pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+2025-12-19T23:09:59    [15:07:39-0800] Collecting coverage>=7.5 (from coverage[toml]>=7.5->pytest-cov==6.0.0->-r requirements.txt (line 43))
+2025-12-19T23:09:59    [15:07:39-0800]   Using cached coverage-7.13.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.5 kB)
+2025-12-19T23:09:59    [15:07:41-0800] Collecting joblib>=1.1.1 (from scikit-learn==1.3.2->-r requirements.txt (line 56))
+2025-12-19T23:10:00    [15:07:41-0800]   Using cached joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+2025-12-19T23:10:00    [15:07:42-0800] Collecting threadpoolctl>=2.0.0 (from scikit-learn==1.3.2->-r requirements.txt (line 56))
+2025-12-19T23:10:00    [15:07:42-0800]   Using cached threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+2025-12-19T23:10:00    [15:07:42-0800] Collecting msrest>=0.7.1 (from azure-communication-email==1.0.0->-r requirements.txt (line 59))
+2025-12-19T23:10:00    [15:07:42-0800]   Using cached msrest-0.7.1-py3-none-any.whl.metadata (21 kB)
+2025-12-19T23:10:00    [15:07:42-0800] Collecting azure-common~=1.1 (from azure-communication-email==1.0.0->-r requirements.txt (line 59))
+2025-12-19T23:10:00    [15:07:42-0800]   Using cached azure_common-1.1.28-py2.py3-none-any.whl.metadata (5.0 kB)
+2025-12-19T23:10:00    [15:07:43-0800] Collecting azure-mgmt-core<2.0.0,>=1.3.2 (from azure-communication-email==1.0.0->-r requirements.txt (line 59))
+2025-12-19T23:10:00    [15:07:43-0800]   Using cached azure_mgmt_core-1.6.0-py3-none-any.whl.metadata (4.6 kB)
+2025-12-19T23:10:00    [15:07:43-0800] Collecting six>=1.11.0 (from azure-communication-sms==1.0.1->-r requirements.txt (line 60))
+2025-12-19T23:10:00    [15:07:43-0800]   Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2025-12-19T23:10:00    [15:07:46-0800] Collecting cryptography>=2.1.4 (from azure-storage-blob==12.19.0->-r requirements.txt (line 63))
+2025-12-19T23:10:00    [15:07:47-0800]   Using cached cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64.whl.metadata (5.7 kB)
+2025-12-19T23:10:00    [15:07:48-0800] Collecting msal>=1.30.0 (from azure-identity<2.0.0,>=1.5.0->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:00    [15:07:48-0800]   Using cached msal-1.34.0-py3-none-any.whl.metadata (11 kB)
+2025-12-19T23:10:00    [15:07:48-0800] Collecting msal-extensions>=1.2.0 (from azure-identity<2.0.0,>=1.5.0->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:00    [15:07:48-0800]   Using cached msal_extensions-1.3.1-py3-none-any.whl.metadata (7.8 kB)
+2025-12-19T23:10:00    [15:07:48-0800] Collecting prompt-toolkit>=3.0.36 (from click-repl>=0.2.0->celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:10:00    [15:07:48-0800]   Using cached prompt_toolkit-3.0.52-py3-none-any.whl.metadata (6.4 kB)
+2025-12-19T23:10:00    [15:07:49-0800] Collecting cffi>=2.0.0 (from cryptography>=2.1.4->azure-storage-blob==12.19.0->-r requirements.txt (line 63))
+2025-12-19T23:10:00    [15:07:49-0800]   Using cached cffi-2.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.6 kB)
+2025-12-19T23:10:01    [15:07:50-0800] Collecting requests-oauthlib>=0.5.0 (from msrest>=0.7.1->azure-communication-email==1.0.0->-r requirements.txt (line 59))
+2025-12-19T23:10:01    [15:07:50-0800]   Using cached requests_oauthlib-2.0.0-py2.py3-none-any.whl.metadata (11 kB)
+2025-12-19T23:10:01    [15:07:50-0800] Collecting opencensus-context>=0.1.3 (from opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:01    [15:07:50-0800]   Using cached opencensus_context-0.1.3-py2.py3-none-any.whl.metadata (3.3 kB)
+2025-12-19T23:10:01    [15:07:50-0800] Collecting google-api-core<3.0.0,>=1.0.0 (from opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:01    [15:07:50-0800]   Using cached google_api_core-2.28.1-py3-none-any.whl.metadata (3.3 kB)
+2025-12-19T23:10:01    [15:07:51-0800] Collecting pycparser (from cffi>=2.0.0->cryptography>=2.1.4->azure-storage-blob==12.19.0->-r requirements.txt (line 63))
+2025-12-19T23:10:01    [15:07:51-0800]   Using cached pycparser-2.23-py3-none-any.whl.metadata (993 bytes)
+2025-12-19T23:10:01    [15:07:51-0800] Collecting googleapis-common-protos<2.0.0,>=1.56.2 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:01    [15:07:51-0800]   Using cached googleapis_common_protos-1.72.0-py3-none-any.whl.metadata (9.4 kB)
+2025-12-19T23:10:01    [15:07:53-0800] Collecting protobuf!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<7.0.0,>=3.19.5 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:01    [15:07:53-0800]   Using cached protobuf-6.33.2-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+2025-12-19T23:10:01    [15:07:53-0800] Collecting proto-plus<2.0.0,>=1.22.3 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:01    [15:07:53-0800]   Using cached proto_plus-1.27.0-py3-none-any.whl.metadata (2.2 kB)
+2025-12-19T23:10:01    [15:07:54-0800] Collecting google-auth<3.0.0,>=2.14.1 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:02    [15:07:54-0800]   Using cached google_auth-2.45.0-py2.py3-none-any.whl.metadata (6.8 kB)
+2025-12-19T23:10:02    [15:07:54-0800] Collecting wcwidth (from prompt-toolkit>=3.0.36->click-repl>=0.2.0->celery==5.4.0->-r requirements.txt (line 38))
+2025-12-19T23:10:02    [15:07:54-0800]   Using cached wcwidth-0.2.14-py2.py3-none-any.whl.metadata (15 kB)
+2025-12-19T23:10:02    [15:07:54-0800] Collecting oauthlib>=3.0.0 (from requests-oauthlib>=0.5.0->msrest>=0.7.1->azure-communication-email==1.0.0->-r requirements.txt (line 59))
+2025-12-19T23:10:02    [15:07:54-0800]   Using cached oauthlib-3.3.1-py3-none-any.whl.metadata (7.9 kB)
+2025-12-19T23:10:02    [15:07:55-0800] Collecting cachetools<7.0,>=2.0.0 (from google-auth<3.0.0,>=2.14.1->google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:02    [15:07:55-0800]   Using cached cachetools-6.2.4-py3-none-any.whl.metadata (5.6 kB)
+2025-12-19T23:10:03    [15:07:55-0800] Collecting pyasn1-modules>=0.2.1 (from google-auth<3.0.0,>=2.14.1->google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-19T23:10:03    [15:07:55-0800]   Using cached pyasn1_modules-0.4.2-py3-none-any.whl.metadata (3.5 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached anyio-4.10.0-py3-none-any.whl (107 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached certifi-2025.8.3-py3-none-any.whl (161 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached click-8.2.1-py3-none-any.whl (102 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached distro-1.9.0-py3-none-any.whl (20 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached fastapi-0.116.1-py3-none-any.whl (95 kB)
+2025-12-19T23:10:03    [15:07:56-0800] Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached idna-3.10-py3-none-any.whl (70 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached jiter-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (352 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached openai-1.107.0-py3-none-any.whl (950 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached pydantic-2.11.7-py3-none-any.whl (444 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached pydantic_core-2.33.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.0 MB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached python_dotenv-1.1.1-py3-none-any.whl (20 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached starlette-0.47.3-py3-none-any.whl (72 kB)
+2025-12-19T23:10:04    [15:07:56-0800] Using cached tqdm-4.67.1-py3-none-any.whl (78 kB)
+2025-12-19T23:10:05    [15:07:56-0800] Using cached typing_inspection-0.4.1-py3-none-any.whl (14 kB)
+2025-12-19T23:10:05    [15:07:56-0800] Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+2025-12-19T23:10:05    [15:07:56-0800] Using cached uvicorn-0.35.0-py3-none-any.whl (66 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached gunicorn-23.0.0-py3-none-any.whl (85 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached redis-5.2.0-py3-none-any.whl (261 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached psycopg2_binary-2.9.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.0 MB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached PyJWT-2.10.1-py3-none-any.whl (22 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached python_jose-3.3.0-py2.py3-none-any.whl (33 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached opencensus_ext_azure-1.1.13-py2.py3-none-any.whl (43 kB)
+2025-12-19T23:10:05    [15:07:57-0800] Using cached opencensus_ext_requests-0.8.0-py2.py3-none-any.whl (6.1 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached azure_keyvault_secrets-4.9.0-py3-none-any.whl (87 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached stripe-14.1.0-py3-none-any.whl (2.1 MB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached requests-2.32.3-py3-none-any.whl (64 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached python_multipart-0.0.20-py3-none-any.whl (24 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached celery-5.4.0-py3-none-any.whl (425 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached kombu-5.4.2-py3-none-any.whl (201 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached pytest-8.3.4-py3-none-any.whl (343 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached pytest_cov-6.0.0-py3-none-any.whl (22 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached pytest_asyncio-0.25.2-py3-none-any.whl (19 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached pytest_mock-3.14.0-py3-none-any.whl (9.9 kB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached pillow-11.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (4.4 MB)
+2025-12-19T23:10:06    [15:07:57-0800] Using cached psutil-6.1.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (287 kB)
+2025-12-19T23:10:07    [15:07:57-0800] Using cached numpy-1.24.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+2025-12-19T23:10:07    [15:07:57-0800] Using cached scipy-1.11.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (36.4 MB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (10.9 MB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached azure_communication_email-1.0.0-py3-none-any.whl (59 kB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached azure_communication_sms-1.0.1-py2.py3-none-any.whl (36 kB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached azure_storage_blob-12.19.0-py3-none-any.whl (394 kB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached azure_cognitiveservices_speech-1.35.0-py3-none-manylinux1_x86_64.whl (3.2 MB)
+2025-12-19T23:10:07    [15:07:58-0800] Using cached azure_ai_translation_text-1.0.0-py3-none-any.whl (87 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached vine-5.1.0-py3-none-any.whl (9.6 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached amqp-5.3.1-py3-none-any.whl (50 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached azure_common-1.1.28-py2.py3-none-any.whl (14 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached azure_core-1.37.0-py3-none-any.whl (214 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached azure_identity-1.25.1-py3-none-any.whl (191 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached azure_mgmt_core-1.6.0-py3-none-any.whl (29 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached billiard-4.2.4-py3-none-any.whl (87 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (151 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+2025-12-19T23:10:08    [15:07:58-0800] Using cached click_plugins-1.1.1.2-py2.py3-none-any.whl (11 kB)
+2025-12-19T23:10:09    [15:07:58-0800] Using cached click_repl-0.3.0-py3-none-any.whl (10 kB)
+2025-12-19T23:10:09    [15:07:58-0800] Using cached coverage-7.13.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (250 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64.whl (4.5 MB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached ecdsa-0.19.1-py2.py3-none-any.whl (150 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached isodate-0.7.2-py3-none-any.whl (22 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached joblib-1.5.3-py3-none-any.whl (309 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached msrest-0.7.1-py3-none-any.whl (85 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached opencensus-0.11.4-py2.py3-none-any.whl (128 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached tzdata-2025.3-py2.py3-none-any.whl (348 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached urllib3-2.6.2-py3-none-any.whl (131 kB)
+2025-12-19T23:10:09    [15:07:59-0800] Using cached wrapt-1.17.3-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (82 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached packaging-25.0-py3-none-any.whl (66 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached pyasn1-0.6.1-py3-none-any.whl (83 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached rsa-4.9.1-py3-none-any.whl (34 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached cffi-2.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (215 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached google_api_core-2.28.1-py3-none-any.whl (173 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached msal-1.34.0-py3-none-any.whl (116 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached msal_extensions-1.3.1-py3-none-any.whl (20 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached opencensus_context-0.1.3-py2.py3-none-any.whl (5.1 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached prompt_toolkit-3.0.52-py3-none-any.whl (391 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached requests_oauthlib-2.0.0-py2.py3-none-any.whl (24 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached google_auth-2.45.0-py2.py3-none-any.whl (233 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached googleapis_common_protos-1.72.0-py3-none-any.whl (297 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached oauthlib-3.3.1-py3-none-any.whl (160 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached proto_plus-1.27.0-py3-none-any.whl (50 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached protobuf-6.33.2-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached pycparser-2.23-py3-none-any.whl (118 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached wcwidth-0.2.14-py2.py3-none-any.whl (37 kB)
+2025-12-19T23:10:10    [15:07:59-0800] Using cached cachetools-6.2.4-py3-none-any.whl (11 kB)
+2025-12-19T23:10:11    [15:07:59-0800] Using cached pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+2025-12-19T23:10:11    [15:08:07-0800] Installing collected packages: opencensus-context, azure-common, wrapt, wcwidth, vine, urllib3, tzdata, typing_extensions, tqdm, threadpoolctl, sniffio, six, redis, python-multipart, python-dotenv, PyJWT, pycparser, pyasn1, psycopg2-binary, psutil, protobuf, pluggy, Pillow, packaging, oauthlib, numpy, joblib, jiter, isodate, iniconfig, idna, h11, distro, coverage, colorama, click, charset-normalizer, certifi, cachetools, billiard, azure-cognitiveservices-speech, annotated-types, uvicorn, typing-inspection, scipy, rsa, requests, python-dateutil, pytest, pydantic_core, pyasn1-modules, proto-plus, prompt-toolkit, httpcore, gunicorn, googleapis-common-protos, ecdsa, click-plugins, click-didyoumean, cffi, anyio, amqp, stripe, starlette, scikit-learn, requests-oauthlib, python-jose, pytest-mock, pytest-cov, pytest-asyncio, pydantic, kombu, httpx, google-auth, cryptography, click-repl, azure-core, openai, msrest, google-api-core, fastapi, celery, azure-storage-blob, azure-mgmt-core, azure-keyvault-secrets, azure-ai-translation-text, opencensus, msal, azure-communication-sms, azure-communication-email, opencensus-ext-requests, msal-extensions, azure-identity, opencensus-ext-azure
+2025-12-19T23:10:11    [15:09:44-0800] Successfully installed Pillow-11.0.0 PyJWT-2.10.1 amqp-5.3.1 annotated-types-0.7.0 anyio-4.10.0 azure-ai-translation-text-1.0.0 azure-cognitiveservices-speech-1.35.0 azure-common-1.1.28 azure-communication-email-1.0.0 azure-communication-sms-1.0.1 azure-core-1.37.0 azure-identity-1.25.1 azure-keyvault-secrets-4.9.0 azure-mgmt-core-1.6.0 azure-storage-blob-12.19.0 billiard-4.2.4 cachetools-6.2.4 celery-5.4.0 certifi-2025.8.3 cffi-2.0.0 charset-normalizer-3.4.4 click-8.2.1 click-didyoumean-0.3.1 click-plugins-1.1.1.2 click-repl-0.3.0 colorama-0.4.6 coverage-7.13.0 cryptography-46.0.3 distro-1.9.0 ecdsa-0.19.1 fastapi-0.116.1 google-api-core-2.28.1 google-auth-2.45.0 googleapis-common-protos-1.72.0 gunicorn-23.0.0 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.10 iniconfig-2.3.0 isodate-0.7.2 jiter-0.10.0 joblib-1.5.3 kombu-5.4.2 msal-1.34.0 msal-extensions-1.3.1 msrest-0.7.1 numpy-1.24.4 oauthlib-3.3.1 openai-1.107.0 opencensus-0.11.4 opencensus-context-0.1.3 opencensus-ext-azure-1.1.13 opencensus-ext-requests-0.8.0 packaging-25.0 pluggy-1.6.0 prompt-toolkit-3.0.52 proto-plus-1.27.0 protobuf-6.33.2 psutil-6.1.1 psycopg2-binary-2.9.10 pyasn1-0.6.1 pyasn1-modules-0.4.2 pycparser-2.23 pydantic-2.11.7 pydantic_core-2.33.2 pytest-8.3.4 pytest-asyncio-0.25.2 pytest-cov-6.0.0 pytest-mock-3.14.0 python-dateutil-2.9.0.post0 python-dotenv-1.1.1 python-jose-3.3.0 python-multipart-0.0.20 redis-5.2.0 requests-2.32.3 requests-oauthlib-2.0.0 rsa-4.9.1 scikit-learn-1.3.2 scipy-1.11.4 six-1.17.0 sniffio-1.3.1 starlette-0.47.3 stripe-14.1.0 threadpoolctl-3.6.0 tqdm-4.67.1 typing-inspection-0.4.1 typing_extensions-4.15.0 tzdata-2025.3 urllib3-2.6.2 uvicorn-0.35.0 vine-5.1.0 wcwidth-0.2.14 wrapt-1.17.3
+2025-12-19T23:10:11    
+2025-12-19T23:10:11    [notice] A new release of pip is available: 24.0 -> 25.3
+2025-12-19T23:10:11    [notice] To update, run: pip install --upgrade pip
+2025-12-19T23:10:11    Not a vso image, so not writing build commands
+2025-12-19T23:10:11    Preparing output...
+2025-12-19T23:10:11    
+2025-12-19T23:10:12    Copying files to destination directory '/tmp/_preCompressedDestinationDir'...
+2025-12-19T23:10:42    Done in 41 sec(s).
+2025-12-19T23:10:43    Compressing content of directory '/tmp/_preCompressedDestinationDir'...
+2025-12-19T23:12:54    Copied the compressed output to '/home/site/wwwroot'
+2025-12-19T23:12:54    
+2025-12-19T23:12:54    Removing existing manifest file
+2025-12-19T23:12:54    Creating a manifest file...
+2025-12-19T23:12:54    Manifest file created.
+2025-12-19T23:12:54    Copying .ostype to manifest output directory.
+2025-12-19T23:12:54    
+2025-12-19T23:12:54    Done in 384 sec(s).
+2025-12-19T23:12:56  Running post deployment command(s)...
+2025-12-19T23:12:56  
+2025-12-19T23:12:56  Generating summary of Oryx build
+2025-12-19T23:12:56  Parsing the build logs
+2025-12-19T23:12:56  Found 0 issue(s)
+2025-12-19T23:12:57  
+2025-12-19T23:12:57  Build Summary :
+2025-12-19T23:12:57  ===============
+2025-12-19T23:12:57  Errors (0)
+2025-12-19T23:12:57  Warnings (0)
+2025-12-19T23:12:57  
+2025-12-19T23:12:57  Triggering container recycle for OneDeploy by adding/updating restartTrigger.txt to the site root path
+2025-12-19T23:12:58  Deployment successful. deployer = OneDeploy deploymentPath = OneDeploy

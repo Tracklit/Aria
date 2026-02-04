@@ -1,0 +1,53 @@
+=== ARIA IMPORT TEST START ===
+Python version: 3.11.14 (main, Oct 14 2025, 15:29:35) [GCC 10.2.1 20210110]
+Working directory: /tmp/8de3dbafaf64ea1
+Python path: ['/tmp/8de3dbafaf64ea1', '/opt/startup/app_logs', '/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages', '/opt/python/3.11.14/lib/python311.zip', '/opt/python/3.11.14/lib/python3.11', '/opt/python/3.11.14/lib/python3.11/lib-dynload', '/opt/python/3.11.14/lib/python3.11/site-packages']
+==================================================
+Testing basic imports...
+✓ redis
+✓ psycopg2
+✓ fastapi
+✓ openai
+✓ stripe
+==================================================
+Testing src module imports...
+✗ src.database: invalid dsn: invalid connection option "@Microsoft.KeyVault(SecretUri"
+
+Traceback (most recent call last):
+  File "/tmp/8de3dbafaf64ea1/test_imports.py", line 60, in <module>
+    from src import database
+  File "/tmp/8de3dbafaf64ea1/src/database.py", line 276, in <module>
+    db_pool = DatabasePool()
+              ^^^^^^^^^^^^^^
+  File "/tmp/8de3dbafaf64ea1/src/database.py", line 39, in __init__
+    self._initialize_pool()
+  File "/tmp/8de3dbafaf64ea1/src/database.py", line 68, in _initialize_pool
+    self.connection_pool = pool.ThreadedConnectionPool(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages/psycopg2/pool.py", line 161, in __init__
+    AbstractConnectionPool.__init__(
+  File "/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages/psycopg2/pool.py", line 59, in __init__
+    self._connect()
+  File "/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages/psycopg2/pool.py", line 63, in _connect
+    conn = psycopg2.connect(*self._args, **self._kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages/psycopg2/__init__.py", line 121, in connect
+    dsn = _ext.make_dsn(dsn, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/8de3dbafaf64ea1/antenv/lib/python3.11/site-packages/psycopg2/extensions.py", line 145, in make_dsn
+    parse_dsn(dsn)
+psycopg2.ProgrammingError: invalid dsn: invalid connection option "@Microsoft.KeyVault(SecretUri"
+
+
+✓ src.cache
+✗ src.main: No module named 'auth_middleware'
+Traceback (most recent call last):
+  File "/tmp/8de3dbafaf64ea1/test_imports.py", line 76, in <module>
+    from src import main
+  File "/tmp/8de3dbafaf64ea1/src/main.py", line 19, in <module>
+    from auth_middleware import require_auth, optional_auth, require_roles, auth_manager
+ModuleNotFoundError: No module named 'auth_middleware'
+
+==================================================
+All import tests complete
+Log file written to: /home/LogFiles/test_output.txt

@@ -1,0 +1,438 @@
+2025-12-21T00:38:03  Fetching changes.
+2025-12-21T00:38:03    Starting  LocalZipHandler
+2025-12-21T00:38:03    Cleaning up temp folders from previous zip deployments and extracting pushed zip file /tmp/zipdeploy/a173f826-a786-442f-bf4c-d9a358862cf1.zip (0.19 MB) to /tmp/zipdeploy/extracted
+2025-12-21T00:38:07  Updating submodules.
+2025-12-21T00:38:07  Preparing deployment for commit id 'be091122-4'.
+2025-12-21T00:38:07  PreDeployment: context.CleanOutputPath False
+2025-12-21T00:38:07  PreDeployment: context.OutputPath /home/site/wwwroot
+2025-12-21T00:38:08  Repository path is /tmp/zipdeploy/extracted
+2025-12-21T00:38:08  Running oryx build...
+2025-12-21T00:38:08    Command: oryx build /tmp/zipdeploy/extracted -o /home/site/wwwroot --platform python --platform-version 3.11 -p virtualenv_name=antenv --log-file /tmp/build-debug.log  -i /tmp/8de402935ecd4ed --compress-destination-dir | tee /tmp/oryx-build.log
+2025-12-21T00:38:09    Operation performed by Microsoft Oryx, https://github.com/Microsoft/Oryx
+2025-12-21T00:38:09    You can report issues at https://github.com/Microsoft/Oryx/issues
+2025-12-21T00:38:09    
+2025-12-21T00:38:09    Oryx Version: 0.2.20251022.1+bef98bc7139feefaa74be16de9d835e2c85385d4, Commit: bef98bc7139feefaa74be16de9d835e2c85385d4, ReleaseTagName: 20251022.1
+2025-12-21T00:38:09    
+2025-12-21T00:38:09    Build Operation ID: cc1de3d933c30f6f
+2025-12-21T00:38:09    Repository Commit : be091122-4bbf-42d5-bceb-aac1a6719bf8
+2025-12-21T00:38:09    OS Type           : bullseye
+2025-12-21T00:38:09    Image Type        : githubactions
+2025-12-21T00:38:09    
+2025-12-21T00:38:09    Primary SDK Storage URL: https://oryx-cdn.microsoft.io
+2025-12-21T00:38:10    Backup SDK Storage URL: 
+2025-12-21T00:38:10    Detecting platforms...
+2025-12-21T00:38:10    External SDK provider is enabled.
+2025-12-21T00:38:10    Requesting metadata for platform python from external SDK provider
+2025-12-21T00:38:11    Requesting metadata for platform python from external SDK provider
+2025-12-21T00:38:11    Detected following platforms:
+2025-12-21T00:38:11      python: 3.11.14
+2025-12-21T00:38:11    Requesting metadata for platform python from external SDK provider
+2025-12-21T00:38:12    Version '3.11.14' of platform 'python' is not installed. Generating script to install it...
+2025-12-21T00:38:12    
+2025-12-21T00:38:12    Using intermediate directory '/tmp/8de402935ecd4ed'.
+2025-12-21T00:38:12    
+2025-12-21T00:38:12    Copying files to the intermediate directory...
+2025-12-21T00:38:13    Done in 1 sec(s).
+2025-12-21T00:38:13    
+2025-12-21T00:38:13    Source directory     : /tmp/8de402935ecd4ed
+2025-12-21T00:38:13    Destination directory: /home/site/wwwroot
+2025-12-21T00:38:13    
+2025-12-21T00:38:13    
+2025-12-21T00:38:13    Downloading and extracting 'python' version '3.11.14' to '/tmp/oryx/platforms/python/3.11.14'...
+2025-12-21T00:38:13    Detected image debian flavor: bullseye.
+2025-12-21T00:38:13    Skipping download of python version 3.11.14 as it is available in external sdk provider cache...
+2025-12-21T00:38:13    Extracting contents...
+2025-12-21T00:38:23    Successfully extracted python version 3.11.14 from external sdk provider cache...
+2025-12-21T00:38:23    Done in 9 sec(s).
+2025-12-21T00:38:23    
+2025-12-21T00:38:23    image detector file exists, platform is python..
+2025-12-21T00:38:23    OS detector file exists, OS is bullseye..
+2025-12-21T00:38:23    Python Version: /tmp/oryx/platforms/python/3.11.14/bin/python3.11
+2025-12-21T00:38:23    Creating directory for command manifest file if it does not exist
+2025-12-21T00:38:23    Removing existing manifest file
+2025-12-21T00:38:23    Python Virtual Environment: antenv
+2025-12-21T00:38:23    Creating virtual environment...
+2025-12-21T00:38:23    Executing: /tmp/oryx/platforms/python/3.11.14/bin/python3.11 -m venv antenv --copies --system-site-packages
+2025-12-21T00:38:35    Activating virtual environment...
+2025-12-21T00:38:35    Running pip install...
+2025-12-21T00:40:10    [16:38:36-0800] Collecting annotated-types==0.7.0 (from -r requirements.txt (line 1))
+2025-12-21T00:40:10    [16:38:36-0800]   Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+2025-12-21T00:40:10    [16:38:36-0800] Collecting anyio==4.10.0 (from -r requirements.txt (line 2))
+2025-12-21T00:40:10    [16:38:36-0800]   Downloading anyio-4.10.0-py3-none-any.whl.metadata (4.0 kB)
+2025-12-21T00:40:10    [16:38:36-0800] Collecting certifi==2025.8.3 (from -r requirements.txt (line 3))
+2025-12-21T00:40:10    [16:38:36-0800]   Downloading certifi-2025.8.3-py3-none-any.whl.metadata (2.4 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting click==8.2.1 (from -r requirements.txt (line 4))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading click-8.2.1-py3-none-any.whl.metadata (2.5 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting colorama==0.4.6 (from -r requirements.txt (line 5))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting distro==1.9.0 (from -r requirements.txt (line 6))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting fastapi==0.116.1 (from -r requirements.txt (line 7))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading fastapi-0.116.1-py3-none-any.whl.metadata (28 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting h11==0.16.0 (from -r requirements.txt (line 8))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting httpcore==1.0.9 (from -r requirements.txt (line 9))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting httpx==0.28.1 (from -r requirements.txt (line 10))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+2025-12-21T00:40:10    [16:38:37-0800] Collecting idna==3.10 (from -r requirements.txt (line 11))
+2025-12-21T00:40:10    [16:38:37-0800]   Downloading idna-3.10-py3-none-any.whl.metadata (10 kB)
+2025-12-21T00:40:10    [16:38:38-0800] Collecting jiter==0.10.0 (from -r requirements.txt (line 12))
+2025-12-21T00:40:10    [16:38:38-0800]   Downloading jiter-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.2 kB)
+2025-12-21T00:40:10    [16:38:38-0800] Collecting openai==1.107.0 (from -r requirements.txt (line 13))
+2025-12-21T00:40:10    [16:38:38-0800]   Downloading openai-1.107.0-py3-none-any.whl.metadata (29 kB)
+2025-12-21T00:40:10    [16:38:39-0800] Collecting pydantic==2.11.7 (from -r requirements.txt (line 14))
+2025-12-21T00:40:10    [16:38:39-0800]   Downloading pydantic-2.11.7-py3-none-any.whl.metadata (67 kB)
+2025-12-21T00:40:10    [16:38:39-0800]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 68.0/68.0 kB 5.4 MB/s eta 0:00:00
+2025-12-21T00:40:10    [16:38:42-0800] Collecting pydantic_core==2.33.2 (from -r requirements.txt (line 15))
+2025-12-21T00:40:10    [16:38:42-0800]   Downloading pydantic_core-2.33.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+2025-12-21T00:40:11    [16:38:42-0800] Collecting python-dotenv==1.1.1 (from -r requirements.txt (line 16))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading python_dotenv-1.1.1-py3-none-any.whl.metadata (24 kB)
+2025-12-21T00:40:11    [16:38:42-0800] Collecting sniffio==1.3.1 (from -r requirements.txt (line 17))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+2025-12-21T00:40:11    [16:38:42-0800] Collecting starlette==0.47.3 (from -r requirements.txt (line 18))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading starlette-0.47.3-py3-none-any.whl.metadata (6.2 kB)
+2025-12-21T00:40:11    [16:38:42-0800] Collecting tqdm==4.67.1 (from -r requirements.txt (line 19))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+2025-12-21T00:40:11    [16:38:42-0800]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 57.7/57.7 kB 13.4 MB/s eta 0:00:00
+2025-12-21T00:40:11    [16:38:42-0800] Collecting typing-inspection==0.4.1 (from -r requirements.txt (line 20))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading typing_inspection-0.4.1-py3-none-any.whl.metadata (2.6 kB)
+2025-12-21T00:40:11    [16:38:42-0800] Collecting typing_extensions==4.15.0 (from -r requirements.txt (line 21))
+2025-12-21T00:40:11    [16:38:42-0800]   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+2025-12-21T00:40:11    [16:38:43-0800] Collecting uvicorn==0.35.0 (from -r requirements.txt (line 22))
+2025-12-21T00:40:11    [16:38:43-0800]   Downloading uvicorn-0.35.0-py3-none-any.whl.metadata (6.5 kB)
+2025-12-21T00:40:11    [16:38:43-0800] Collecting gunicorn==23.0.0 (from -r requirements.txt (line 23))
+2025-12-21T00:40:11    [16:38:43-0800]   Downloading gunicorn-23.0.0-py3-none-any.whl.metadata (4.4 kB)
+2025-12-21T00:40:11    [16:38:43-0800] Collecting redis==5.2.0 (from -r requirements.txt (line 26))
+2025-12-21T00:40:11    [16:38:43-0800]   Downloading redis-5.2.0-py3-none-any.whl.metadata (9.1 kB)
+2025-12-21T00:40:11    [16:38:43-0800] Collecting psycopg2-binary==2.9.10 (from -r requirements.txt (line 27))
+2025-12-21T00:40:11    [16:38:43-0800]   Downloading psycopg2_binary-2.9.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+2025-12-21T00:40:11    [16:38:43-0800] Collecting PyJWT==2.10.1 (from -r requirements.txt (line 28))
+2025-12-21T00:40:11    [16:38:43-0800]   Downloading PyJWT-2.10.1-py3-none-any.whl.metadata (4.0 kB)
+2025-12-21T00:40:11    [16:38:44-0800] Collecting python-jose==3.3.0 (from python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading python_jose-3.3.0-py2.py3-none-any.whl.metadata (5.4 kB)
+2025-12-21T00:40:11    [16:38:44-0800] Collecting opencensus-ext-azure==1.1.13 (from -r requirements.txt (line 30))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading opencensus_ext_azure-1.1.13-py2.py3-none-any.whl.metadata (16 kB)
+2025-12-21T00:40:11    [16:38:44-0800] Collecting opencensus-ext-requests==0.8.0 (from -r requirements.txt (line 31))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading opencensus_ext_requests-0.8.0-py2.py3-none-any.whl.metadata (2.6 kB)
+2025-12-21T00:40:11    [16:38:44-0800] Collecting azure-keyvault-secrets==4.9.0 (from -r requirements.txt (line 32))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading azure_keyvault_secrets-4.9.0-py3-none-any.whl.metadata (29 kB)
+2025-12-21T00:40:11    [16:38:44-0800] Collecting azure-identity==1.19.0 (from -r requirements.txt (line 33))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading azure_identity-1.19.0-py3-none-any.whl.metadata (80 kB)
+2025-12-21T00:40:11    [16:38:44-0800]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.6/80.6 kB 24.7 MB/s eta 0:00:00
+2025-12-21T00:40:11    [16:38:44-0800] Collecting stripe==14.1.0 (from -r requirements.txt (line 34))
+2025-12-21T00:40:11    [16:38:44-0800]   Downloading stripe-14.1.0-py3-none-any.whl.metadata (18 kB)
+2025-12-21T00:40:11    [16:38:45-0800] Collecting requests==2.32.3 (from -r requirements.txt (line 35))
+2025-12-21T00:40:11    [16:38:45-0800]   Downloading requests-2.32.3-py3-none-any.whl.metadata (4.6 kB)
+2025-12-21T00:40:11    [16:38:45-0800] Collecting python-multipart==0.0.20 (from -r requirements.txt (line 36))
+2025-12-21T00:40:11    [16:38:45-0800]   Downloading python_multipart-0.0.20-py3-none-any.whl.metadata (1.8 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting celery==5.4.0 (from -r requirements.txt (line 39))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading celery-5.4.0-py3-none-any.whl.metadata (21 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting kombu==5.4.2 (from -r requirements.txt (line 40))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading kombu-5.4.2-py3-none-any.whl.metadata (3.2 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting pytest==8.3.4 (from -r requirements.txt (line 43))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading pytest-8.3.4-py3-none-any.whl.metadata (7.5 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting pytest-cov==6.0.0 (from -r requirements.txt (line 44))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading pytest_cov-6.0.0-py3-none-any.whl.metadata (27 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting pytest-asyncio==0.25.2 (from -r requirements.txt (line 45))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading pytest_asyncio-0.25.2-py3-none-any.whl.metadata (3.9 kB)
+2025-12-21T00:40:12    [16:38:45-0800] Collecting pytest-mock==3.14.0 (from -r requirements.txt (line 46))
+2025-12-21T00:40:12    [16:38:45-0800]   Downloading pytest_mock-3.14.0-py3-none-any.whl.metadata (3.8 kB)
+2025-12-21T00:40:12    [16:38:46-0800] Collecting Pillow==11.0.0 (from -r requirements.txt (line 47))
+2025-12-21T00:40:12    [16:38:46-0800]   Downloading pillow-11.0.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (9.1 kB)
+2025-12-21T00:40:12    [16:38:47-0800] Collecting psutil==6.1.1 (from -r requirements.txt (line 48))
+2025-12-21T00:40:12    [16:38:47-0800]   Downloading psutil-6.1.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (22 kB)
+2025-12-21T00:40:12    [16:38:48-0800] Collecting numpy==1.24.4 (from -r requirements.txt (line 53))
+2025-12-21T00:40:12    [16:38:48-0800]   Downloading numpy-1.24.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.6 kB)
+2025-12-21T00:40:12    [16:38:48-0800] Collecting scipy==1.11.4 (from -r requirements.txt (line 56))
+2025-12-21T00:40:12    [16:38:48-0800]   Downloading scipy-1.11.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (60 kB)
+2025-12-21T00:40:12    [16:38:48-0800]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.4/60.4 kB 6.8 MB/s eta 0:00:00
+2025-12-21T00:40:12    [16:38:48-0800] Collecting scikit-learn==1.3.2 (from -r requirements.txt (line 57))
+2025-12-21T00:40:12    [16:38:48-0800]   Downloading scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (11 kB)
+2025-12-21T00:40:12    [16:38:48-0800] Collecting azure-communication-email==1.0.0 (from -r requirements.txt (line 60))
+2025-12-21T00:40:12    [16:38:48-0800]   Downloading azure_communication_email-1.0.0-py3-none-any.whl.metadata (10 kB)
+2025-12-21T00:40:12    [16:38:49-0800] Collecting azure-communication-sms==1.0.1 (from -r requirements.txt (line 61))
+2025-12-21T00:40:12    [16:38:49-0800]   Downloading azure_communication_sms-1.0.1-py2.py3-none-any.whl.metadata (8.6 kB)
+2025-12-21T00:40:12    [16:38:49-0800] Collecting azure-storage-blob==12.19.0 (from -r requirements.txt (line 64))
+2025-12-21T00:40:12    [16:38:49-0800]   Downloading azure_storage_blob-12.19.0-py3-none-any.whl.metadata (26 kB)
+2025-12-21T00:40:12    [16:38:49-0800] Collecting azure-cognitiveservices-speech==1.35.0 (from -r requirements.txt (line 67))
+2025-12-21T00:40:12    [16:38:49-0800]   Downloading azure_cognitiveservices_speech-1.35.0-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+2025-12-21T00:40:12    [16:38:49-0800] Collecting azure-ai-translation-text==1.0.0 (from -r requirements.txt (line 70))
+2025-12-21T00:40:12    [16:38:49-0800]   Downloading azure_ai_translation_text-1.0.0-py3-none-any.whl.metadata (18 kB)
+2025-12-21T00:40:12    [16:38:50-0800] Collecting packaging (from gunicorn==23.0.0->-r requirements.txt (line 23))
+2025-12-21T00:40:12    [16:38:50-0800]   Downloading packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+2025-12-21T00:40:12    [16:38:50-0800] Collecting ecdsa!=0.15 (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-21T00:40:12    [16:38:50-0800]   Downloading ecdsa-0.19.1-py2.py3-none-any.whl.metadata (29 kB)
+2025-12-21T00:40:12    [16:38:51-0800] Collecting rsa (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-21T00:40:12    [16:38:51-0800]   Downloading rsa-4.9.1-py3-none-any.whl.metadata (5.6 kB)
+2025-12-21T00:40:12    [16:38:51-0800] Collecting pyasn1 (from python-jose==3.3.0->python-jose[cryptography]==3.3.0->-r requirements.txt (line 29))
+2025-12-21T00:40:12    [16:38:51-0800]   Downloading pyasn1-0.6.1-py3-none-any.whl.metadata (8.4 kB)
+2025-12-21T00:40:12    [16:38:51-0800] Collecting azure-core<2.0.0,>=1.12.0 (from opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:12    [16:38:51-0800]   Downloading azure_core-1.37.0-py3-none-any.whl.metadata (47 kB)
+2025-12-21T00:40:12    [16:38:51-0800]      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 47.6/47.6 kB 3.9 MB/s eta 0:00:00
+2025-12-21T00:40:12    [16:38:51-0800] Collecting opencensus<1.0.0,>=0.11.4 (from opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:12    [16:38:51-0800]   Downloading opencensus-0.11.4-py2.py3-none-any.whl.metadata (12 kB)
+2025-12-21T00:40:12    [16:38:51-0800] Collecting wrapt<2.0.0,>=1.0.0 (from opencensus-ext-requests==0.8.0->-r requirements.txt (line 31))
+2025-12-21T00:40:12    [16:38:52-0800]   Downloading wrapt-1.17.3-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (6.4 kB)
+2025-12-21T00:40:12    [16:38:52-0800] Collecting isodate>=0.6.1 (from azure-keyvault-secrets==4.9.0->-r requirements.txt (line 32))
+2025-12-21T00:40:12    [16:38:52-0800]   Downloading isodate-0.7.2-py3-none-any.whl.metadata (11 kB)
+2025-12-21T00:40:12    [16:38:53-0800] Collecting cryptography>=2.5 (from azure-identity==1.19.0->-r requirements.txt (line 33))
+2025-12-21T00:40:12    [16:38:53-0800]   Downloading cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64.whl.metadata (5.7 kB)
+2025-12-21T00:40:12    [16:38:53-0800] Collecting msal>=1.30.0 (from azure-identity==1.19.0->-r requirements.txt (line 33))
+2025-12-21T00:40:12    [16:38:53-0800]   Downloading msal-1.34.0-py3-none-any.whl.metadata (11 kB)
+2025-12-21T00:40:12    [16:38:53-0800] Collecting msal-extensions>=1.2.0 (from azure-identity==1.19.0->-r requirements.txt (line 33))
+2025-12-21T00:40:12    [16:38:53-0800]   Downloading msal_extensions-1.3.1-py3-none-any.whl.metadata (7.8 kB)
+2025-12-21T00:40:12    [16:38:53-0800] Collecting charset-normalizer<4,>=2 (from requests==2.32.3->-r requirements.txt (line 35))
+2025-12-21T00:40:12    [16:38:53-0800]   Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+2025-12-21T00:40:12    [16:38:53-0800] Collecting urllib3<3,>=1.21.1 (from requests==2.32.3->-r requirements.txt (line 35))
+2025-12-21T00:40:12    [16:38:53-0800]   Downloading urllib3-2.6.2-py3-none-any.whl.metadata (6.6 kB)
+2025-12-21T00:40:12    [16:38:54-0800] Collecting billiard<5.0,>=4.2.0 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:12    [16:38:54-0800]   Downloading billiard-4.2.4-py3-none-any.whl.metadata (4.8 kB)
+2025-12-21T00:40:12    [16:38:54-0800] Collecting vine<6.0,>=5.1.0 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:12    [16:38:54-0800]   Downloading vine-5.1.0-py3-none-any.whl.metadata (2.7 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting click-didyoumean>=0.3.0 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading click_didyoumean-0.3.1-py3-none-any.whl.metadata (3.9 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting click-repl>=0.2.0 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading click_repl-0.3.0-py3-none-any.whl.metadata (3.6 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting click-plugins>=1.1.1 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl.metadata (6.5 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting tzdata>=2022.7 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading tzdata-2025.3-py2.py3-none-any.whl.metadata (1.4 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting python-dateutil>=2.8.2 (from celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting amqp<6.0.0,>=5.1.1 (from kombu==5.4.2->-r requirements.txt (line 40))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading amqp-5.3.1-py3-none-any.whl.metadata (8.9 kB)
+2025-12-21T00:40:13    [16:38:54-0800] Collecting iniconfig (from pytest==8.3.4->-r requirements.txt (line 43))
+2025-12-21T00:40:13    [16:38:54-0800]   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+2025-12-21T00:40:13    [16:38:55-0800] Collecting pluggy<2,>=1.5 (from pytest==8.3.4->-r requirements.txt (line 43))
+2025-12-21T00:40:13    [16:38:55-0800]   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+2025-12-21T00:40:13    [16:38:57-0800] Collecting coverage>=7.5 (from coverage[toml]>=7.5->pytest-cov==6.0.0->-r requirements.txt (line 44))
+2025-12-21T00:40:13    [16:38:57-0800]   Downloading coverage-7.13.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.5 kB)
+2025-12-21T00:40:13    [16:38:57-0800] Collecting joblib>=1.1.1 (from scikit-learn==1.3.2->-r requirements.txt (line 57))
+2025-12-21T00:40:13    [16:38:57-0800]   Downloading joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+2025-12-21T00:40:13    [16:38:57-0800] Collecting threadpoolctl>=2.0.0 (from scikit-learn==1.3.2->-r requirements.txt (line 57))
+2025-12-21T00:40:13    [16:38:58-0800]   Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+2025-12-21T00:40:13    [16:38:58-0800] Collecting msrest>=0.7.1 (from azure-communication-email==1.0.0->-r requirements.txt (line 60))
+2025-12-21T00:40:13    [16:38:58-0800]   Downloading msrest-0.7.1-py3-none-any.whl.metadata (21 kB)
+2025-12-21T00:40:13    [16:38:58-0800] Collecting azure-common~=1.1 (from azure-communication-email==1.0.0->-r requirements.txt (line 60))
+2025-12-21T00:40:13    [16:38:58-0800]   Downloading azure_common-1.1.28-py2.py3-none-any.whl.metadata (5.0 kB)
+2025-12-21T00:40:13    [16:38:58-0800] Collecting azure-mgmt-core<2.0.0,>=1.3.2 (from azure-communication-email==1.0.0->-r requirements.txt (line 60))
+2025-12-21T00:40:13    [16:38:58-0800]   Downloading azure_mgmt_core-1.6.0-py3-none-any.whl.metadata (4.6 kB)
+2025-12-21T00:40:13    [16:38:58-0800] Collecting six>=1.11.0 (from azure-communication-sms==1.0.1->-r requirements.txt (line 61))
+2025-12-21T00:40:13    [16:38:58-0800]   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2025-12-21T00:40:13    [16:38:59-0800] Collecting prompt-toolkit>=3.0.36 (from click-repl>=0.2.0->celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:14    [16:38:59-0800]   Downloading prompt_toolkit-3.0.52-py3-none-any.whl.metadata (6.4 kB)
+2025-12-21T00:40:14    [16:38:59-0800] Collecting cffi>=2.0.0 (from cryptography>=2.5->azure-identity==1.19.0->-r requirements.txt (line 33))
+2025-12-21T00:40:14    [16:39:00-0800]   Downloading cffi-2.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.6 kB)
+2025-12-21T00:40:14    [16:39:00-0800] Collecting requests-oauthlib>=0.5.0 (from msrest>=0.7.1->azure-communication-email==1.0.0->-r requirements.txt (line 60))
+2025-12-21T00:40:14    [16:39:00-0800]   Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl.metadata (11 kB)
+2025-12-21T00:40:14    [16:39:00-0800] Collecting opencensus-context>=0.1.3 (from opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:00-0800]   Downloading opencensus_context-0.1.3-py2.py3-none-any.whl.metadata (3.3 kB)
+2025-12-21T00:40:14    [16:39:00-0800] Collecting google-api-core<3.0.0,>=1.0.0 (from opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:00-0800]   Downloading google_api_core-2.28.1-py3-none-any.whl.metadata (3.3 kB)
+2025-12-21T00:40:14    [16:39:01-0800] Collecting pycparser (from cffi>=2.0.0->cryptography>=2.5->azure-identity==1.19.0->-r requirements.txt (line 33))
+2025-12-21T00:40:14    [16:39:01-0800]   Downloading pycparser-2.23-py3-none-any.whl.metadata (993 bytes)
+2025-12-21T00:40:14    [16:39:01-0800] Collecting googleapis-common-protos<2.0.0,>=1.56.2 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:01-0800]   Downloading googleapis_common_protos-1.72.0-py3-none-any.whl.metadata (9.4 kB)
+2025-12-21T00:40:14    [16:39:03-0800] Collecting protobuf!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<7.0.0,>=3.19.5 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:03-0800]   Downloading protobuf-6.33.2-cp39-abi3-manylinux2014_x86_64.whl.metadata (593 bytes)
+2025-12-21T00:40:14    [16:39:03-0800] Collecting proto-plus<2.0.0,>=1.22.3 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:03-0800]   Downloading proto_plus-1.27.0-py3-none-any.whl.metadata (2.2 kB)
+2025-12-21T00:40:14    [16:39:03-0800] Collecting google-auth<3.0.0,>=2.14.1 (from google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:03-0800]   Downloading google_auth-2.45.0-py2.py3-none-any.whl.metadata (6.8 kB)
+2025-12-21T00:40:14    [16:39:03-0800] Collecting wcwidth (from prompt-toolkit>=3.0.36->click-repl>=0.2.0->celery==5.4.0->-r requirements.txt (line 39))
+2025-12-21T00:40:14    [16:39:03-0800]   Downloading wcwidth-0.2.14-py2.py3-none-any.whl.metadata (15 kB)
+2025-12-21T00:40:14    [16:39:03-0800] Collecting oauthlib>=3.0.0 (from requests-oauthlib>=0.5.0->msrest>=0.7.1->azure-communication-email==1.0.0->-r requirements.txt (line 60))
+2025-12-21T00:40:14    [16:39:03-0800]   Downloading oauthlib-3.3.1-py3-none-any.whl.metadata (7.9 kB)
+2025-12-21T00:40:14    [16:39:04-0800] Collecting cachetools<7.0,>=2.0.0 (from google-auth<3.0.0,>=2.14.1->google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:04-0800]   Downloading cachetools-6.2.4-py3-none-any.whl.metadata (5.6 kB)
+2025-12-21T00:40:14    [16:39:04-0800] Collecting pyasn1-modules>=0.2.1 (from google-auth<3.0.0,>=2.14.1->google-api-core<3.0.0,>=1.0.0->opencensus<1.0.0,>=0.11.4->opencensus-ext-azure==1.1.13->-r requirements.txt (line 30))
+2025-12-21T00:40:14    [16:39:04-0800]   Downloading pyasn1_modules-0.4.2-py3-none-any.whl.metadata (3.5 kB)
+2025-12-21T00:40:14    [16:39:05-0800] Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+2025-12-21T00:40:14    [16:39:05-0800] Downloading anyio-4.10.0-py3-none-any.whl (107 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 107.2/107.2 kB 34.7 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading certifi-2025.8.3-py3-none-any.whl (161 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━���━━━━━━━━━━━━━━━ 161.2/161.2 kB 35.1 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading click-8.2.1-py3-none-any.whl (102 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 102.2/102.2 kB 9.8 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+2025-12-21T00:40:14    [16:39:05-0800] Downloading distro-1.9.0-py3-none-any.whl (20 kB)
+2025-12-21T00:40:14    [16:39:05-0800] Downloading fastapi-0.116.1-py3-none-any.whl (95 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 95.6/95.6 kB 31.1 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2025-12-21T00:40:14    [16:39:05-0800] Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.8/78.8 kB 25.7 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+2025-12-21T00:40:14    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.5/73.5 kB 13.5 MB/s eta 0:00:00
+2025-12-21T00:40:14    [16:39:05-0800] Downloading idna-3.10-py3-none-any.whl (70 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 70.4/70.4 kB 20.9 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading jiter-0.10.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (352 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 352.2/352.2 kB 20.3 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading openai-1.107.0-py3-none-any.whl (950 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 951.0/951.0 kB 49.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading pydantic-2.11.7-py3-none-any.whl (444 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 444.8/444.8 kB 48.0 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading pydantic_core-2.33.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.0 MB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.0/2.0 MB 52.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading python_dotenv-1.1.1-py3-none-any.whl (20 kB)
+2025-12-21T00:40:15    [16:39:05-0800] Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+2025-12-21T00:40:15    [16:39:05-0800] Downloading starlette-0.47.3-py3-none-any.whl (72 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.0/73.0 kB 20.6 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.5/78.5 kB 25.0 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading typing_inspection-0.4.1-py3-none-any.whl (14 kB)
+2025-12-21T00:40:15    [16:39:05-0800] Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 44.6/44.6 kB 4.9 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading uvicorn-0.35.0-py3-none-any.whl (66 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 66.4/66.4 kB 19.8 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading gunicorn-23.0.0-py3-none-any.whl (85 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 85.0/85.0 kB 17.5 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading redis-5.2.0-py3-none-any.whl (261 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 261.4/261.4 kB 27.1 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading psycopg2_binary-2.9.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.0 MB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.0/3.0 MB 16.8 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading PyJWT-2.10.1-py3-none-any.whl (22 kB)
+2025-12-21T00:40:15    [16:39:05-0800] Downloading python_jose-3.3.0-py2.py3-none-any.whl (33 kB)
+2025-12-21T00:40:15    [16:39:05-0800] Downloading opencensus_ext_azure-1.1.13-py2.py3-none-any.whl (43 kB)
+2025-12-21T00:40:15    [16:39:05-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 43.4/43.4 kB 6.2 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:05-0800] Downloading opencensus_ext_requests-0.8.0-py2.py3-none-any.whl (6.1 kB)
+2025-12-21T00:40:15    [16:39:06-0800] Downloading azure_keyvault_secrets-4.9.0-py3-none-any.whl (87 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.0/87.0 kB 11.1 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading azure_identity-1.19.0-py3-none-any.whl (187 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 187.6/187.6 kB 52.9 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading stripe-14.1.0-py3-none-any.whl (2.1 MB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 57.4 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading requests-2.32.3-py3-none-any.whl (64 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 64.9/64.9 kB 5.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading python_multipart-0.0.20-py3-none-any.whl (24 kB)
+2025-12-21T00:40:15    [16:39:06-0800] Downloading celery-5.4.0-py3-none-any.whl (425 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 426.0/426.0 kB 41.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading kombu-5.4.2-py3-none-any.whl (201 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 201.3/201.3 kB 19.3 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading pytest-8.3.4-py3-none-any.whl (343 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 343.1/343.1 kB 35.8 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading pytest_cov-6.0.0-py3-none-any.whl (22 kB)
+2025-12-21T00:40:15    [16:39:06-0800] Downloading pytest_asyncio-0.25.2-py3-none-any.whl (19 kB)
+2025-12-21T00:40:15    [16:39:06-0800] Downloading pytest_mock-3.14.0-py3-none-any.whl (9.9 kB)
+2025-12-21T00:40:15    [16:39:06-0800] Downloading pillow-11.0.0-cp311-cp311-manylinux_2_28_x86_64.whl (4.4 MB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.4/4.4 MB 53.9 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading psutil-6.1.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (287 kB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 287.5/287.5 kB 27.0 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading numpy-1.24.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.3 MB)
+2025-12-21T00:40:15    [16:39:06-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17.3/17.3 MB 48.2 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:06-0800] Downloading scipy-1.11.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (36.4 MB)
+2025-12-21T00:40:15    [16:39:07-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 36.4/36.4 MB 17.2 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:07-0800] Downloading scikit_learn-1.3.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (10.9 MB)
+2025-12-21T00:40:15    [16:39:07-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.9/10.9 MB 56.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:07-0800] Downloading azure_communication_email-1.0.0-py3-none-any.whl (59 kB)
+2025-12-21T00:40:15    [16:39:07-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 59.1/59.1 kB 16.1 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:07-0800] Downloading azure_communication_sms-1.0.1-py2.py3-none-any.whl (36 kB)
+2025-12-21T00:40:15    [16:39:07-0800] Downloading azure_storage_blob-12.19.0-py3-none-any.whl (394 kB)
+2025-12-21T00:40:15    [16:39:07-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 394.2/394.2 kB 32.7 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading azure_cognitiveservices_speech-1.35.0-py3-none-manylinux1_x86_64.whl (3.2 MB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.2/3.2 MB 13.5 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading azure_ai_translation_text-1.0.0-py3-none-any.whl (87 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.7/87.7 kB 23.0 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading vine-5.1.0-py3-none-any.whl (9.6 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading amqp-5.3.1-py3-none-any.whl (50 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 50.9/50.9 kB 7.6 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading azure_common-1.1.28-py2.py3-none-any.whl (14 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading azure_core-1.37.0-py3-none-any.whl (214 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 214.0/214.0 kB 22.1 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading azure_mgmt_core-1.6.0-py3-none-any.whl (29 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading billiard-4.2.4-py3-none-any.whl (87 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.1/87.1 kB 12.6 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (151 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 151.6/151.6 kB 34.6 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl (11 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading click_repl-0.3.0-py3-none-any.whl (10 kB)
+2025-12-21T00:40:15    [16:39:08-0800] Downloading coverage-7.13.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (250 kB)
+2025-12-21T00:40:15    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 250.9/250.9 kB 64.9 MB/s eta 0:00:00
+2025-12-21T00:40:15    [16:39:08-0800] Downloading cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64.whl (4.5 MB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 53.5 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading ecdsa-0.19.1-py2.py3-none-any.whl (150 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 150.6/150.6 kB 29.9 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading isodate-0.7.2-py3-none-any.whl (22 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading joblib-1.5.3-py3-none-any.whl (309 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 309.1/309.1 kB 25.3 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading msal-1.34.0-py3-none-any.whl (116 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 117.0/117.0 kB 18.8 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading msal_extensions-1.3.1-py3-none-any.whl (20 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading msrest-0.7.1-py3-none-any.whl (85 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 85.4/85.4 kB 26.0 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading opencensus-0.11.4-py2.py3-none-any.whl (128 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 128.2/128.2 kB 36.2 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━���━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 52.1 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading tzdata-2025.3-py2.py3-none-any.whl (348 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 348.5/348.5 kB 50.7 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading urllib3-2.6.2-py3-none-any.whl (131 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 131.2/131.2 kB 27.0 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading wrapt-1.17.3-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (82 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 82.4/82.4 kB 20.7 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading packaging-25.0-py3-none-any.whl (66 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 66.5/66.5 kB 15.0 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading pyasn1-0.6.1-py3-none-any.whl (83 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 83.1/83.1 kB 7.7 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading rsa-4.9.1-py3-none-any.whl (34 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading cffi-2.0.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (215 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 215.6/215.6 kB 27.5 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading google_api_core-2.28.1-py3-none-any.whl (173 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━���━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 173.7/173.7 kB 30.4 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading opencensus_context-0.1.3-py2.py3-none-any.whl (5.1 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading prompt_toolkit-3.0.52-py3-none-any.whl (391 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 391.4/391.4 kB 30.4 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl (24 kB)
+2025-12-21T00:40:16    [16:39:08-0800] Downloading google_auth-2.45.0-py2.py3-none-any.whl (233 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 233.3/233.3 kB 12.0 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading googleapis_common_protos-1.72.0-py3-none-any.whl (297 kB)
+2025-12-21T00:40:16    [16:39:08-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━���━━━ 297.5/297.5 kB 60.8 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:08-0800] Downloading oauthlib-3.3.1-py3-none-any.whl (160 kB)
+2025-12-21T00:40:16    [16:39:09-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 160.1/160.1 kB 16.6 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:09-0800] Downloading proto_plus-1.27.0-py3-none-any.whl (50 kB)
+2025-12-21T00:40:16    [16:39:09-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 50.2/50.2 kB 5.4 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:09-0800] Downloading protobuf-6.33.2-cp39-abi3-manylinux2014_x86_64.whl (323 kB)
+2025-12-21T00:40:16    [16:39:09-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 323.3/323.3 kB 35.7 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:09-0800] Downloading pycparser-2.23-py3-none-any.whl (118 kB)
+2025-12-21T00:40:16    [16:39:09-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 118.1/118.1 kB 34.4 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:09-0800] Downloading wcwidth-0.2.14-py2.py3-none-any.whl (37 kB)
+2025-12-21T00:40:16    [16:39:09-0800] Downloading cachetools-6.2.4-py3-none-any.whl (11 kB)
+2025-12-21T00:40:16    [16:39:09-0800] Downloading pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+2025-12-21T00:40:16    [16:39:09-0800]    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 181.3/181.3 kB 10.3 MB/s eta 0:00:00
+2025-12-21T00:40:16    [16:39:12-0800] Installing collected packages: opencensus-context, azure-common, wrapt, wcwidth, vine, urllib3, tzdata, typing_extensions, tqdm, threadpoolctl, sniffio, six, redis, python-multipart, python-dotenv, PyJWT, pycparser, pyasn1, psycopg2-binary, psutil, protobuf, pluggy, Pillow, packaging, oauthlib, numpy, joblib, jiter, isodate, iniconfig, idna, h11, distro, coverage, colorama, click, charset-normalizer, certifi, cachetools, billiard, azure-cognitiveservices-speech, annotated-types, uvicorn, typing-inspection, scipy, rsa, requests, python-dateutil, pytest, pydantic_core, pyasn1-modules, proto-plus, prompt-toolkit, httpcore, gunicorn, googleapis-common-protos, ecdsa, click-plugins, click-didyoumean, cffi, anyio, amqp, stripe, starlette, scikit-learn, requests-oauthlib, python-jose, pytest-mock, pytest-cov, pytest-asyncio, pydantic, kombu, httpx, google-auth, cryptography, click-repl, azure-core, openai, msrest, google-api-core, fastapi, celery, azure-storage-blob, azure-mgmt-core, azure-keyvault-secrets, azure-ai-translation-text, opencensus, msal, azure-communication-sms, azure-communication-email, opencensus-ext-requests, msal-extensions, azure-identity, opencensus-ext-azure
+2025-12-21T00:40:16    [16:40:05-0800] Successfully installed Pillow-11.0.0 PyJWT-2.10.1 amqp-5.3.1 annotated-types-0.7.0 anyio-4.10.0 azure-ai-translation-text-1.0.0 azure-cognitiveservices-speech-1.35.0 azure-common-1.1.28 azure-communication-email-1.0.0 azure-communication-sms-1.0.1 azure-core-1.37.0 azure-identity-1.19.0 azure-keyvault-secrets-4.9.0 azure-mgmt-core-1.6.0 azure-storage-blob-12.19.0 billiard-4.2.4 cachetools-6.2.4 celery-5.4.0 certifi-2025.8.3 cffi-2.0.0 charset-normalizer-3.4.4 click-8.2.1 click-didyoumean-0.3.1 click-plugins-1.1.1.2 click-repl-0.3.0 colorama-0.4.6 coverage-7.13.0 cryptography-46.0.3 distro-1.9.0 ecdsa-0.19.1 fastapi-0.116.1 google-api-core-2.28.1 google-auth-2.45.0 googleapis-common-protos-1.72.0 gunicorn-23.0.0 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.10 iniconfig-2.3.0 isodate-0.7.2 jiter-0.10.0 joblib-1.5.3 kombu-5.4.2 msal-1.34.0 msal-extensions-1.3.1 msrest-0.7.1 numpy-1.24.4 oauthlib-3.3.1 openai-1.107.0 opencensus-0.11.4 opencensus-context-0.1.3 opencensus-ext-azure-1.1.13 opencensus-ext-requests-0.8.0 packaging-25.0 pluggy-1.6.0 prompt-toolkit-3.0.52 proto-plus-1.27.0 protobuf-6.33.2 psutil-6.1.1 psycopg2-binary-2.9.10 pyasn1-0.6.1 pyasn1-modules-0.4.2 pycparser-2.23 pydantic-2.11.7 pydantic_core-2.33.2 pytest-8.3.4 pytest-asyncio-0.25.2 pytest-cov-6.0.0 pytest-mock-3.14.0 python-dateutil-2.9.0.post0 python-dotenv-1.1.1 python-jose-3.3.0 python-multipart-0.0.20 redis-5.2.0 requests-2.32.3 requests-oauthlib-2.0.0 rsa-4.9.1 scikit-learn-1.3.2 scipy-1.11.4 six-1.17.0 sniffio-1.3.1 starlette-0.47.3 stripe-14.1.0 threadpoolctl-3.6.0 tqdm-4.67.1 typing-inspection-0.4.1 typing_extensions-4.15.0 tzdata-2025.3 urllib3-2.6.2 uvicorn-0.35.0 vine-5.1.0 wcwidth-0.2.14 wrapt-1.17.3
+2025-12-21T00:40:16    
+2025-12-21T00:40:17    [notice] A new release of pip is available: 24.0 -> 25.3
+2025-12-21T00:40:17    [notice] To update, run: pip install --upgrade pip
+2025-12-21T00:40:17    Not a vso image, so not writing build commands
+2025-12-21T00:40:17    Preparing output...
+2025-12-21T00:40:17    
+2025-12-21T00:40:17    Copying files to destination directory '/tmp/_preCompressedDestinationDir'...
+2025-12-21T00:40:24    Done in 14 sec(s).
+2025-12-21T00:40:24    Compressing content of directory '/tmp/_preCompressedDestinationDir'...
+2025-12-21T00:41:25    Copied the compressed output to '/home/site/wwwroot'
+2025-12-21T00:41:25    
+2025-12-21T00:41:25    Removing existing manifest file
+2025-12-21T00:41:25    Creating a manifest file...
+2025-12-21T00:41:25    Manifest file created.
+2025-12-21T00:41:25    Copying .ostype to manifest output directory.
+2025-12-21T00:41:25    
+2025-12-21T00:41:25    Done in 193 sec(s).
+2025-12-21T00:41:26  Running post deployment command(s)...
+2025-12-21T00:41:26  
+2025-12-21T00:41:26  Generating summary of Oryx build
+2025-12-21T00:41:26  Parsing the build logs
+2025-12-21T00:41:26  Found 0 issue(s)
+2025-12-21T00:41:26  
+2025-12-21T00:41:27  Build Summary :
+2025-12-21T00:41:27  ===============
+2025-12-21T00:41:27  Errors (0)
+2025-12-21T00:41:27  Warnings (0)
+2025-12-21T00:41:27  
+2025-12-21T00:41:27  Triggering container recycle for OneDeploy by adding/updating restartTrigger.txt to the site root path
+2025-12-21T00:41:27  Deployment successful. deployer = OneDeploy deploymentPath = OneDeploy

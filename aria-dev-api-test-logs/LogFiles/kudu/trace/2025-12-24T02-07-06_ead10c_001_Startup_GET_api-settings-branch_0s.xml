@@ -1,0 +1,5 @@
+<step title="Startup Request" date="2025-12-24T02:07:06.938" instance="ead10c" url="/api/settings/branch" method="GET" type="request" pid="770,1,5" SCM_DO_BUILD_DURING_DEPLOYMENT="true" ScmType="ExternalGit" >
+  <step title="Cleanup Xml Logs" date="2025-12-24T02:07:06.960" >
+    <step title="Cleanup Infos" date="2025-12-24T02:07:07.109" totalFiles="755" totalCleanup="595" /><!-- duration: 50ms -->
+  </step><!-- duration: 261ms -->
+</step><!-- duration: 390ms -->

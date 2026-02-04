@@ -1,0 +1,5 @@
+<step title="Incoming Request" date="2025-12-19T21:14:58.516" instance="d7204e" url="/logstream" method="GET" type="request" pid="770,1,5" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="identity" Authorization="Bea..." x-ms-client-request-id="c019c77f-dd1f-11f0-8ee5-088e904feb3e" X-ARR-LOG-ID="c019c77f-dd1f-11f0-8ee5-088e904feb3e" CLIENT-IP="52.167.112.163:34698" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/logstream" X-Client-IP="52.167.112.163" X-Client-Port="34698" >
+  <step title="Cleanup Xml Logs" date="2025-12-19T21:14:58.518" >
+    <step title="Cleanup Infos" date="2025-12-19T21:14:58.539" totalFiles="695" totalCleanup="535" /><!-- duration: 5ms -->
+  </step><!-- duration: 28ms -->
+  <step title="LogStreamHandlerMiddleware.Invoke" date="2025-12-19T21:14:58.579" /><!-- duration: 351ms -->

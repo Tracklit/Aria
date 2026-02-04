@@ -1,0 +1,6 @@
+<step title="Incoming Request" date="2025-12-19T22:48:24.365" instance="d7204e" url="/dump" method="GET" type="request" pid="770,1,23" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="identity" Authorization="Bea..." x-ms-client-request-id="cfb954c2-dd2c-11f0-9cf0-088e904feb3e" X-ARR-LOG-ID="cfb954c2-dd2c-11f0-9cf0-088e904feb3e" CLIENT-IP="52.177.6.198:17362" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/dump" X-Client-IP="52.177.6.198" X-Client-Port="17362" >
+  <step title="Cleanup Xml Logs" date="2025-12-19T22:48:24.368" >
+    <step title="Cleanup Infos" date="2025-12-19T22:48:24.475" totalFiles="708" totalCleanup="548" /><!-- duration: 31ms -->
+  </step><!-- duration: 146ms -->
+  <step title="Outgoing response" date="2025-12-19T22:48:29.735" type="response" statusCode="200" statusText="OK" /><!-- duration: 16ms -->
+</step><!-- duration: 5388ms -->

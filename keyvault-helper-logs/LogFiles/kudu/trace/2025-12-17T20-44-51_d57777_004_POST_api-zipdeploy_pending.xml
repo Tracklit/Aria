@@ -1,0 +1,19 @@
+<step title="Incoming Request" date="2025-12-17T20:44:51.304" instance="d57777" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="768,1,20" Accept="*/*" Host="aria-dev-api.scm.azurewebsites.net" User-Agent="AZURECLI/2.67.0 (MSI)" Accept-Encoding="gzip, deflate" Authorization="Bea..." Cache-Control="no-cache" Content-Type="application/octet-stream" Content-Length="155912" x-ms-client-request-id="37729059-db89-11f0-a320-088e904feb3e" x-ms-artifact-checksum="8db4544116c98d245d335dc7fbe7159fb7fecd8546aea2fc98a1ecb9fad62955" X-ARR-LOG-ID="37729059-db89-11f0-a320-088e904feb3e" CLIENT-IP="52.177.6.190:11794" X-SITE-DEPLOYMENT-ID="aria-dev-api" WAS-DEFAULT-HOSTNAME="aria-dev-api.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="52.177.6.190" X-Client-Port="11794" >
+  <step title="Cleanup Xml Logs" date="2025-12-17T20:44:51.307" /><!-- duration: 9ms -->
+  <step title="ZipPushDeploy" date="2025-12-17T20:44:51.528" >
+    <step title="ZipDeploy. Extract zip. Remote build." date="2025-12-17T20:44:51.538" /><!-- duration: 3ms -->
+    <step title="None repository commit" date="2025-12-17T20:44:51.560" >
+      <step title="Commit id: 3d2891af-bde2-4244-90f0-81c815b11051" date="2025-12-17T20:44:51.566" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 2ms -->
+    </step><!-- duration: 14ms -->
+    <step title="Starting PushDeployAsync" date="2025-12-17T20:44:51.581" /><!-- duration: 6ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/d63f4c2e-f0fb-433b-946f-4a6694cd0d8d.zip" date="2025-12-17T20:44:51.615" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/d63f4c2e-f0fb-433b-946f-4a6694cd0d8d.zip" date="2025-12-17T20:44:51.631" /><!-- duration: 37ms -->
+    </step><!-- duration: 148ms -->
+    <step title="Removing previous build artifact&apos;s manifest file" date="2025-12-17T20:44:51.780" >
+      <step title="Start deployment in the background" date="2025-12-17T20:44:51.801" >
+        <step title="Acquiring Deployment Lock" date="2025-12-17T20:44:51.836" /><!-- duration: 9ms -->
+        <step title="Acquired Deployment Lock" date="2025-12-17T20:44:51.918" /><!-- duration: 3ms -->
+      </step><!-- duration: 235ms -->
+    </step><!-- duration: 268ms -->
+    <step title="Outgoing response" date="2025-12-17T20:44:52.066" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 5ms -->
+  </step><!-- duration: 549ms -->

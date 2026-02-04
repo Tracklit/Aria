@@ -1,0 +1,16 @@
+2025-12-17T20:58:49  Incoming Request, url: /api/zipdeploy?isAsync=true, method: POST, type: request, pid: 768,1,30, Accept: */*, Host: aria-dev-api.scm.azurewebsites.net, User-Agent: AZURECLI/2.67.0 (MSI), Accept-Encoding: gzip, deflate, Authorization: Bea..., Cache-Control: no-cache, Content-Type: application/octet-stream, Content-Length: 179773, x-ms-client-request-id: 2ad26bb7-db8b-11f0-a468-088e904feb3e, x-ms-artifact-checksum: 649ba95093c8c77956d88ba98ba0617e63700a18c9469bfb19259a798b86c734, X-ARR-LOG-ID: 2ad26bb7-db8b-11f0-a468-088e904feb3e, CLIENT-IP: 52.177.6.198:41920, X-SITE-DEPLOYMENT-ID: aria-dev-api, WAS-DEFAULT-HOSTNAME: aria-dev-api.scm.azurewebsites.net, X-Forwarded-Proto: https, X-AppService-Proto: https, X-Forwarded-TlsVersion: 1.3, X-WAWS-Unencoded-URL: /api/zipdeploy?isAsync=true, X-Client-IP: 52.177.6.198, X-Client-Port: 41920
+2025-12-17T20:58:49    ZipPushDeploy
+2025-12-17T20:58:49      ZipDeploy. Extract zip. Remote build.
+2025-12-17T20:58:49      Starting PushDeployAsync
+2025-12-17T20:58:49      Writing artifact to /tmp/zipdeploy/9f8e5a87-3eaa-41c7-9dc9-955f40e3b2ff.zip
+2025-12-17T20:58:49        Writing multipart request body to /tmp/zipdeploy/9f8e5a87-3eaa-41c7-9dc9-955f40e3b2ff.zip
+2025-12-17T20:58:50      Done Writing artifact to /tmp/zipdeploy/9f8e5a87-3eaa-41c7-9dc9-955f40e3b2ff.zip
+2025-12-17T20:58:50      Removing previous build artifact's manifest file
+2025-12-17T20:58:50        Start deployment in the background
+2025-12-17T20:58:50          Acquiring Deployment Lock
+2025-12-17T20:58:50          Acquired Deployment Lock
+2025-12-17T20:58:50        Done Start deployment in the background
+2025-12-17T20:58:50      Done ZipPushDeploy
+2025-12-17T20:58:50      Outgoing response, type: response, statusCode: 202, statusText: Accepted
+2025-12-17T20:58:50    Done Incoming Request, elapsed: 1570 ms
+

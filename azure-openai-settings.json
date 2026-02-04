@@ -1,0 +1,17 @@
+[
+  {
+    "name": "AZURE_OPENAI_API_KEY",
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-tracklit-dev-kvnx2h.vault.azure.net/secrets/AZURE-OPENAI-API-KEY/)",
+    "slotSetting": false
+  },
+  {
+    "name": "AZURE_OPENAI_ENDPOINT",
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-tracklit-dev-kvnx2h.vault.azure.net/secrets/AZURE-OPENAI-ENDPOINT/)",
+    "slotSetting": false
+  },
+  {
+    "name": "AZURE_OPENAI_DEPLOYMENT",
+    "value": "@Microsoft.KeyVault(SecretUri=https://kv-tracklit-dev-kvnx2h.vault.azure.net/secrets/AZURE-OPENAI-DEPLOYMENT/)",
+    "slotSetting": false
+  }
+]

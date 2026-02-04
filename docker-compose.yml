@@ -1,0 +1,196 @@
+version: '3.8'
+
+services:
+  # Aria API service
+  Aria-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: Aria-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Database (PostgreSQL)
+      - DATABASE_URL=postgresql://Aria:Aria_dev_password@postgres:5432/Aria_dev
+      
+      # Redis Cache
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=
+      
+      # Celery
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      
+      # OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Authentication
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRATION_HOURS=24
+      
+      # Azure Application Insights (optional for local dev)
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING:-}
+      
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      
+      # CORS
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+      
+      # Terra API (Wearables)
+      - TERRA_API_KEY=${TERRA_API_KEY}
+      - TERRA_DEV_ID=${TERRA_DEV_ID}
+      - TERRA_WEBHOOK_SECRET=${TERRA_WEBHOOK_SECRET}
+      
+      # Application settings
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - WORKERS=2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    networks:
+      - Aria-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery worker for background tasks
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aria-celery-worker
+    environment:
+      - DATABASE_URL=postgresql://Aria:Aria_dev_password@postgres:5432/Aria_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    networks:
+      - Aria-network
+    command: celery -A scripts.celery_tasks worker --loglevel=info --pool=solo
+    restart: unless-stopped
+
+  # Celery beat scheduler
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aria-celery-beat
+    environment:
+      - DATABASE_URL=postgresql://Aria:Aria_dev_password@postgres:5432/Aria_dev
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    networks:
+      - Aria-network
+    command: celery -A scripts.celery_tasks beat --loglevel=info
+    restart: unless-stopped
+
+  # Flower - Celery monitoring dashboard (optional)
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aria-flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - Aria-network
+    command: celery -A scripts.celery_tasks flower --port=5555
+    restart: unless-stopped
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: Aria-postgres
+    environment:
+      - POSTGRES_DB=Aria_dev
+      - POSTGRES_USER=Aria
+      - POSTGRES_PASSWORD=Aria_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - Aria-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U Aria -d Aria_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: Aria-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - Aria-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  Aria-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local

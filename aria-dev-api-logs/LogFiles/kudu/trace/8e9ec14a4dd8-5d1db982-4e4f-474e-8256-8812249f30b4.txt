@@ -1,0 +1,1 @@
+2025-12-19T15:28:01  Startup Request, url: /logstream, method: GET, type: request, pid: 770,1,15, ScmType: ExternalGit, SCM_DO_BUILD_DURING_DEPLOYMENT: true
