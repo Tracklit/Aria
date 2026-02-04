@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "value": "aria-mobile"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "westus"
+    },
+    "dockerImage": {
+      "value": "tracklitprodtnrusd.azurecr.io/aria-mobile-backend:latest"
+    },
+    "postgresServerName": {
+      "value": "pg-tracklit-prod-tnrusd"
+    },
+    "redisName": {
+      "value": "redis-tracklit-prod-tnrusd"
+    },
+    "keyVaultName": {
+      "value": "kv-tracklit-prod-tnrusd"
+    },
+    "containerRegistryName": {
+      "value": "tracklitprodtnrusd"
+    },
+    "existingPostgresResourceGroup": {
+      "value": "rg-tracklit-prod"
+    },
+    "existingKeyVaultResourceGroup": {
+      "value": "rg-tracklit-prod"
+    }
+  }
+}

@@ -18,18 +18,18 @@ import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 export default function LoginScreen() {
   const { login, isLoading, error, clearError } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
+    if (!username.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please enter both username and password');
       return;
     }
 
     try {
-      await login({ email: email.trim(), password });
+      await login({ username: username.trim(), password });
       // Navigation will be handled by the root layout based on auth state
     } catch (err: any) {
       // Error is handled in context
@@ -71,16 +71,15 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
+              <Ionicons name="person-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Username"
                 placeholderTextColor={colors.text.tertiary}
-                value={email}
-                onChangeText={setEmail}
+                value={username}
+                onChangeText={setUsername}
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType="email-address"
               />
             </View>
 

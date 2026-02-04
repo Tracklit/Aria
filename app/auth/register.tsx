@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -16,20 +17,53 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
-export default function LoginScreen() {
-  const { login, isLoading, error, clearError } = useAuth();
+export default function RegisterScreen() {
+  const { register, isLoading, error, clearError } = useAuth();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
-      return;
+  const validateForm = (): boolean => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return false;
     }
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email');
+      return false;
+    }
+    if (!username.trim()) {
+      Alert.alert('Error', 'Please enter a username');
+      return false;
+    }
+    if (!password.trim()) {
+      Alert.alert('Error', 'Please enter a password');
+      return false;
+    }
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return false;
+    }
+    return true;
+  };
+
+  const handleRegister = async () => {
+    if (!validateForm()) return;
 
     try {
-      await login({ email: email.trim(), password });
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        username: username.trim(),
+        password,
+      });
       // Navigation will be handled by the root layout based on auth state
     } catch (err: any) {
       // Error is handled in context
@@ -53,13 +87,17 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Text style={styles.logoText}>A</Text>
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue your training</Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Start your training journey with Aria</Text>
           </View>
 
           {error && (
@@ -71,6 +109,18 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color={colors.text.tertiary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor={colors.text.tertiary}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
@@ -78,9 +128,22 @@ export default function LoginScreen() {
                 placeholderTextColor={colors.text.tertiary}
                 value={email}
                 onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-circle-outline" size={20} color={colors.text.tertiary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor={colors.text.tertiary}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
             </View>
 
@@ -88,7 +151,7 @@ export default function LoginScreen() {
               <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Password (min 8 characters)"
                 placeholderTextColor={colors.text.tertiary}
                 value={password}
                 onChangeText={setPassword}
@@ -103,19 +166,27 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor={colors.text.tertiary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showPassword}
+              />
+            </View>
 
             <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
+              style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+              onPress={handleRegister}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color={colors.text.primary} />
               ) : (
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                <Text style={styles.registerButtonText}>Create Account</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -132,12 +203,16 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/auth/register')}>
-              <Text style={styles.footerLink}>Sign Up</Text>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/login')}>
+              <Text style={styles.footerLink}>Sign In</Text>
             </TouchableOpacity>
           </View>
-        </View>
+
+          <Text style={styles.termsText}>
+            By creating an account, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -161,9 +236,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
     justifyContent: 'center',
   },
   logoContainer: {
@@ -192,6 +271,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -226,24 +306,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginLeft: spacing.sm,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
-  },
-  forgotPasswordText: {
-    ...typography.caption,
-    color: colors.primary,
-  },
-  loginButton: {
+  registerButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
+    marginTop: spacing.sm,
   },
-  loginButtonDisabled: {
+  registerButtonDisabled: {
     opacity: 0.7,
   },
-  loginButtonText: {
+  registerButtonText: {
     ...typography.body,
     color: colors.text.primary,
     fontWeight: '600',
@@ -281,6 +354,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   footerText: {
     ...typography.body,
@@ -290,5 +364,10 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.primary,
     fontWeight: '600',
+  },
+  termsText: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 });

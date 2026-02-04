@@ -94,7 +94,7 @@ export async function apiRequest<T = any>(
       throw error;
     }
 
-    if (DEBUG_API && path.includes('/api/sprinthia/chat')) {
+    if (DEBUG_API && path.includes('/api/aria/chat')) {
       const preview =
         typeof payload?.response === 'string'
           ? payload.response.slice(0, 140)
@@ -133,7 +133,7 @@ export interface RegisterInput {
 }
 
 export interface LoginInput {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -151,7 +151,7 @@ export interface RegisterResponse {
 }
 
 export async function register(input: RegisterInput): Promise<RegisterResponse> {
-  return apiRequest<RegisterResponse>('/api/register', {
+  return apiRequest<RegisterResponse>('/api/auth/register', {
     method: 'POST',
     data: input,
     skipAuth: true,
@@ -159,7 +159,7 @@ export async function register(input: RegisterInput): Promise<RegisterResponse> 
 }
 
 export async function login(input: LoginInput): Promise<LoginResponse> {
-  return apiRequest<LoginResponse>('/api/mobile/login', {
+  return apiRequest<LoginResponse>('/api/auth/login', {
     method: 'POST',
     data: input,
     skipAuth: true,
@@ -167,7 +167,7 @@ export async function login(input: LoginInput): Promise<LoginResponse> {
 }
 
 export async function logout(): Promise<void> {
-  await apiRequest('/api/logout', { method: 'POST', rawResponse: true });
+  await apiRequest('/api/auth/logout', { method: 'POST', rawResponse: true });
 }
 
 // User
@@ -315,19 +315,19 @@ export async function generateDashboardInsights(context: any) {
 
 // Aria AI
 export async function getConversations() {
-  return apiRequest('/api/sprinthia/conversations');
+  return apiRequest('/api/aria/conversations');
 }
 
 export async function createConversation(title?: string) {
-  return apiRequest('/api/sprinthia/conversations', { method: 'POST', data: { title } });
+  return apiRequest('/api/aria/conversations', { method: 'POST', data: { title } });
 }
 
 export async function getConversationMessages(conversationId: number) {
-  return apiRequest(`/api/sprinthia/conversations/${conversationId}/messages`);
+  return apiRequest(`/api/aria/conversations/${conversationId}/messages`);
 }
 
 export async function deleteConversation(conversationId: number) {
-  return apiRequest(`/api/sprinthia/conversations/${conversationId}`, { method: 'DELETE' });
+  return apiRequest(`/api/aria/conversations/${conversationId}`, { method: 'DELETE' });
 }
 
 export interface ChatInput {
@@ -341,7 +341,7 @@ export interface ChatResponse {
 }
 
 export async function sendChatMessage(input: ChatInput): Promise<ChatResponse> {
-  return apiRequest('/api/sprinthia/chat', { method: 'POST', data: input });
+  return apiRequest('/api/aria/chat', { method: 'POST', data: input });
 }
 
 // Streaming Chat
@@ -352,10 +352,10 @@ export async function sendChatMessageStream(
   onError?: (error: Error) => void
 ): Promise<void> {
   const token = await getToken();
-  const url = `${env.API_BASE_URL}/api/sprinthia/chat`;
+  const url = `${env.API_BASE_URL}/api/aria/chat`;
 
   if (DEBUG_API) {
-    console.log('[API] POST /api/sprinthia/chat (streaming)');
+    console.log('[API] POST /api/aria/chat (streaming)');
   }
 
   try {

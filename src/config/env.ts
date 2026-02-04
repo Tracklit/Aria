@@ -1,9 +1,8 @@
 const PRODUCTION_API_BASE_URL =
-  'https://app-aria-mobile-prod.azurewebsites.net';
+  'https://app-tracklit-prod-tnrusd.azurewebsites.net';
 
 const ALLOWED_API_HOSTS = new Set([
-  'app-aria-mobile-prod.azurewebsites.net',
-  'aria-dev-api.azurewebsites.net', // AI backend
+  'app-tracklit-prod-tnrusd.azurewebsites.net',
 ]);
 
 // In some Hermes builds `process` may be undefined. Guard access so

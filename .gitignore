@@ -1,3 +1,8 @@
+*.env
+*node_modules/
+aria-app/Dockerfile
+.expo/
+Dockerfile.mobile
 # Python
 __pycache__/
 *.py[cod]

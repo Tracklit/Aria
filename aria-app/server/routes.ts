@@ -206,7 +206,9 @@ export function registerRoutes(app: Express): void {
     try {
       const data = registerSchema.parse(req.body);
       const result = await register(data);
-      res.status(201).json(result);
+      // Map accessToken to token for mobile app compatibility
+      const { accessToken, ...rest } = result;
+      res.status(201).json({ ...rest, token: accessToken });
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.name === 'ZodError') {
@@ -222,7 +224,9 @@ export function registerRoutes(app: Express): void {
       const data = loginSchema.parse(req.body);
       const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
       const result = await login(data, clientIp);
-      res.json(result);
+      // Map accessToken to token for mobile app compatibility
+      const { accessToken, ...rest } = result;
+      res.json({ ...rest, token: accessToken });
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.name === 'ZodError') {
@@ -753,6 +757,189 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // ==================== ADDITIONAL ANALYTICS ROUTES ====================
+
+  app.get('/api/analytics/patterns', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const workouts = await storage.getRecentWorkouts(req.userId!, 30);
+      const patterns: any[] = [];
+
+      if (workouts.length >= 5) {
+        // Check workout frequency pattern
+        const daysBetween: number[] = [];
+        for (let i = 1; i < workouts.length; i++) {
+          const diff = (new Date(workouts[i - 1].startTime).getTime() - new Date(workouts[i].startTime).getTime()) / (1000 * 60 * 60 * 24);
+          daysBetween.push(diff);
+        }
+        const avgGap = daysBetween.reduce((a, b) => a + b, 0) / daysBetween.length;
+
+        if (avgGap <= 1.5) {
+          patterns.push({
+            type: 'overtraining',
+            confidence: 0.7,
+            description: 'You are training very frequently with little rest between sessions.',
+            recommendation: 'Consider adding more rest days to allow recovery.',
+            detectedAt: new Date().toISOString(),
+            severity: 'medium',
+          });
+        } else if (avgGap >= 4) {
+          patterns.push({
+            type: 'undertraining',
+            confidence: 0.6,
+            description: 'Your training sessions are spread far apart.',
+            recommendation: 'Try to increase your training frequency for better progress.',
+            detectedAt: new Date().toISOString(),
+            severity: 'low',
+          });
+        } else {
+          patterns.push({
+            type: 'consistent',
+            confidence: 0.8,
+            description: 'Your training frequency is consistent and well-balanced.',
+            recommendation: 'Keep up the good work! Consider gradually increasing intensity.',
+            detectedAt: new Date().toISOString(),
+            severity: 'low',
+          });
+        }
+      }
+
+      res.json({ patterns });
+    } catch (error: any) {
+      console.error('Get patterns error:', error);
+      res.status(500).json({ error: 'Failed to fetch training patterns' });
+    }
+  });
+
+  app.get('/api/analytics/fatigue-score', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const recentWorkouts = await storage.getRecentWorkouts(req.userId!, 14);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const lastWeekWorkouts = recentWorkouts.filter(w => new Date(w.startTime) >= weekAgo);
+
+      // Simple fatigue score based on recent training load
+      const totalMinutes = lastWeekWorkouts.reduce((sum, w) => sum + (w.durationSeconds || 0) / 60, 0);
+      const workoutCount = lastWeekWorkouts.length;
+
+      let score = Math.min(100, Math.round((workoutCount * 12) + (totalMinutes * 0.15)));
+      let trend: 'increasing' | 'stable' | 'decreasing' = 'stable';
+      const factors: string[] = [];
+
+      if (workoutCount >= 6) {
+        factors.push('High workout frequency this week');
+        trend = 'increasing';
+      } else if (workoutCount <= 2) {
+        factors.push('Low training volume allows recovery');
+        trend = 'decreasing';
+      }
+
+      if (totalMinutes > 300) {
+        factors.push('High total training duration');
+      }
+
+      if (factors.length === 0) {
+        factors.push('Balanced training load');
+      }
+
+      const riskLevel = score > 70 ? 'high' : score > 40 ? 'medium' : 'low';
+      const recommendation = score > 70
+        ? 'Consider taking a rest day or doing a light recovery session.'
+        : score > 40
+          ? 'Your fatigue level is moderate. Listen to your body.'
+          : 'You are well-rested and ready for training.';
+
+      res.json({ score, trend, recommendation, factors, riskLevel });
+    } catch (error: any) {
+      console.error('Get fatigue score error:', error);
+      res.status(500).json({ error: 'Failed to fetch fatigue score' });
+    }
+  });
+
+  app.get('/api/analytics/performance', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const weekStart = new Date();
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      const stats = await storage.getWeeklyStats(req.userId!, weekStart);
+
+      const trainingLoad = stats.workoutCount * 20 + stats.totalDuration / 60;
+
+      res.json({
+        trainingLoad: Math.round(trainingLoad),
+        fitnessLevel: Math.min(100, Math.round(trainingLoad * 0.8)),
+        fatigueLevel: Math.min(100, Math.round(trainingLoad * 0.5)),
+        injuryRisk: trainingLoad > 200 ? 'high' : trainingLoad > 100 ? 'medium' : 'low',
+      });
+    } catch (error: any) {
+      console.error('Get performance error:', error);
+      res.status(500).json({ error: 'Failed to fetch performance metrics' });
+    }
+  });
+
+  app.get('/api/analytics/injury-risk', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const recentWorkouts = await storage.getRecentWorkouts(req.userId!, 14);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const lastWeekCount = recentWorkouts.filter(w => new Date(w.startTime) >= weekAgo).length;
+
+      const riskLevel = lastWeekCount >= 7 ? 'high' : lastWeekCount >= 5 ? 'medium' : 'low';
+      const riskScore = Math.min(100, lastWeekCount * 14);
+
+      res.json({
+        riskLevel,
+        riskScore,
+        factors: lastWeekCount >= 5
+          ? ['High training frequency', 'Insufficient rest between sessions']
+          : ['Training load within safe range'],
+        recommendation: lastWeekCount >= 5
+          ? 'Consider reducing training frequency to prevent overuse injuries.'
+          : 'Your current training load is within a safe range.',
+      });
+    } catch (error: any) {
+      console.error('Get injury risk error:', error);
+      res.status(500).json({ error: 'Failed to fetch injury risk' });
+    }
+  });
+
+  app.get('/api/analytics/predictions', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const recentWorkouts = await storage.getRecentWorkouts(req.userId!, 30);
+
+      const predictions: any[] = [];
+
+      if (recentWorkouts.length >= 3) {
+        const avgDistance = recentWorkouts.reduce((sum, w) => sum + (w.distanceMeters || 0), 0) / recentWorkouts.length;
+        if (avgDistance > 0) {
+          predictions.push({
+            type: 'distance_trend',
+            metric: 'Weekly Distance',
+            currentValue: Math.round(avgDistance),
+            predictedValue: Math.round(avgDistance * 1.05),
+            unit: 'meters',
+            confidence: 0.65,
+            timeframe: 'next 2 weeks',
+          });
+        }
+
+        predictions.push({
+          type: 'consistency',
+          metric: 'Training Consistency',
+          currentValue: Math.min(100, Math.round((recentWorkouts.length / 30) * 100)),
+          predictedValue: Math.min(100, Math.round((recentWorkouts.length / 30) * 105)),
+          unit: '%',
+          confidence: 0.6,
+          timeframe: 'next month',
+        });
+      }
+
+      res.json({ predictions });
+    } catch (error: any) {
+      console.error('Get predictions error:', error);
+      res.status(500).json({ error: 'Failed to fetch predictions' });
+    }
+  });
+
   // ==================== INSIGHTS ROUTES ====================
 
   app.get('/api/insights', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
@@ -801,6 +988,50 @@ export function registerRoutes(app: Express): void {
     } catch (error: any) {
       console.error('Get dashboard state error:', error);
       res.status(500).json({ error: 'Failed to fetch dashboard state' });
+    }
+  });
+
+  app.post('/api/dashboard/generate-insights', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { mode, context } = await determineDashboardMode(req.userId!);
+      const content = await generateDashboardContent(req.userId!, mode, context);
+
+      // Generate simple AI insights from workout data
+      const recentWorkouts = await storage.getRecentWorkouts(req.userId!, 10);
+      const insights: any[] = [];
+
+      if (recentWorkouts.length > 0) {
+        insights.push({
+          id: `insight-${Date.now()}`,
+          type: 'tip',
+          title: 'Training Summary',
+          message: `You've completed ${recentWorkouts.length} workouts recently. Keep up the momentum!`,
+          confidence: 0.8,
+          priority: 3,
+          actionable: true,
+          suggestedAction: 'Plan your next workout',
+        });
+      } else {
+        insights.push({
+          id: `insight-${Date.now()}`,
+          type: 'encouragement',
+          title: 'Get Started',
+          message: 'Start your first workout to get personalized insights and training recommendations.',
+          confidence: 1.0,
+          priority: 1,
+          actionable: true,
+          suggestedAction: 'Log a workout',
+        });
+      }
+
+      res.json({
+        mode,
+        ...content,
+        insights,
+      });
+    } catch (error: any) {
+      console.error('Generate insights error:', error);
+      res.status(500).json({ error: 'Failed to generate insights' });
     }
   });
 
