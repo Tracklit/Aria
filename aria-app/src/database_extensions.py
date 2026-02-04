@@ -798,6 +798,93 @@ def log_hydration(user_id: str, log_date: str, log_time: str, amount_ml: int,
     result = db_pool.execute_one(query, (user_id, log_date, log_time, amount_ml, beverage_type))
     return result.get("id") if result else None
 
+# =============================================================================
+# DASHBOARD HELPER FUNCTIONS (Shared Tables)
+# =============================================================================
+
+def get_todays_race(user_id: str) -> Optional[Dict]:
+    """Get today's race from shared races table"""
+    query = """
+        SELECT * FROM races
+        WHERE user_id = %s 
+        AND date = CURRENT_DATE
+        AND is_completed = FALSE
+        LIMIT 1
+    """
+    # Note: user_id in shared tables might be integer, but passed as string here
+    # We should handle both cases
+    try:
+        user_id_int = int(user_id)
+        params = (user_id_int,)
+    except ValueError:
+        # If user_id is definitely a string (e.g. Auth0 ID), use it as is
+        # But if shared tables use serial IDs, this might fail or return nothing
+        params = (user_id,)
+        
+    return db_pool.execute_one(query, params)
+
+def get_todays_planned_workout(user_id: str) -> Optional[Dict]:
+    """Get today's planned workout from active training plan"""
+    # First get active plan
+    plan_query = """
+        SELECT id FROM training_plans
+        WHERE user_id = %s AND status = 'active'
+        ORDER BY created_at DESC
+        LIMIT 1
+    """
+    try:
+        user_id_int = int(user_id)
+        params = (user_id_int,)
+    except ValueError:
+        params = (user_id,)
+        
+    plan = db_pool.execute_one(plan_query, params)
+    
+    if not plan:
+        return None
+        
+    # Get workout for today
+    workout_query = """
+        SELECT * FROM planned_workouts
+        WHERE plan_id = %s AND date = CURRENT_DATE
+        LIMIT 1
+    """
+    return db_pool.execute_one(workout_query, (plan.get('id'),))
+
+def get_weekly_mileage(user_id: str) -> float:
+    """Calculate total mileage for the current week"""
+    # Sum distance from workouts table (shared) AND training_sessions (python)
+    # For now, prioritizing training_sessions if used, or fall back to workouts
+    
+    # Try training_sessions first
+    query = """
+        SELECT COALESCE(SUM(distance_meters), 0) as total_meters
+        FROM training_sessions
+        WHERE user_id = %s 
+        AND session_date >= DATE_TRUNC('week', CURRENT_DATE)
+    """
+    result = db_pool.execute_one(query, (user_id,))
+    total = float(result.get('total_meters', 0))
+    
+    # If 0, try shared workouts table
+    if total == 0:
+        try:
+            user_id_int = int(user_id)
+            query_shared = """
+                SELECT COALESCE(SUM(distance_meters), 0) as total_meters
+                FROM workouts
+                WHERE user_id = %s
+                AND start_time >= DATE_TRUNC('week', CURRENT_DATE)
+            """
+            result_shared = db_pool.execute_one(query_shared, (user_id_int,))
+            if result_shared:
+                total = float(result_shared.get('total_meters', 0))
+        except:
+            pass
+            
+    return total / 1000.0  # Convert to km
+
+
 def get_daily_nutrition(user_id: str, log_date: str) -> Dict:
     """Get daily nutrition summary"""
     query = """

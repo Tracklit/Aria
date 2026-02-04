@@ -18,7 +18,11 @@ from src.database_extensions import (
     get_recommended_drills,
     add_drill_recommendation,
     search_drills,
-    achieve_goal
+    achieve_goal,
+    # New imports
+    get_todays_race,
+    get_todays_planned_workout,
+    get_weekly_mileage
 )
 from src.database import get_athlete_profile
 
@@ -618,3 +622,153 @@ async def analyze_user_comprehensive(user_id: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error in comprehensive analysis for {user_id}: {e}")
         return {"status": "error", "user_id": user_id, "message": str(e)}
+
+# =============================================================================
+# DYNAMIC DASHBOARD GENERATOR
+# =============================================================================
+
+async def determine_dashboard_mode(user_id: str) -> str:
+    """
+    Determine the current dashboard mode based on user context
+    """
+    try:
+        # Check for race day
+        todays_race = get_todays_race(user_id)
+        if todays_race:
+            return "RACE_DAY"
+            
+        # Check for planned workout
+        todays_workout = get_todays_planned_workout(user_id)
+        if todays_workout:
+            # Check if already completed? (Would need to check completions table)
+            return "WORKOUT_READY"
+            
+        # Check recent intensity for recovery
+        recent_sessions = get_training_sessions(user_id, limit=3)
+        if recent_sessions:
+            last_session = recent_sessions[0]
+            # If high intensity yesterday, suggesting recovery
+            # Logic simplified for now
+            if last_session.get('rpe', 0) >= 8:
+                return "RECOVERY_FOCUS"
+                
+        # Check if rest day (no workout planned)
+        # If we got here, no workout was found
+        return "REST_DAY"
+        
+    except Exception as e:
+        logger.error(f"Error determining dashboard mode: {e}")
+        return "GENERAL"
+
+def get_time_based_greeting() -> str:
+    """Generate greeting based on time of day"""
+    hour = datetime.now().hour
+    if 5 <= hour < 12:
+        return "Good morning"
+    elif 12 <= hour < 17:
+        return "Good afternoon"
+    elif 17 <= hour < 22:
+        return "Good evening"
+    else:
+        return "Welcome back"
+
+async def generate_dashboard_content(user_id: str) -> Dict[str, Any]:
+    """
+    Generate dynamic dashboard content
+    """
+    logger.info(f"Generating dashboard content for user: {user_id}")
+    
+    try:
+        mode = await determine_dashboard_mode(user_id)
+        greeting = get_time_based_greeting()
+        
+        # Get core data
+        athlete_profile = get_athlete_profile(user_id)
+        user_name = athlete_profile.get("name", "Athlete") if athlete_profile else "Athlete"
+        
+        # Get dynamic content based on mode
+        cards = []
+        insights = []
+        
+        # 1. Primary Focus Card
+        if mode == "RACE_DAY":
+            race = get_todays_race(user_id)
+            cards.append({
+                "id": "race-day-primary",
+                "type": "race_event",
+                "title": "Race Day!",
+                "subtitle": race.get("name", "Competition"),
+                "priority": 100,
+                "data": race
+            })
+            greeting = f"Go crush it, {user_name}!"
+            
+        elif mode == "WORKOUT_READY":
+            workout = get_todays_planned_workout(user_id)
+            cards.append({
+                "id": "workout-primary",
+                "type": "workout_summary",
+                "title": "Today's Workout",
+                "subtitle": workout.get("title", "Planned Session") if workout else "Session",
+                "priority": 90,
+                "data": workout or {},
+                "action": "start_workout"
+            })
+            
+        elif mode == "RECOVERY_FOCUS":
+            cards.append({
+                "id": "recovery-primary",
+                "type": "recovery_status",
+                "title": "Recovery Day",
+                "subtitle": "Focus on rest and mobility today",
+                "priority": 80,
+                "data": {"status": "recommended"}
+            })
+            
+        elif mode == "REST_DAY":
+             cards.append({
+                "id": "rest-primary",
+                "type": "status_card",
+                "title": "Rest Day",
+                "subtitle": "Recharge for tomorrow",
+                "priority": 70,
+                "data": {}
+            })
+            
+        # 2. Add Proactive Suggestions (as cards or insights)
+        suggestions = await generate_proactive_suggestions(user_id)
+        for i, suggestion in enumerate(suggestions[:3]): # Top 3
+            cards.append({
+                "id": f"suggestion-{i}",
+                "type": "ai_insight",
+                "title": "Aria Insight",
+                "subtitle": suggestion.get("message"),
+                "priority": 60 - i,
+                "data": suggestion
+            })
+            
+        # 3. Weekly Stats (Trends)
+        weekly_miles = get_weekly_mileage(user_id)
+        insights.append({
+            "type": "stat",
+            "label": "Weekly Mileage",
+            "value": f"{weekly_miles:.1f} km",
+            "trend": "neutral" # To be calculated
+        })
+
+        return {
+            "mode": mode,
+            "greeting": f"{greeting}, {user_name}",
+            "cards": sorted(cards, key=lambda x: x["priority"], reverse=True),
+            "insights": insights,
+            "weather": {"temp": 72, "condition": "Sunny"} # Placeholder/Mock
+        }
+        
+    except Exception as e:
+        logger.error(f"Error generating dashboard content for {user_id}: {e}")
+        return {
+            "mode": "GENERAL",
+            "greeting": "Welcome back",
+            "cards": [],
+            "error": str(e)
+        }

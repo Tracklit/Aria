@@ -43,6 +43,10 @@ class DatabasePool:
         """Build connection parameters from environment"""
         # Resolve Key Vault references at runtime, not at module load
         database_url = get_env_with_keyvault_resolution("DATABASE_URL")
+        if database_url and database_url.startswith("@Microsoft.KeyVault("):
+            logger.warning("DATABASE_URL contains unresolved Key Vault reference. Falling back to individual params.")
+            database_url = None
+
         if database_url:
             # Parse DATABASE_URL if provided
             return {"dsn": database_url}

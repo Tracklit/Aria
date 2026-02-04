@@ -967,73 +967,63 @@ export function registerRoutes(app: Express): void {
 
   app.get('/api/dashboard/state', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { mode, context } = await determineDashboardMode(req.userId!);
-      const content = await generateDashboardContent(req.userId!, mode, context);
+      const ariaApiUrl = process.env.ARIA_API_URL || 'https://aria-dev-api.azurewebsites.net';
+      console.log(`Proxying dashboard state to: ${ariaApiUrl}/api/v1/dashboard/state/${req.userId}`);
 
-      // Save/update dashboard state
-      await storage.upsertDashboardState({
-        userId: req.userId!,
-        mode,
-        greeting: content.greeting,
-        subtitle: content.subtitle,
-        cards: content.cards,
-        generatedBy: 'rules',
-        generatedAt: new Date(),
+      const response = await fetch(`${ariaApiUrl}/api/v1/dashboard/state/${req.userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.authorization || '',
+          'X-Source': 'aria-mobile-proxy'
+        }
       });
 
-      res.json({
-        mode,
-        ...content,
-      });
+      if (!response.ok) {
+        throw new Error(`Python backend error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      // Python returns { success: true, dashboard: { ... } }
+      // We expect data.dashboard to match the structure the frontend needs
+
+      // Update local storage for caching/redundancy if needed, but for now we rely on Python
+      // We might want to save the state locally for offline support later
+
+      res.json(data.dashboard);
     } catch (error: any) {
       console.error('Get dashboard state error:', error);
+      // Fallback to basic rule-based local logic in case of failure? 
+      // For now, fail to alert us to the issue
       res.status(500).json({ error: 'Failed to fetch dashboard state' });
     }
   });
 
   app.post('/api/dashboard/generate-insights', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { mode, context } = await determineDashboardMode(req.userId!);
-      const content = await generateDashboardContent(req.userId!, mode, context);
+      const ariaApiUrl = process.env.ARIA_API_URL || 'https://aria-dev-api.azurewebsites.net';
 
-      // Generate simple AI insights from workout data
-      const recentWorkouts = await storage.getRecentWorkouts(req.userId!, 10);
-      const insights: any[] = [];
+      const response = await fetch(`${ariaApiUrl}/api/v1/dashboard/generate-insights/${req.userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.authorization || '',
+          'X-Source': 'aria-mobile-proxy'
+        }
+      });
 
-      if (recentWorkouts.length > 0) {
-        insights.push({
-          id: `insight-${Date.now()}`,
-          type: 'tip',
-          title: 'Training Summary',
-          message: `You've completed ${recentWorkouts.length} workouts recently. Keep up the momentum!`,
-          confidence: 0.8,
-          priority: 3,
-          actionable: true,
-          suggestedAction: 'Plan your next workout',
-        });
-      } else {
-        insights.push({
-          id: `insight-${Date.now()}`,
-          type: 'encouragement',
-          title: 'Get Started',
-          message: 'Start your first workout to get personalized insights and training recommendations.',
-          confidence: 1.0,
-          priority: 1,
-          actionable: true,
-          suggestedAction: 'Log a workout',
-        });
+      if (!response.ok) {
+        throw new Error(`Python backend error: ${response.status}`);
       }
 
-      res.json({
-        mode,
-        ...content,
-        insights,
-      });
+      const data = await response.json();
+      res.json(data.suggestions || []);
     } catch (error: any) {
       console.error('Generate insights error:', error);
       res.status(500).json({ error: 'Failed to generate insights' });
     }
   });
+
 
   // ==================== ARIA AI ROUTES ====================
 

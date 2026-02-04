@@ -24,7 +24,10 @@ from src.ai_companion_logic import (
     recommend_drills_for_user,
     analyze_goal_progress,
     schedule_smart_check_ins,
-    analyze_user_comprehensive
+    analyze_goal_progress,
+    schedule_smart_check_ins,
+    analyze_user_comprehensive,
+    generate_dashboard_content
 )
 
 logger = logging.getLogger(__name__)
@@ -793,3 +796,41 @@ async def schedule_checkins(request: Request, user_id: str):
     except Exception as e:
         logger.error(f"Error scheduling check-ins: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# =============================================================================
+# DYNAMIC DASHBOARD ENDPOINTS
+# =============================================================================
+
+@router.get("/dashboard/state/{user_id}")
+async def get_dashboard_state_endpoint(user_id: str):
+    """
+    Get dynamic dashboard state for user
+    Includes mode, greeting, cards, and insights
+    """
+    try:
+        content = await generate_dashboard_content(user_id)
+        return {
+            "success": True,
+            "dashboard": content
+        }
+    except Exception as e:
+        logger.error(f"Error generating dashboard state: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/dashboard/generate-insights/{user_id}")
+@apply_rate_limit("general")
+async def generate_dashboard_insights_endpoint(request: Request, user_id: str):
+    """
+    Force regeneration of dashboard insights (proactive suggestions)
+    """
+    try:
+        # Generate new suggestions
+        suggestions = await generate_proactive_suggestions(user_id)
+        return {
+            "success": True,
+            "suggestions": suggestions
+        }
+    except Exception as e:
+        logger.error(f"Error generating insights: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
