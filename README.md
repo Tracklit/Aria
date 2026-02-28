@@ -173,13 +173,9 @@ Aria is an advanced AI companion for sprint athletes that goes beyond simple Q&A
    # Option A: Docker Compose (easiest)
    docker-compose up -d
    
-   # Option B: Manual (3 terminals)
-   # Terminal 1: python src/main.py
-   # Terminal 2: celery -A scripts.celery_tasks worker --pool=solo --loglevel=info
-   # Terminal 3: celery -A scripts.celery_tasks beat --loglevel=info
-   
-   # Option C: Windows PowerShell
-   .\start_aria.ps1
+   # Option B: Manual
+   cd aria-app
+   python run.py
    ```
 
 8. **Verify setup**
@@ -196,38 +192,49 @@ Aria is an advanced AI companion for sprint athletes that goes beyond simple Q&A
 
 ```
 Aria/
-├── src/                              # Application source code
-│   ├── main.py                      # FastAPI application + enhanced /health endpoint
-│   ├── ai_companion_logic.py        # 6 AI functions (suggestions, patterns, goals, etc.)
-│   ├── companion_endpoints.py       # 10 AI endpoints + 4 cached endpoints
-│   ├── additional_endpoints.py      # 60+ new feature endpoints (social, analytics, race, etc.)
-│   ├── notifications.py             # Multi-channel notification system
-│   ├── video_analysis.py            # Pose estimation and biomechanics
-│   ├── social_features.py           # Social networking and community
-│   ├── advanced_analytics.py        # Predictive analytics and ML insights
-│   ├── race_management.py           # Race preparation and tracking
-│   ├── data_export.py               # GDPR compliance and data portability
-│   ├── equipment_tracking.py        # Gear mileage and replacement tracking
-│   ├── gamification.py              # XP, achievements, and virtual races
-│   ├── database.py                  # PostgreSQL operations (45+ tables)
-│   ├── cache_utils.py               # Redis caching utilities
-│   └── ...
+├── aria-app/                         # All application code
+│   ├── src/                          # Python FastAPI backend
+│   │   ├── main.py                  # FastAPI application (2000+ lines)
+│   │   ├── database.py              # PostgreSQL connection pool & CRUD
+│   │   ├── cache.py                 # Redis cache wrapper
+│   │   ├── auth_middleware.py       # JWT/API key authentication
+│   │   ├── observability.py         # Azure App Insights integration
+│   │   ├── rate_limit.py            # Subscription-based rate limiting
+│   │   ├── ai_companion_logic.py    # AI functions (suggestions, patterns, goals)
+│   │   ├── companion_endpoints.py   # AI coaching endpoints
+│   │   ├── additional_endpoints.py  # Social, analytics, race endpoints
+│   │   ├── video_analysis.py        # MediaPipe pose estimation
+│   │   ├── voice_service.py         # Azure Speech Services
+│   │   ├── social_features.py       # Social networking
+│   │   ├── advanced_analytics.py    # ML-powered insights
+│   │   ├── race_management.py       # Race tracking
+│   │   ├── gamification.py          # XP, achievements, levels
+│   │   ├── equipment_tracking.py    # Gear tracking
+│   │   ├── data_export.py           # GDPR compliance
+│   │   └── notifications.py         # Multi-channel notifications
+│   ├── app/                          # Expo Router screens (React Native)
+│   ├── server/                       # Express.js companion server
+│   ├── shared/                       # Shared Drizzle ORM schema
+│   ├── ios/                          # iOS native project
+│   ├── app.py                        # Azure App Service entry point
+│   ├── run.py                        # Local dev entry point
+│   └── startup.sh                    # Azure startup script
+├── tests/                            # Python test suite (12 test files)
 ├── scripts/                          # Utility scripts
-│   ├── celery_tasks.py              # 6 scheduled background tasks
-│   ├── migrate_database.py          # Database migration for new features
-│   ├── seed_companion_data.py       # Seed 50+ drills, 20+ mental exercises
-│   ├── health_check.py              # Pre-flight validation (Redis, DB, Celery, cache)
-│   └── ...
-├── tests/                            # Test suite (Phase 4)
+│   ├── celery_tasks.py              # Background task definitions
+│   ├── migrate_database.py          # Database migrations
+│   ├── seed_companion_data.py       # Data seeding
+│   └── health_check.py              # Pre-flight validation
+├── infrastructure/                   # Azure IaC (Bicep templates)
+│   ├── main.bicep                   # Core infrastructure
+│   ├── container-apps/              # Container Apps deployment
+│   └── DEPLOYMENT_GUIDE.md          # Infrastructure deployment guide
 ├── docs/                             # Documentation
-│   ├── SETUP_AND_ARCHITECTURE.md    # Complete setup + architecture details
-│   ├── COMPANION_API.md             # API endpoint reference
-│   ├── BACKGROUND_TASKS_CACHING.md  # Celery + Redis setup/monitoring
-│   ├── NEW_FEATURES_IMPLEMENTATION.md  # Complete feature documentation
-│   ├── QUICK_DEPLOYMENT.md          # Deployment guide with testing examples
-│   └── ...
-├── docker-compose.yml                # Multi-service orchestration (API, Celery, Redis, DB, Flower)
-├── start_aria.ps1                    # Windows quick-start automation
+├── .github/                          # CI/CD workflows
+├── Dockerfile                        # Multi-stage Python API container
+├── docker-compose.yml                # Local multi-service orchestration
+├── requirements.txt                  # Python dependencies
+├── pytest.ini                        # Test configuration
 └── .env.example                      # Environment template
 ```
 
@@ -419,7 +426,9 @@ See [docs/TESTING.md](docs/TESTING.md) for comprehensive testing documentation.
 
 **Infrastructure**
 - Docker (Containerization)
-- Azure App Service (Hosting)
+- Azure Container Apps (Hosting)
+- Azure Container Registry (Image registry)
+- Azure Key Vault (Secrets management)
 - GitHub Actions (CI/CD)
 
 ### Design Principles
@@ -490,9 +499,9 @@ docker run -p 8000:8000 --env-file .env Aria:latest
 docker-compose up -d
 ```
 
-### Azure App Service
+### Azure Container Apps
 
-See [docs/QUICK_START_DEPLOYMENT.md](docs/QUICK_START_DEPLOYMENT.md) for Azure deployment guide.
+The production API runs on Azure Container Apps. See [infrastructure/DEPLOYMENT_GUIDE.md](infrastructure/DEPLOYMENT_GUIDE.md) for the full Azure deployment guide.
 
 ---
 
@@ -536,16 +545,14 @@ The API integrates with Azure Application Insights for:
 
 ## 📝 Documentation
 
-- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) - Development status
-- [New Features Documentation](docs/NEW_FEATURES_IMPLEMENTATION.md) - Complete feature guide (4,000+ lines of new code)
-- [**� Docker Deployment Guide**](docs/DOCKER_DEPLOYMENT.md) - **CRITICAL: Docker-based deployment workflow (rebuild & push required)**
-- [**�🚨 INFRASTRUCTURE ISSUES & FIXES**](INFRASTRUCTURE_ISSUES_AND_FIXES.md) - **CRITICAL: Missing Azure services & config**
-- [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.md) - **Complete Azure deployment guide (GitHub Actions, PowerShell, CLI, Docker)**
-- [Quick Deployment Guide](docs/QUICK_DEPLOYMENT.md) - Step-by-step deployment with examples
-- [Production Readiness](docs/PRODUCTION_READINESS_REPORT.md) - Deployment checklist
+- [Infrastructure Deployment](infrastructure/DEPLOYMENT_GUIDE.md) - Azure Container Apps deployment guide
+- [Docker Deployment](docs/DOCKER_DEPLOYMENT.md) - Docker-based deployment workflow
+- [Setup & Architecture](docs/SETUP_AND_ARCHITECTURE.md) - Complete architecture details
+- [API Reference](docs/COMPANION_API.md) - AI companion API endpoints
 - [Testing Guide](docs/TESTING.md) - Testing documentation
-- [Project Structure](PROJECT_STRUCTURE.md) - Code organization
-- [Migration Guide](docs/migration/MIGRATION_COMPLETE.md) - Supabase migration details
+- [Azure OpenAI Setup](docs/AZURE_OPENAI_SETUP.md) - OpenAI configuration
+- [Voice Features](docs/VOICE_FEATURES.md) - Speech services integration
+- [Migration Guide](docs/migration/) - Database migration details
 
 ---
 
@@ -591,6 +598,6 @@ For bugs and feature requests, please open an issue on GitHub.
 
 **Built with ❤️ by the Aria Team**
 
-**Version**: 0.2.1  
-**Status**: Production Ready  
-**Last Updated**: January 2, 2026
+**Version**: 0.3.0  
+**Status**: Production (Azure Container Apps)  
+**Last Updated**: February 27, 2026

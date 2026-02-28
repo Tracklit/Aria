@@ -1,9 +1,13 @@
+# ==========================================
+# Aria Project .gitignore
+# ==========================================
+
+# ----- Environment Variables -----
+.env
 *.env
-*node_modules/
-aria-app/Dockerfile
-.expo/
-Dockerfile.mobile
-# Python
+!.env.example
+
+# ----- Python -----
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,14 +28,18 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyo
 
-# Virtual Environment
+# Virtual Environments
 venv/
 ENV/
 env/
-.venv
+.venv/
 
-# Testing
+# ----- Node.js -----
+node_modules/
+
+# ----- Testing -----
 .pytest_cache/
 .coverage
 htmlcov/
@@ -39,58 +47,66 @@ coverage.json
 .tox/
 .hypothesis/
 
-# IDE
+# ----- IDE / Editor -----
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# ----- OS -----
 .DS_Store
+Thumbs.db
 
-# Environment Variables
-.env
-*.env
-!.env.example
-
-# Logs
+# ----- Logs -----
 *.log
-logs/
 *.log.*
-app-logs/
+logs/
+*-logs/
+*-logs[0-9]*/
 
-# Celery
+# ----- Archives / Artifacts -----
+*.zip
+*.tar.gz
+deploy.zip
+
+# ----- Temporary / Debug -----
+*.tmp
+*.temp
+*.cache
+temp_check*/
+test-*/
+verify-*/
+final-*/
+latest-*/
+
+# ----- Celery -----
 celerybeat-schedule
 celerybeat-schedule.db
 celerybeat.pid
 *.pid
 
-# Redis dump
+# ----- Redis -----
 dump.rdb
 
-# Database
+# ----- Database -----
 *.db
 *.sqlite
 *.sqlite3
 
-# Temporary files
-*.tmp
-*.temp
-*.cache
-
-# Build artifacts
-cleanup_commands.ps1
-
-# Azure
-.azure/
-
-# Docker
+# ----- Docker -----
 .dockerignore
 
-# OS
-Thumbs.db
-.DS_Store
+# ----- Azure -----
+.azure/
 
-# Project specific
+# ----- Expo / React Native -----
+.expo/
+aria-app/Dockerfile
+Dockerfile.mobile
+
+# ----- Project Specific -----
 *.bak
 *.orig
 .backup/
+cleanup_commands.ps1

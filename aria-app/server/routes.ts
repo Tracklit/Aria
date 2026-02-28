@@ -983,7 +983,7 @@ export function registerRoutes(app: Express): void {
         throw new Error(`Python backend error: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { dashboard: any };
       // Python returns { success: true, dashboard: { ... } }
       // We expect data.dashboard to match the structure the frontend needs
 
@@ -1016,7 +1016,7 @@ export function registerRoutes(app: Express): void {
         throw new Error(`Python backend error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { suggestions?: any[] };
       res.json(data.suggestions || []);
     } catch (error: any) {
       console.error('Generate insights error:', error);
