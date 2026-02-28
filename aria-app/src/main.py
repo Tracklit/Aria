@@ -81,15 +81,27 @@ from azure.identity import DefaultAzureCredential
 # Initialize client with graceful fallback for testing
 try:
     endpoint = get_env_with_keyvault_resolution("AZURE_OPENAI_ENDPOINT")
+    api_key = get_env_with_keyvault_resolution("AZURE_OPENAI_KEY") or get_env_with_keyvault_resolution("OPENAI_API_KEY")
     if endpoint:
-        # Use Azure AD authentication (Managed Identity)
-        credential = DefaultAzureCredential()
-        client = AzureOpenAI(
-            azure_endpoint=endpoint,
-            azure_ad_token_provider=lambda: credential.get_token("https://cognitiveservices.azure.com/.default").token,
-            api_version="2024-02-15-preview"
-        )
-        AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT")
+        if api_key:
+            # Use API key authentication (faster, no RBAC propagation delay)
+            logger.info("Initializing Azure OpenAI with API key authentication")
+            client = AzureOpenAI(
+                azure_endpoint=endpoint,
+                api_key=api_key,
+                api_version="2024-02-15-preview"
+            )
+        else:
+            # Use Azure AD authentication (Managed Identity)
+            logger.info("Initializing Azure OpenAI with Managed Identity authentication")
+            credential = DefaultAzureCredential()
+            client = AzureOpenAI(
+                azure_endpoint=endpoint,
+                azure_ad_token_provider=lambda: credential.get_token("https://cognitiveservices.azure.com/.default").token,
+                api_version="2024-02-15-preview"
+            )
+        AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT") or get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT_NAME")
+        logger.info(f"Azure OpenAI initialized: endpoint={endpoint}, deployment={AZURE_OPENAI_DEPLOYMENT}")
     else:
         client = None
         AZURE_OPENAI_DEPLOYMENT = None
@@ -201,20 +213,18 @@ async def readiness_check():
     
     status_code = 200
     
-    # Check Redis
+    # Check Redis (optional - does not block readiness)
     try:
         if cache.redis:
             cache.redis.ping()
             health_status["checks"]["redis"] = "healthy"
         else:
-            health_status["checks"]["redis"] = "unavailable"
-            health_status["status"] = "degraded"
-            status_code = 503
+            health_status["checks"]["redis"] = "unavailable (optional)"
+            # Redis is optional - don't block readiness
     except Exception as e:
-        health_status["checks"]["redis"] = f"unhealthy: {str(e)}"
-        health_status["status"] = "unhealthy"
-        status_code = 503
-    
+        health_status["checks"]["redis"] = f"degraded: {str(e)}"
+        logger.warning(f"Redis readiness check failed (non-blocking): {str(e)}")
+
     # Check PostgreSQL
     try:
         with db_pool.get_cursor() as cursor:
@@ -224,11 +234,12 @@ async def readiness_check():
         health_status["checks"]["database"] = f"unhealthy: {str(e)}"
         health_status["status"] = "unhealthy"
         status_code = 503
+        logger.error(f"Database readiness check failed: {str(e)}")
     
     # Check OpenAI (optional - doesn't block readiness)
     try:
         # Quick check - we don't actually make an API call
-        if os.getenv("OPENAI_API_KEY"):
+        if os.getenv("AZURE_OPENAI_KEY") or os.getenv("OPENAI_API_KEY"):
             health_status["checks"]["openai"] = "configured"
         else:
             health_status["checks"]["openai"] = "not_configured"
@@ -245,12 +256,15 @@ async def startup_check():
     """
     # Check critical components for startup
     checks = {
-        "cache_initialized": cache.redis is not None,
-        "db_pool_initialized": db_pool.pool is not None,
-        "openai_configured": os.getenv("OPENAI_API_KEY") is not None
+        "redis_available": cache.redis is not None,
+        "db_pool_initialized": db_pool.connection_pool is not None,
+        "openai_configured": os.getenv("AZURE_OPENAI_KEY") is not None or os.getenv("OPENAI_API_KEY") is not None
     }
     
-    if all(checks.values()):
+    # Only DB pool is required for startup; Redis is optional
+    startup_ready = checks["db_pool_initialized"]
+    
+    if startup_ready:
         return JSONResponse(
             status_code=200,
             content={

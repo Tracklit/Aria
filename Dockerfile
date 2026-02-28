@@ -40,8 +40,8 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
-COPY --chown=Aria:Aria . .
+# Copy application code from aria-app directory
+COPY --chown=Aria:Aria aria-app/. .
 
 # Switch to non-root user
 USER Aria

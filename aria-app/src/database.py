@@ -106,6 +106,8 @@ class DatabasePool:
             logger.info("Database connection test successful")
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             raise
     
     def get_connection(self) -> Connection:
