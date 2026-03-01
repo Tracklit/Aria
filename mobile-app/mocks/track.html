@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Track - Aria App Mocks</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .timer-circle-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 40px auto;
+        }
+
+        .timer-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .timer-bg {
+            fill: none;
+            stroke: #333;
+            stroke-width: 12;
+        }
+
+        .timer-progress {
+            fill: none;
+            stroke: url(#gradient);
+            stroke-width: 12;
+            stroke-dasharray: 700;
+            stroke-dashoffset: 150;
+            stroke-linecap: round;
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .timer-time {
+            font-size: 48px;
+            font-weight: 700;
+        }
+
+        .timer-label {
+            font-size: 20px;
+            color: var(--brand-green);
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="screen">
+            <div class="header">
+                <div class="header-row">
+                    <a href="index.html" style="text-decoration: none;"><svg width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="cursor: pointer;">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg></a>
+                    <div style="font-size: 18px; font-weight: 600;">Track</div>
+                    <div style="width: 24px;"></div>
+                </div>
+                <div
+                    style="width: 100%; text-align: center; color: var(--brand-cyan); font-size: 28px; margin-top: 30px;">
+                    Sprint Intervals</div>
+            </div>
+
+            <div class="timer-circle-container">
+                <svg class="timer-svg" viewBox="0 0 250 250">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#007aff" />
+                            <stop offset="50%" stop-color="#00e5ff" />
+                            <stop offset="100%" stop-color="#00e676" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="timer-bg" cx="125" cy="125" r="110" />
+                    <circle class="timer-progress" cx="125" cy="125" r="110" />
+                </svg>
+                <div class="timer-text">
+                    <div class="timer-time">08:22</div>
+                    <div class="timer-label">Recovery</div>
+                </div>
+            </div>
+
+            <div class="stats-row" style="padding-bottom: 0;">
+                <div class="stat-item">
+                    <div class="stat-value">3.12</div>
+                    <div class="stat-label"
+                        style="display: flex; align-items: center; gap: 4px; color: rgba(255,255,255,0.7);"><svg
+                            width="12" height="12" viewBox="0 0 24 24" fill="var(--brand-blue)" stroke="none">
+                            <path
+                                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z" />
+                        </svg> mi</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">4:24</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.7);">/mi</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">158</div>
+                    <div class="stat-label" style="color: rgba(255,255,255,0.7);">bpm</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 16px; padding: 24px;">
+                <a href="index.html" class="btn"
+                    style="flex: 1; background: #221a1a; color: #ff3b30; border-radius: 12px; font-weight: 500; text-decoration: none;">End</a>
+                <button class="btn"
+                    style="flex: 2; background: linear-gradient(90deg, #004d40, #00897b); color: var(--brand-cyan); border-radius: 12px; font-weight: 500;">Resume
+                    >></button>
+            </div>
+
+            <div style="padding: 24px; padding-top: 0;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 24px; font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20"
+                            viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                        </svg> 3.12 <span
+                            style="font-size: 16px; font-weight: normal; color: var(--text-secondary);">mi</span></div>
+                    <div>4:24<span
+                            style="font-size: 16px; font-weight: normal; color: var(--text-secondary);">/mi</span></div>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; font-size: 24px; font-weight: 600;">
+                    <div style="display: flex; align-items: center; gap: 8px;"><svg width="20" height="20"
+                            viewBox="0 0 24 24" fill="var(--brand-red)" stroke="none">
+                            <path
+                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg> 158 <span
+                            style="font-size: 16px; font-weight: normal; color: var(--text-secondary);">bpm</span></div>
+                    <div style="display: flex; align-items: center; gap: 8px; color: var(--brand-cyan);"><svg width="20"
+                            height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg> 180 <span
+                            style="font-size: 16px; font-weight: normal; color: rgba(255,255,255,0.7);">spm</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

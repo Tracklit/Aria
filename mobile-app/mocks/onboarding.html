@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Onboarding - Aria App Mocks</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-border-gradient {
+            background: linear-gradient(var(--bg-dark), var(--bg-dark)) padding-box, linear-gradient(135deg, var(--brand-blue), var(--brand-green)) border-box;
+            border: 4px solid transparent;
+        }
+
+        .avatar-glow {
+            position: relative;
+        }
+
+        .avatar-glow::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.15) 0%, transparent 70%);
+            z-index: 0;
+            border-radius: 50%;
+        }
+
+        .onboarding-btn {
+            background: #00e676;
+            background: linear-gradient(90deg, #007aff, #00e676);
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="screen">
+            <div class="header">
+                <div style="font-size: 16px; color: var(--brand-blue); margin-bottom: 8px;">Step 1 of 3</div>
+                <div class="title-large">Onbordoning</div>
+            </div>
+
+            <div style="display: flex; justify-content: center; margin: 20px 0;">
+                <div
+                    style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--brand-blue); display: flex; justify-content: center; align-items: center;">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--brand-blue)"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" class="form-input" value="Alex Johnson" style="background: #0f0f11;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" value="alex.johnson@email.com" style="background: #0f0f11;">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Sport</label>
+                <div class="pill-group">
+                    <div class="pill selected" style="background: rgba(0,74,204,0.6); color: white;">Track & Field</div>
+                    <div class="pill" style="background: #0f0f11;">Cycling</div>
+                    <div class="pill" style="background: #0f0f11;">Swimming</div>
+                </div>
+            </div>
+
+            <div class="form-group" id="onboarding-goals">
+                <label class="form-label">Goals</label>
+                <div class="pill-group">
+                    <div class="pill selected" style="background: var(--brand-blue); color: white; border: none;">Speed
+                    </div>
+                    <div class="pill" style="background: #0f0f11;">Endurance</div>
+                    <div class="pill" style="background: #0f0f11;">Recovery</div>
+                </div>
+            </div>
+
+            <div style="padding: 20px 24px; margin-top: auto;">
+                <a href="profile.html" class="btn btn-primary onboarding-btn">Continue</a>
+                <div style="text-align: center; color: var(--brand-blue); margin-top: 16px; font-size: 14px;">Connect
+                    Garmin, Apple Watch</div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

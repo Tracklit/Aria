@@ -64,6 +64,9 @@ Thumbs.db
 logs/
 *-logs/
 *-logs[0-9]*/
+aria-api/logs/**
+!aria-api/logs/
+!aria-api/logs/.gitignore
 
 # ----- Archives / Artifacts -----
 *.zip
@@ -102,7 +105,6 @@ dump.rdb
 
 # ----- Expo / React Native -----
 .expo/
-aria-app/Dockerfile
 Dockerfile.mobile
 
 # ----- Project Specific -----

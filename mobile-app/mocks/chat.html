@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat - Aria App Mocks</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active svg {
+            fill: currentColor;
+        }
+
+        .video-mock {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-left: 15px solid black;
+            border-bottom: 10px solid transparent;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="screen" style="display: flex; flex-direction: column; height: 100vh;">
+            <div class="header"
+                style="flex-direction: row; justify-content: center; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #111; position: relative;">
+                <a href="index.html" style="position: absolute; left: 24px; text-decoration: none;"><svg width="24"
+                        height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg></a>
+                <div style="font-size: 18px; font-weight: 600;">Chat</div>
+            </div>
+
+            <div class="chat-container" style="flex: 1; overflow-y: auto; padding-bottom: 100px;">
+
+                <div class="chat-bubble user">
+                    Got any tips for improving my running endurance?
+                </div>
+
+                <div style="display: flex; gap: 12px; align-items: flex-start;">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=50&h=50&fit=crop"
+                        style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--brand-cyan);"
+                        alt="AI Base">
+                    <div class="chat-bubble ai" style="border-top-left-radius: 18px;">
+                        <div
+                            style="color: var(--brand-blue); font-weight: 600; font-size: 12px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--brand-blue)" stroke="none">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg> SprintGPT</div>
+                        Sure: Focus on gradually increasing your long run distance, maintaining a comfortable pace, and
+                        incorporating interval training. Consistency is key!
+                    </div>
+                </div>
+
+                <div class="chat-bubble user">
+                    Here's my interval run from today
+                </div>
+
+                <div class="chat-bubble ai">
+                    Great job on completing your intervals! How did you feel duirring the run?
+                    <div class="video-mock" style="margin-top: 12px;">
+                        <div class="play-btn">
+                            <div class="play-icon"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-bubble ai">
+                    Based on the analysis of your last 3 weeks, you're getting close to burnout. I suggest reducing your
+                    training by 20%.
+                </div>
+
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" placeholder="Type a message">
+                <div
+                    style="width: 40px; height: 40px; background: #222; border-radius: 50%; display: flex; justify-content: center; align-items: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </div>
+                <div
+                    style="width: 40px; height: 40px; background: #004d40; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--brand-cyan); font-weight: border;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <a href="chat.html" class="nav-item active">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Chat
+            </a>
+            <a href="index.html" class="nav-item">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Dashboard
+            </a>
+            <a href="plan.html" class="nav-item">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Plan
+            </a>
+            <a href="settings.html" class="nav-item">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="19" cy="12" r="1"></circle>
+                    <circle cx="5" cy="12" r="1"></circle>
+                </svg>
+                ...More
+            </a>
+        </nav>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
