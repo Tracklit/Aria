@@ -141,7 +141,7 @@ if (-not $SkipContainerBuild) {
     Write-Host "  docker push <acr-name>.azurecr.io/aria-api:latest"
     Write-Host ""
     Write-Host "  # Build Node.js API"
-    Write-Host "  cd aria-api/mobile-backend && docker build -f Dockerfile -t <acr-name>.azurecr.io/aria-mobile-app:latest ."
+    Write-Host "  cd mobile-backend && docker build -f Dockerfile -t <acr-name>.azurecr.io/aria-mobile-app:latest ."
     Write-Host "  docker push <acr-name>.azurecr.io/aria-mobile-app:latest"
 }
 

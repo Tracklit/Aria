@@ -152,8 +152,8 @@ jobs:
       - name: Build and push mobile backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./aria-api/mobile-backend
-          file: ./aria-api/mobile-backend/Dockerfile
+          context: ./mobile-backend
+          file: ./mobile-backend/Dockerfile
           push: true
           tags: ${{ steps.meta_mobile.outputs.tags }}
           labels: ${{ steps.meta_mobile.outputs.labels }}

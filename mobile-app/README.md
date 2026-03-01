@@ -70,7 +70,7 @@ npm run ios
 # Run on Android
 npm run android
 
-# Mobile backend now lives in `../aria-api/mobile-backend`
+# Mobile backend now lives in `../mobile-backend`
 ```
 
 ## Project Structure

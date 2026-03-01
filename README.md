@@ -1,8 +1,9 @@
 # Aria Monorepo
 
-This repository is organized into two primary products:
+This repository is organized into three primary products:
 
 - `aria-api/` - AI/API backend, Azure infrastructure, deployment assets, Python test suite, and backend docs
+- `mobile-backend/` - Node/Express backend service for mobile clients
 - `mobile-app/` - Expo React Native mobile client
 
 ## Directory Layout
@@ -15,7 +16,10 @@ Aria/
 │   ├── scripts/
 │   ├── infrastructure/
 │   ├── docs/
-│   └── mobile-backend/
+├── mobile-backend/
+│   ├── server/
+│   ├── shared/
+│   └── migrations/
 ├── mobile-app/
 │   ├── app/
 │   ├── src/
@@ -53,7 +57,7 @@ docker build -f aria-api/Dockerfile aria-api
 ### Mobile backend image
 
 ```bash
-docker build -f aria-api/mobile-backend/Dockerfile aria-api/mobile-backend
+docker build -f mobile-backend/Dockerfile mobile-backend
 ```
 
 ## CI/CD Image Names

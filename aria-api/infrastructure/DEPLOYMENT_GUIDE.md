@@ -198,7 +198,7 @@ docker build -t $ACR_NAME.azurecr.io/aria-api:latest .
 docker push $ACR_NAME.azurecr.io/aria-api:latest
 
 # Build and push Node.js API
-cd aria-api/mobile-backend
+cd mobile-backend
 docker build -f Dockerfile -t $ACR_NAME.azurecr.io/aria-mobile-app:latest .
 docker push $ACR_NAME.azurecr.io/aria-mobile-app:latest
 ```
@@ -249,7 +249,7 @@ curl "https://$NODE_API/api/health"
 | `infrastructure/container-apps/parameters.prod.json` | Prod environment parameters |
 | `infrastructure/container-apps/keyvault-secrets.bicep` | Key Vault secrets module |
 | `infrastructure/deploy-container-apps.ps1` | Deployment script |
-| `aria-api/mobile-backend/Dockerfile` | Node.js API Dockerfile |
+| `mobile-backend/Dockerfile` | Node.js API Dockerfile |
 
 ---
 
