@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   daysNumber: {
-    ...typography.display,
+    ...typography.h1,
     fontSize: 48,
     color: colors.yellow,
     fontWeight: 'bold',

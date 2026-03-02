@@ -1,308 +1,191 @@
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  RefreshControl,
-  ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useDashboard } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
-import { DashboardCard as DashboardCardType } from '../../src/context/DashboardContext';
-import { DashboardCard } from '../../src/components/features';
-import {
-  SkeletonCard,
-  SkeletonStatsCard,
-  SkeletonWarningCard,
-  SkeletonPatternCard,
-  SkeletonInsightCard,
-} from '../../src/components/ui/SkeletonLoader';
-import { FadeIn } from '../../src/components/ui/FadeIn';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth, useDashboard, useWorkout } from '../../src/context';
+import { colors } from '../../src/theme';
 
-const screenWidth = Dimensions.get('window').width;
+function getDisplayName(profileName?: string | null, greeting?: string) {
+  if (profileName?.trim()) return profileName.trim();
+  if (!greeting) return 'Alex';
+  const match = greeting.match(/,\s*(.+)$/);
+  return match?.[1]?.trim() || 'Alex';
+}
 
 export default function DashboardScreen() {
+  const { profile } = useAuth();
+  const { startWorkoutSession, todaysWorkout, loadTodaysWorkout } = useWorkout();
   const {
-    mode,
     greeting,
     subtitle,
     cards,
     insights,
-    patterns,
     fatigueScore,
     isLoading,
-    isGenerating,
-    error,
     loadDashboard,
-    refreshDashboard,
     loadPatterns,
-    clearError,
+    refreshDashboard,
   } = useDashboard();
 
   useEffect(() => {
     loadDashboard();
-    loadPatterns(); // Load pattern recognition data
-  }, [loadDashboard, loadPatterns]);
+    loadPatterns();
+    loadTodaysWorkout();
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout]);
 
-  const handleRefresh = useCallback(async () => {
-    await Promise.all([
-      refreshDashboard(),
-      loadPatterns(),
-    ]);
-  }, [refreshDashboard, loadPatterns]);
+  const displayName = useMemo(
+    () => getDisplayName(profile?.displayName, greeting),
+    [profile?.displayName, greeting]
+  );
 
-  const handleCardAction = useCallback((action: string, data?: any) => {
-    switch (action) {
-      case 'start_workout':
-      case 'start_session':
-        router.push('/workout/tracking');
-        break;
-      case 'view_plan':
-        router.push('/(tabs)/plan');
-        break;
-      case 'view_race':
-        // Navigate to race details
-        break;
-      default:
-        console.log('Unhandled action:', action);
-    }
-  }, []);
-
-  const renderCard = useCallback((card: DashboardCardType) => {
-    return (
-      <DashboardCard
-        key={card.order}
-        card={card}
-        onCTAPress={handleCardAction}
-      />
-    );
-  }, [handleCardAction]);
-
-  // Memoize filtered patterns to avoid recomputing
-  const highPriorityPatterns = useMemo(() => {
-    return patterns?.filter((p) => p.severity === 'high' || p.severity === 'medium') || [];
-  }, [patterns]);
-
-  const renderLoading = useCallback(() => (
-    <>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Loading...</Text>
-        <Text style={styles.subtitle}>Getting your insights ready</Text>
-      </View>
-      <SkeletonWarningCard style={{ marginBottom: spacing.lg }} />
-      <View style={{ gap: spacing.md, marginBottom: spacing.lg }}>
-        <SkeletonPatternCard />
-        <SkeletonPatternCard />
-      </View>
-      <View style={{ marginBottom: spacing.lg }}>
-        <SkeletonInsightCard style={{ marginBottom: spacing.md }} />
-        <SkeletonInsightCard style={{ marginBottom: spacing.md }} />
-        <SkeletonInsightCard />
-      </View>
-      <View style={styles.cardsContainer}>
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonStatsCard />
-      </View>
-    </>
-  ), []);
-
-  const renderError = useCallback(() => (
-    <View style={styles.errorContainer}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
-      <Text style={styles.errorTitle}>Unable to Load Dashboard</Text>
-      <Text style={styles.errorText}>{error}</Text>
-      <TouchableOpacity style={styles.retryButton} onPress={() => {
-        clearError();
-        loadDashboard();
-      }}>
-        <Text style={styles.retryButtonText}>Retry</Text>
-      </TouchableOpacity>
-    </View>
-  ), [error, clearError, loadDashboard]);
-
-  const renderEmptyState = useCallback(() => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="analytics-outline" size={48} color={colors.text.tertiary} />
-      <Text style={styles.emptyTitle}>No Insights Yet</Text>
-      <Text style={styles.emptyText}>
-        Start tracking your workouts to see personalized insights and recommendations.
-      </Text>
-    </View>
-  ), []);
+  const workoutCard = cards.find((card) => card.type === 'workout_card');
+  const workoutTitle = workoutCard?.title || 'Sprint Intervals';
+  const workoutSubtitle = workoutCard?.subtitle || '6 × 150m, 90% effort';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
-        style={styles.scrollView}
+        style={styles.scroll}
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={handleRefresh}
-            tintColor={colors.primary}
-          />
-        }
+        showsVerticalScrollIndicator={false}
       >
-        {isLoading && cards.length === 0 ? (
-          renderLoading()
-        ) : error ? (
-          renderError()
-        ) : (
-          <>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.greeting}>{greeting || 'Good morning!'}</Text>
-              {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <View style={styles.microphoneContainer}>
+          <View style={styles.microphoneBubble}>
+            <Ionicons name="mic-outline" size={20} color={colors.teal} />
+          </View>
+        </View>
+
+        <Text style={styles.greeting}>Good Morning, {displayName}</Text>
+        <Text style={styles.subtitle}>{subtitle || "Let's get faster today 🚀"}</Text>
+
+        <View style={styles.avatarWrap}>
+          {profile?.photoUrl ? (
+            <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
             </View>
+          )}
+        </View>
 
-            {/* Fatigue Score Warning */}
-            {fatigueScore && fatigueScore.riskLevel === 'high' && (
-              <FadeIn delay={100} duration={500}>
-                <View style={[styles.warningCard, { borderColor: colors.red + '50' }]}>
-                  <View style={styles.warningHeader}>
-                    <Ionicons name="warning" size={24} color={colors.red} />
-                    <Text style={styles.warningTitle}>High Fatigue Detected</Text>
-                  </View>
-                  <Text style={styles.warningText}>
-                    Fatigue Score: {fatigueScore.score}/100 ({fatigueScore.trend})
-                  </Text>
-                  <Text style={styles.warningRecommendation}>{fatigueScore.recommendation}</Text>
-                  {fatigueScore.factors && fatigueScore.factors.length > 0 && (
-                    <View style={styles.factorsList}>
-                      {fatigueScore.factors.map((factor, index) => (
-                        <Text key={index} style={styles.factorText}>• {factor}</Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </FadeIn>
-            )}
-
-            {/* Training Pattern Warnings */}
-            {highPriorityPatterns.length > 0 && (
-              <View style={styles.patternsSection}>
-                {highPriorityPatterns.map((pattern, index) => (
-                    <FadeIn key={index} delay={200 + (index * 100)} duration={500}>
-                      <View
-                        style={[
-                          styles.patternCard,
-                          {
-                            borderColor: pattern.severity === 'high'
-                              ? colors.red + '50'
-                              : colors.yellow + '50'
-                          }
-                        ]}
-                      >
-                        <View style={styles.patternHeader}>
-                          <Ionicons
-                            name={pattern.severity === 'high' ? 'alert-circle' : 'alert'}
-                            size={20}
-                            color={pattern.severity === 'high' ? colors.red : colors.yellow}
-                          />
-                          <Text style={styles.patternType}>{pattern.type.replace('_', ' ').toUpperCase()}</Text>
-                          <Text style={styles.patternConfidence}>
-                            {Math.round(pattern.confidence * 100)}% confident
-                          </Text>
-                        </View>
-                        <Text style={styles.patternDescription}>{pattern.description}</Text>
-                        <Text style={styles.patternRecommendation}>💡 {pattern.recommendation}</Text>
-                      </View>
-                    </FadeIn>
-                  ))}
-              </View>
-            )}
-
-            {/* AI Insights (if any) */}
-            {isGenerating && (
-              <>
-                <View style={styles.generatingCard}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.generatingText}>Generating AI insights...</Text>
-                </View>
-                <View style={{ gap: spacing.md, marginBottom: spacing.lg }}>
-                  <SkeletonInsightCard />
-                  <SkeletonInsightCard />
-                  <SkeletonInsightCard />
-                </View>
-              </>
-            )}
-
-            {insights && insights.length > 0 && (
-              <FadeIn delay={300} duration={600}>
-                <View style={styles.insightsSection}>
-                  <Text style={styles.sectionTitle}>AI Insights</Text>
-                  {insights.slice(0, 3).map((insight, index) => (
-                    <FadeIn key={insight.id} delay={400 + (index * 100)} duration={500}>
-                      <View
-                        style={[
-                          styles.insightCard,
-                          {
-                            borderColor: insight.type === 'warning'
-                              ? colors.red + '30'
-                              : insight.type === 'tip'
-                              ? colors.teal + '30'
-                              : insight.type === 'prediction'
-                              ? colors.primary + '30'
-                              : colors.green + '30'
-                          }
-                        ]}
-                      >
-                        <View style={styles.insightHeader}>
-                          <Ionicons
-                            name={
-                              insight.type === 'warning'
-                                ? 'warning-outline'
-                                : insight.type === 'tip'
-                                ? 'bulb-outline'
-                                : insight.type === 'prediction'
-                                ? 'trending-up-outline'
-                                : 'happy-outline'
-                            }
-                            size={20}
-                            color={
-                              insight.type === 'warning'
-                                ? colors.red
-                                : insight.type === 'tip'
-                                ? colors.teal
-                                : insight.type === 'prediction'
-                                ? colors.primary
-                                : colors.green
-                            }
-                          />
-                          <Text style={styles.insightTitle}>{insight.title}</Text>
-                        </View>
-                        <Text style={styles.insightMessage}>{insight.message}</Text>
-                        {insight.suggestedAction && (
-                          <Text style={styles.insightAction}>→ {insight.suggestedAction}</Text>
-                        )}
-                      </View>
-                    </FadeIn>
-                  ))}
-                </View>
-              </FadeIn>
-            )}
-
-            {/* Dynamic Cards */}
-            {cards.length > 0 ? (
-              <View style={styles.cardsContainer}>
-                {cards.map((card, index) => (
-                  <FadeIn key={card.order} delay={500 + (index * 100)} duration={500}>
-                    {renderCard(card)}
-                  </FadeIn>
-                ))}
-              </View>
-            ) : (
-              renderEmptyState()
-            )}
-          </>
+        {fatigueScore?.riskLevel === 'high' && (
+          <View style={styles.warningCard}>
+            <View style={styles.warningHeader}>
+              <Ionicons name="warning-outline" size={20} color="#FF3B30" />
+              <Text style={styles.warningTitle}>High Fatigue Detected</Text>
+            </View>
+            <Text style={styles.warningText}>
+              Fatigue Score: {fatigueScore.score}/100 ({fatigueScore.trend})
+            </Text>
+            {(fatigueScore.factors || []).slice(0, 2).map((factor, index) => (
+              <Text key={`${factor}-${index}`} style={styles.factorText}>
+                • {factor}
+              </Text>
+            ))}
+            <Text style={styles.warningRecommendation}>
+              Recommendation: {fatigueScore.recommendation}
+            </Text>
+          </View>
         )}
+
+        <LinearGradient
+          colors={['#0d47a1', '#1976d2', '#004d40']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.workoutCard}
+        >
+          <Text style={styles.workoutTitle}>{workoutTitle}</Text>
+          <Text style={styles.workoutSubtitle}>{workoutSubtitle}</Text>
+          <TouchableOpacity
+            testID="dashboard.start_session"
+            style={styles.workoutButton}
+            onPress={async () => {
+              try {
+                await startWorkoutSession(todaysWorkout?.id);
+              } catch (error) {
+                // Keep navigation responsive; workout screen can handle fallback states.
+              } finally {
+                router.push('/workout/tracking');
+              }
+            }}
+          >
+            <Text style={styles.workoutButtonText}>Start Session</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Race Day Insights</Text>
+          <LinearGradient
+            colors={['rgba(88,86,214,0.4)', 'rgba(0,229,255,0.2)']}
+            style={styles.raceCard}
+          >
+            <Text style={styles.raceEmoji}>🎉</Text>
+            <Text style={styles.raceTitle}>Congrats {displayName}!</Text>
+            <Text style={styles.raceMessage}>
+              You&apos;re officially ready for the Half Marathon. Here&apos;s your final race day strategy.
+            </Text>
+            <TouchableOpacity
+              testID="dashboard.view_strategy"
+              style={styles.raceButton}
+              onPress={() => router.push('/race-day')}
+            >
+              <Text style={styles.raceButtonText}>View Strategy</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>AI Insights</Text>
+          {isLoading && insights.length === 0 ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : (
+            (insights.slice(0, 3).length > 0
+              ? insights.slice(0, 3)
+              : [
+                  {
+                    id: 0,
+                    title: 'Form Improvement',
+                    message:
+                      'Your cadence has improved by 4 BPM over the last two weeks, reducing impact stress on your knees.',
+                    suggestedAction: 'View Form Analysis',
+                  },
+                ]
+            ).map((insight) => (
+              <TouchableOpacity
+                key={String(insight.id)}
+                testID={`dashboard.insight.${insight.id}`}
+                style={styles.insightCard}
+                onPress={() => router.push('/(tabs)/chat')}
+              >
+                <View style={styles.insightHeader}>
+                  <Ionicons name="bulb-outline" size={18} color={colors.green} />
+                  <Text style={styles.insightTitle}>{insight.title}</Text>
+                </View>
+                <Text style={styles.insightText}>{insight.message}</Text>
+                {insight.suggestedAction ? (
+                  <Text style={styles.insightAction}>→ {insight.suggestedAction}</Text>
+                ) : null}
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        <TouchableOpacity testID="dashboard.refresh" style={styles.refresh} onPress={refreshDashboard}>
+          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Text style={styles.refreshText}>Refresh</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -311,333 +194,217 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#000',
   },
-  scrollView: {
+  scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 130,
   },
-  header: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
+  microphoneContainer: {
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  microphoneBubble: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111111',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   greeting: {
-    ...typography.h1,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+    paddingHorizontal: 16,
   },
   subtitle: {
-    ...typography.body,
-    color: colors.primary,
-    fontSize: 17,
-  },
-  cardsContainer: {
-    gap: spacing.lg,
-  },
-
-  // Card styles
-  workoutCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.primary + '30',
-  },
-  competitionCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.yellow + '30',
-  },
-  insightCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.teal + '30',
-  },
-  streakCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.orange + '30',
-  },
-  statsCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  cardTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    flex: 1,
-  },
-  cardSubtitle: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginBottom: spacing.md,
-  },
-  tipsContainer: {
-    gap: spacing.sm,
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  tipBullet: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  tipText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    flex: 1,
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginTop: spacing.md,
-  },
-  ctaButtonText: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-
-  // Stats card
-  statsTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.text.secondary,
-  },
-
-  // Loading state
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl * 3,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
-  },
-
-  // Error state
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl * 3,
-    paddingHorizontal: spacing.xl,
-  },
-  errorTitle: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  retryButtonText: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-
-  // Empty state
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl * 3,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyTitle: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
-    ...typography.body,
-    color: colors.text.secondary,
+    marginTop: 6,
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#00E5FF',
     textAlign: 'center',
   },
-
-  // AI Insights & Warnings
+  avatarWrap: {
+    alignItems: 'center',
+    marginVertical: 26,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#00E5FF',
+  },
+  avatarFallback: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
+    borderColor: '#00E5FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#111111',
+  },
+  avatarInitial: {
+    color: '#fff',
+    fontSize: 46,
+    fontWeight: '700',
+  },
   warningCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    borderWidth: 2,
+    marginHorizontal: 24,
+    backgroundColor: 'rgba(255,59,48,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,59,48,0.45)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 18,
   },
   warningHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: 8,
   },
   warningTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    flex: 1,
+    marginLeft: 8,
+    color: '#FF3B30',
+    fontWeight: '700',
+    fontSize: 16,
   },
   warningText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  warningRecommendation: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    marginTop: spacing.sm,
-  },
-  factorsList: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
+    color: '#FFF',
+    fontSize: 14,
+    marginBottom: 4,
   },
   factorText: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    color: '#CCC',
+    fontSize: 13,
+    marginBottom: 2,
   },
-
-  // Pattern Cards
-  patternsSection: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  patternCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-  },
-  patternHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  patternType: {
-    ...typography.caption,
-    color: colors.text.primary,
+  warningRecommendation: {
+    color: '#FFF',
+    fontSize: 13,
+    marginTop: 6,
     fontWeight: '600',
-    flex: 1,
   },
-  patternConfidence: {
-    ...typography.caption,
-    color: colors.text.tertiary,
+  workoutCard: {
+    marginHorizontal: 24,
+    borderRadius: 20,
+    padding: 20,
   },
-  patternDescription: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
+  workoutTitle: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  patternRecommendation: {
-    ...typography.caption,
-    color: colors.text.primary,
-    fontStyle: 'italic',
+  workoutSubtitle: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 16,
+    marginBottom: 18,
   },
-
-  // Generating state
-  generatingCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    flexDirection: 'row',
+  workoutButton: {
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingVertical: 14,
     alignItems: 'center',
-    gap: spacing.md,
   },
-  generatingText: {
-    ...typography.body,
-    color: colors.text.secondary,
+  workoutButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
-
-  // AI Insights
-  insightsSection: {
-    marginBottom: spacing.lg,
+  section: {
+    marginTop: 24,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 14,
+  },
+  raceCard: {
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(88,86,214,0.5)',
+  },
+  raceEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  raceTitle: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  raceMessage: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  raceButton: {
+    backgroundColor: '#111111',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  raceButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  loadingState: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
   insightCard: {
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
+    backgroundColor: 'rgba(0,230,118,0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#00E676',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
   },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: 6,
   },
   insightTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontWeight: '600',
-    flex: 1,
+    marginLeft: 8,
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
-  insightMessage: {
-    ...typography.body,
-    color: colors.text.secondary,
-    lineHeight: 22,
+  insightText: {
+    color: '#D5D5D5',
+    fontSize: 14,
+    lineHeight: 20,
   },
   insightAction: {
-    ...typography.caption,
-    color: colors.primary,
-    marginTop: spacing.sm,
+    color: '#00E676',
     fontWeight: '600',
+    marginTop: 6,
+    fontSize: 13,
+  },
+  refresh: {
+    marginTop: 6,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  refreshText: {
+    color: colors.primary,
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

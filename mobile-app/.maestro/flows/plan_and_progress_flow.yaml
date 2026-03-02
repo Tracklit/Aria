@@ -1,0 +1,16 @@
+appId: com.anonymous.Aria
+---
+- tapOn:
+    id: "tab.plan"
+- assertVisible:
+    id: "plan.title"
+- tapOn:
+    id: "tab.progress"
+- assertVisible:
+    id: "progress.subtitle"
+- assertVisible:
+    id: "progress.weekly_summary"
+- tapOn:
+    id: "tab.home"
+- assertVisible:
+    id: "dashboard.start_session"

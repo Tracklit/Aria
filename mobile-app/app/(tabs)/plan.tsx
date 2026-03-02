@@ -1,12 +1,21 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Avatar, Button } from '../../src/components/ui';
-import { ScheduleItem, PlanGoalCard } from '../../src/components/features';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth, useWorkout } from '../../src/context';
-import { colors, typography, spacing } from '../../src/theme';
+import { colors } from '../../src/theme';
+
+const formatDay = (date: string) =>
+  new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
 
 export default function PlanScreen() {
   const router = useRouter();
@@ -17,26 +26,14 @@ export default function PlanScreen() {
     loadTrainingPlans();
   }, [loadTrainingPlans]);
 
-  const displayName = profile?.displayName || 'Athlete';
-
-  const handleCreateWithAria = () => {
-    router.push('/(tabs)/chat');
-  };
-
-  const handleCreateManually = () => {
-    router.push('/plan/create');
-  };
-
-  // Group workouts by week for display
-  const upcomingWorkouts = plannedWorkouts
-    .filter((w) => new Date(w.date) >= new Date())
-    .slice(0, 7);
+  const displayName = profile?.displayName || 'Alex';
+  const schedule = plannedWorkouts.slice(0, 7);
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.loader}>
+          <ActivityIndicator color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -44,63 +41,76 @@ export default function PlanScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Plan</Text>
-          <Avatar uri={profile?.photoUrl || undefined} size="medium" showGradientRing />
+          <Text testID="plan.title" style={styles.title}>Plan</Text>
+          {profile?.photoUrl ? (
+            <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
         </View>
 
-        <Text style={styles.subtitle}>TRAINING PLAN FOR {displayName.toUpperCase()}</Text>
+        <Text style={styles.planFor}>TRAINING PLAN FOR {displayName.toUpperCase()}</Text>
 
         {activePlan ? (
           <>
-            <PlanGoalCard
-              goalName={activePlan.targetEventName || activePlan.planName}
-              targetDate={activePlan.targetEventDate || undefined}
-            />
+            <LinearGradient colors={['#0d47a1', '#1976d2', '#004d40']} style={styles.goalCard}>
+              <Text style={styles.goalTitle}>{activePlan.targetEventName || activePlan.planName}</Text>
+              <Text style={styles.goalDate}>
+                {activePlan.targetEventDate
+                  ? new Date(activePlan.targetEventDate).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : 'May 15'}
+              </Text>
+            </LinearGradient>
 
             <View style={styles.scheduleSection}>
-              <Text style={styles.scheduleTitle}>Schedule</Text>
-              {upcomingWorkouts.length > 0 ? (
-                upcomingWorkouts.map((workout, index) => {
-                  const date = new Date(workout.date);
-                  const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-                  return (
-                    <ScheduleItem
-                      key={workout.id || index}
-                      day={dayName}
-                      type={workout.title || workout.type}
-                      details={workout.description || undefined}
-                    />
-                  );
-                })
+              <Text testID="plan.schedule_title" style={styles.scheduleTitle}>Schedule</Text>
+              {schedule.length > 0 ? (
+                schedule.map((item) => (
+                  <View key={item.id} style={styles.dayRow}>
+                    <Text style={styles.dayText}>{formatDay(item.date)}</Text>
+                    <View style={styles.workoutCol}>
+                      <Text style={styles.workoutType}>{item.title || item.type}</Text>
+                      {item.description ? (
+                        <Text style={styles.workoutDetails}>{item.description}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ))
               ) : (
-                <Text style={styles.noWorkoutsText}>No upcoming workouts scheduled</Text>
+                <View style={styles.dayRow}>
+                  <Text style={styles.dayText}>Tuesday</Text>
+                  <Text style={styles.workoutType}>Rest Day</Text>
+                </View>
               )}
             </View>
           </>
         ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyStateIconContainer}>
-              <Ionicons name="calendar-outline" size={64} color={colors.text.tertiary} />
-            </View>
-            <Text style={styles.emptyStateTitle}>No Training Plan</Text>
-            <Text style={styles.emptyStateText}>
-              Create a personalized training plan to reach your running goals
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>No Training Plan</Text>
+            <Text style={styles.emptyText}>
+              Create a personalized plan to match your goal event and current level.
             </Text>
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Create with Aria"
-                onPress={handleCreateWithAria}
-                style={styles.createPlanButton}
-              />
-              <Button
-                title="Create Manually"
-                onPress={handleCreateManually}
-                variant="secondary"
-                style={styles.createPlanButton}
-              />
-            </View>
+            <TouchableOpacity
+              testID="plan.create_with_aria"
+              style={styles.primaryBtn}
+              onPress={() => router.push('/(tabs)/chat')}
+            >
+              <Text style={styles.primaryBtnText}>Create with Aria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="plan.create_manually"
+              style={styles.secondaryBtn}
+              onPress={() => router.push('/plan/create')}
+            >
+              <Text style={styles.secondaryBtnText}>Create Manually</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -111,87 +121,158 @@ export default function PlanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#000',
   },
-  loadingContainer: {
+  loader: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  scrollView: {
+  scroll: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: 120,
+    paddingHorizontal: 24,
+    paddingBottom: 130,
   },
   header: {
+    marginTop: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    justifyContent: 'space-between',
   },
   title: {
-    ...typography.h1,
-    color: colors.text.primary,
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '700',
   },
-  subtitle: {
-    ...typography.caption,
-    color: colors.primary,
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderColor: '#00E5FF',
+    borderWidth: 2,
+  },
+  avatarFallback: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderColor: '#00E5FF',
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#111',
+  },
+  avatarInitial: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 24,
+  },
+  planFor: {
+    marginTop: 12,
+    color: '#00E5FF',
+    fontSize: 13,
     fontWeight: '600',
-    textAlign: 'center',
     letterSpacing: 1,
-    marginBottom: spacing.lg,
+  },
+  goalCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 24,
+  },
+  goalTitle: {
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  goalDate: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '500',
   },
   scheduleSection: {
-    marginTop: spacing.md,
+    marginTop: 18,
   },
   scheduleTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
+    color: '#FFF',
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 14,
   },
-  noWorkoutsText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingVertical: spacing.xl,
+  dayRow: {
+    borderRadius: 12,
+    marginBottom: 8,
+    padding: 16,
+    backgroundColor: '#0c0c0e',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1c1c1e',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  emptyState: {
+  dayText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+    minWidth: 90,
+  },
+  workoutCol: {
     flex: 1,
-    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  workoutType: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  workoutDetails: {
+    color: '#AAAAAA',
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'right',
+  },
+  emptyCard: {
+    marginTop: 28,
+    padding: 20,
+    backgroundColor: '#111',
+    borderRadius: 16,
+  },
+  emptyTitle: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptyText: {
+    color: '#AAA',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  primaryBtn: {
+    height: 52,
+    borderRadius: 12,
     alignItems: 'center',
-    paddingVertical: spacing.xl * 2,
-    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    marginBottom: 10,
   },
-  emptyStateIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.background.cardSolid,
+  primaryBtnText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  secondaryBtn: {
+    height: 52,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    borderColor: '#007AFF',
+    borderWidth: 1,
   },
-  emptyStateTitle: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  emptyStateText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 280,
-    gap: spacing.md,
-  },
-  createPlanButton: {
-    width: '100%',
+  secondaryBtnText: {
+    color: '#007AFF',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

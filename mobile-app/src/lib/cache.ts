@@ -166,7 +166,7 @@ export function cacheable<T extends (...args: any[]) => Promise<any>>(
 ): T {
   const { ttl = DEFAULT_TTL, keyGenerator } = options;
 
-  return (async (...args: any[]) => {
+  return (async (...args: Parameters<T>) => {
     // Generate cache key
     const cacheKey = keyGenerator
       ? keyGenerator(...args)
@@ -180,7 +180,7 @@ export function cacheable<T extends (...args: any[]) => Promise<any>>(
 
     // Execute function and cache result
     try {
-      const result = await fn(...args);
+      const result = await fn(...(args as any));
       globalCache.set(cacheKey, result, ttl);
       return result;
     } catch (error) {
@@ -209,7 +209,7 @@ export function createCache(namespace: string, maxSize?: number): {
     clear: () => cache.clear(),
     invalidatePattern: (pattern: RegExp) => {
       let count = 0;
-      const keys = Array.from((cache as any).cache.keys());
+      const keys = Array.from((cache as any).cache.keys()) as string[];
       for (const key of keys) {
         if (key.startsWith(`${namespace}:`) && pattern.test(key)) {
           cache.delete(key);

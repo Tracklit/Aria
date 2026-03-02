@@ -184,7 +184,7 @@ export async function aggregateUserContext(
     // Fetch all data sources in parallel
     const [user, workouts, races, weeklyStats, chatMessages] = await Promise.all([
       getCurrentUser(),
-      getWorkouts({ limit: 20 }).catch(() => []), // Fetch more for streak calculation
+      getWorkouts(20).catch(() => []), // Fetch more for streak calculation
       getRaces().catch(() => []),
       getWeeklyAnalytics().catch(() => null),
       conversationId

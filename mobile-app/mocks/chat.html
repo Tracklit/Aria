@@ -64,13 +64,24 @@
     <div class="app-container">
         <div class="screen" style="display: flex; flex-direction: column; height: 100vh;">
             <div class="header"
-                style="flex-direction: row; justify-content: center; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #111; position: relative;">
-                <a href="index.html" style="position: absolute; left: 24px; text-decoration: none;"><svg width="24"
-                        height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer;">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg></a>
-                <div style="font-size: 18px; font-weight: 600;">Chat</div>
+                style="flex-direction: row; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #111; position: relative;">
+                <div style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding-left: 12px;">
+                    <!-- React Native Gap: History Drawer Menu -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </div>
+                <div style="font-size: 18px; font-weight: 600; text-align: center; flex: 1;">Chat</div>
+                <div style="width: 24px; padding-right: 12px;">
+                    <!-- React Native Gap: New Chat Button -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                </div>
             </div>
 
             <div class="chat-container" style="flex: 1; overflow-y: auto; padding-bottom: 100px;">
@@ -88,7 +99,8 @@
                             style="color: var(--brand-blue); font-weight: 600; font-size: 12px; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--brand-blue)" stroke="none">
                                 <circle cx="12" cy="12" r="10" />
-                            </svg> SprintGPT</div>
+                            </svg> SprintGPT
+                        </div>
                         Sure: Focus on gradually increasing your long run distance, maintaining a comfortable pace, and
                         incorporating interval training. Consistency is key!
                     </div>
@@ -110,6 +122,23 @@
                 <div class="chat-bubble ai">
                     Based on the analysis of your last 3 weeks, you're getting close to burnout. I suggest reducing your
                     training by 20%.
+                </div>
+
+                <!-- React Native Gap: Typing Indicator -->
+                <div class="typing-indicator">
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    <div class="typing-text">SprintGPT is thinking...</div>
+                </div>
+
+                <!-- React Native Gap: Suggestion Chips -->
+                <div class="suggestions-container" style="padding: 0; margin-top: 16px;">
+                    <div class="suggestions-title">Try asking:</div>
+                    <button class="suggestion-chip">How should I prepare for my first 5K?</button>
+                    <button class="suggestion-chip">What to eat before a long run?</button>
                 </div>
 
             </div>
@@ -148,7 +177,7 @@
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
-                Dashboard
+                Home
             </a>
             <a href="plan.html" class="nav-item">
                 <svg viewBox="0 0 24 24">
@@ -158,6 +187,13 @@
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                 </svg>
                 Plan
+            </a>
+            <a href="progress.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                Progress
             </a>
             <a href="settings.html" class="nav-item">
                 <svg viewBox="0 0 24 24">

@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import {
+  Avatar as GSAvatar,
+  AvatarFallbackText,
+  AvatarImage,
+  Spinner,
+} from '@gluestack-ui/themed';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme';
 
@@ -52,30 +58,28 @@ export const Avatar: React.FC<AvatarProps> = ({
             ]}
           >
             {showPlaceholder ? (
-              <View
-                style={[
-                  styles.avatar,
-                  styles.placeholder,
-                  { width: avatarSize, height: avatarSize },
-                ]}
-              />
+              <GSAvatar style={[styles.avatar, styles.placeholder, { width: avatarSize, height: avatarSize }]}>
+                <AvatarFallbackText>AR</AvatarFallbackText>
+              </GSAvatar>
             ) : (
               <>
-                <Image
-                  source={{ uri }}
-                  style={[styles.avatar, { width: avatarSize, height: avatarSize }]}
-                  onLoadStart={() => setIsLoading(true)}
-                  onLoadEnd={() => setIsLoading(false)}
-                  onError={() => {
-                    setIsLoading(false);
-                    setHasError(true);
-                  }}
-                />
-                {showSpinner && (
+                <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
+                  <AvatarImage
+                    source={{ uri }}
+                    alt="Profile avatar"
+                    onLoadStart={() => setIsLoading(true)}
+                    onLoadEnd={() => setIsLoading(false)}
+                    onError={() => {
+                      setIsLoading(false);
+                      setHasError(true);
+                    }}
+                  />
+                </GSAvatar>
+                {showSpinner ? (
                   <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Spinner size="small" color={colors.primary} />
                   </View>
-                )}
+                ) : null}
               </>
             )}
           </View>
@@ -87,30 +91,28 @@ export const Avatar: React.FC<AvatarProps> = ({
   return (
     <View style={[styles.container, style]}>
       {showPlaceholder ? (
-        <View
-          style={[
-            styles.avatar,
-            styles.placeholder,
-            { width: avatarSize, height: avatarSize },
-          ]}
-        />
+        <GSAvatar style={[styles.avatar, styles.placeholder, { width: avatarSize, height: avatarSize }]}>
+          <AvatarFallbackText>AR</AvatarFallbackText>
+        </GSAvatar>
       ) : (
         <>
-          <Image
-            source={{ uri }}
-            style={[styles.avatar, { width: avatarSize, height: avatarSize }]}
-            onLoadStart={() => setIsLoading(true)}
-            onLoadEnd={() => setIsLoading(false)}
-            onError={() => {
-              setIsLoading(false);
-              setHasError(true);
-            }}
-          />
-          {showSpinner && (
+          <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
+            <AvatarImage
+              source={{ uri }}
+              alt="Profile avatar"
+              onLoadStart={() => setIsLoading(true)}
+              onLoadEnd={() => setIsLoading(false)}
+              onError={() => {
+                setIsLoading(false);
+                setHasError(true);
+              }}
+            />
+          </GSAvatar>
+          {showSpinner ? (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="small" color={colors.primary} />
+              <Spinner size="small" color={colors.primary} />
             </View>
-          )}
+          ) : null}
         </>
       )}
     </View>

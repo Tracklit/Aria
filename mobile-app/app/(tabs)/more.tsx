@@ -19,7 +19,7 @@ export default function MoreScreen() {
   };
 
   const handleEditProfile = () => {
-    router.push('/onboarding/step1');
+    router.push('/profile');
   };
 
   const handleChangePhoto = async () => {
@@ -92,12 +92,12 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Settings</Text>
+        <Text testID="settings.title" style={styles.title}>Settings</Text>
 
         {/* Profile Header */}
         {profile && (
           <View style={styles.profileCard}>
-            <TouchableOpacity onPress={handleChangePhoto} disabled={isUploadingPhoto}>
+            <TouchableOpacity testID="settings.change_photo" onPress={handleChangePhoto} disabled={isUploadingPhoto}>
               {isUploadingPhoto ? (
                 <View style={styles.profileAvatar}>
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -111,7 +111,7 @@ export default function MoreScreen() {
               )}
               <Text style={styles.changePhotoText}>Change Photo</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.profileInfo} onPress={handleEditProfile}>
+            <TouchableOpacity testID="settings.edit_profile_header" style={styles.profileInfo} onPress={handleEditProfile}>
               <Text style={styles.profileName}>{profile.displayName || 'Athlete'}</Text>
               <Text style={styles.profileSport}>
                 {profile.sport ? profile.sport.charAt(0).toUpperCase() + profile.sport.slice(1) : 'Running'}
@@ -126,11 +126,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>ACCOUNT</Text>
           <View style={styles.group}>
-            <SettingsRow title="Edit Profile" onPress={handleEditProfile} />
+            <SettingsRow title="Edit Profile" onPress={handleEditProfile} testID="settings.edit_profile" />
             <View style={styles.divider} />
-            <SettingsRow title="Notifications" onPress={() => handlePress('Notifications')} />
+            <SettingsRow title="Notifications" onPress={() => handlePress('Notifications')} testID="settings.notifications" />
             <View style={styles.divider} />
-            <SettingsRow title="Privacy" onPress={() => handlePress('Privacy')} />
+            <SettingsRow title="Privacy" onPress={() => handlePress('Privacy')} testID="settings.privacy" />
           </View>
         </View>
 
@@ -141,11 +141,12 @@ export default function MoreScreen() {
             <SettingsRow
               title="Units of Measure"
               onPress={() => handlePress('Units of Measure')}
+              testID="settings.units"
             />
             <View style={styles.divider} />
-            <SettingsRow title="AI Coaching Style" onPress={() => handlePress('AI Coaching Style')} />
+            <SettingsRow title="AI Coaching Style" onPress={() => handlePress('AI Coaching Style')} testID="settings.ai_style" />
             <View style={styles.divider} />
-            <SettingsRow title="Voice Feedback" onPress={() => handlePress('Voice Feedback')} />
+            <SettingsRow title="Voice Feedback" onPress={() => handlePress('Voice Feedback')} testID="settings.voice_feedback" />
           </View>
         </View>
 
@@ -153,11 +154,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>INTEGRATIONS</Text>
           <View style={styles.group}>
-            <SettingsRow title="Apple Health" onPress={() => handlePress('Apple Health')} />
+            <SettingsRow title="Apple Health" onPress={() => handlePress('Apple Health')} testID="settings.apple_health" />
             <View style={styles.divider} />
-            <SettingsRow title="Garmin Connect" onPress={() => handlePress('Garmin')} />
+            <SettingsRow title="Garmin" onPress={() => handlePress('Garmin')} testID="settings.garmin" />
             <View style={styles.divider} />
-            <SettingsRow title="Strava" onPress={() => handlePress('Strava')} />
+            <SettingsRow title="Strava" onPress={() => handlePress('Strava')} testID="settings.strava" />
           </View>
         </View>
 
@@ -165,16 +166,16 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>SUPPORT</Text>
           <View style={styles.group}>
-            <SettingsRow title="Help & FAQ" onPress={() => handlePress('Help')} />
+            <SettingsRow title="Help & FAQ" onPress={() => handlePress('Help')} testID="settings.help" />
             <View style={styles.divider} />
-            <SettingsRow title="Contact Us" onPress={() => handlePress('Contact')} />
+            <SettingsRow title="Contact Us" onPress={() => handlePress('Contact')} testID="settings.contact" />
             <View style={styles.divider} />
-            <SettingsRow title="Rate the App" onPress={() => handlePress('Rate')} />
+            <SettingsRow title="Rate the App" onPress={() => handlePress('Rate')} testID="settings.rate" />
           </View>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <TouchableOpacity testID="settings.logout" onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 

@@ -5,37 +5,47 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
+  TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Input, Button, Chip } from '../../src/components/ui';
 import { useAuth } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { colors } from '../../src/theme';
 
 type Sport = 'running' | 'track' | 'cycling' | 'swimming' | 'triathlon';
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'elite';
 
+const SPORT_OPTIONS: { label: string; value: Sport }[] = [
+  { label: 'Track & Field', value: 'track' },
+  { label: 'Cycling', value: 'cycling' },
+  { label: 'Swimming', value: 'swimming' },
+];
+
+const LEVEL_OPTIONS: { label: string; value: ExperienceLevel }[] = [
+  { label: 'Beginner', value: 'beginner' },
+  { label: 'Intermediate', value: 'intermediate' },
+  { label: 'Advanced', value: 'advanced' },
+  { label: 'Elite', value: 'elite' },
+];
+
+const GOALS = ['Speed', 'Endurance', 'Weight Loss', 'First Race', 'PR', 'Recovery', 'General Fitness'];
+
 export default function OnboardingStep1() {
-  const router = useRouter();
-  const { profile, updateProfile, completeOnboarding, isLoading } = useAuth();
+  const { profile, user, updateProfile, completeOnboarding } = useAuth();
 
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
-  const [selectedSport, setSelectedSport] = useState<Sport>(
-    (profile?.sport as Sport) || 'running'
-  );
+  const [sport, setSport] = useState<Sport>((profile?.sport as Sport) || 'track');
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
     (profile?.experienceLevel as ExperienceLevel) || 'beginner'
   );
-  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goalTags || []);
+  const [goals, setGoals] = useState<string[]>(profile?.goalTags || ['Speed']);
   const [isSaving, setIsSaving] = useState(false);
 
   const toggleGoal = (goal: string) => {
-    setSelectedGoals((prev) =>
-      prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal]
-    );
+    setGoals((prev) => (prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal]));
   };
 
   const handleContinue = async () => {
@@ -43,146 +53,133 @@ export default function OnboardingStep1() {
       Alert.alert('Error', 'Please enter your name');
       return;
     }
-
     setIsSaving(true);
     try {
       await updateProfile({
         displayName: displayName.trim(),
-        sport: selectedSport,
+        sport,
         experienceLevel,
-        goalTags: selectedGoals,
+        goalTags: goals,
       });
       await completeOnboarding();
       router.replace('/(tabs)/dashboard');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save profile');
+      Alert.alert('Error', error?.message || 'Failed to save onboarding');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const sports: { value: Sport; label: string }[] = [
-    { value: 'running', label: 'Running' },
-    { value: 'track', label: 'Track & Field' },
-    { value: 'cycling', label: 'Cycling' },
-    { value: 'swimming', label: 'Swimming' },
-    { value: 'triathlon', label: 'Triathlon' },
-  ];
-
-  const levels: { value: ExperienceLevel; label: string }[] = [
-    { value: 'beginner', label: 'Beginner' },
-    { value: 'intermediate', label: 'Intermediate' },
-    { value: 'advanced', label: 'Advanced' },
-    { value: 'elite', label: 'Elite' },
-  ];
-
-  const goals = [
-    'Speed',
-    'Endurance',
-    'Weight Loss',
-    'First Race',
-    'PR',
-    'Recovery',
-    'General Fitness',
-  ];
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.step}>Complete Your Profile</Text>
-        <Text style={styles.title}>Tell us about yourself</Text>
-        <Text style={styles.subtitle}>
-          This helps Aria personalize your training experience
-        </Text>
-
-        {/* Avatar Upload Button */}
-        <TouchableOpacity style={styles.avatarButton}>
-          <View style={styles.avatarRing}>
-            {profile?.photoUrl ? (
-              <View style={styles.avatarImage}>
-                <Text style={styles.avatarInitial}>
-                  {displayName.charAt(0).toUpperCase() || 'A'}
-                </Text>
-              </View>
-            ) : (
-              <Ionicons name="camera" size={32} color={colors.primary} />
-            )}
-          </View>
-          <Text style={styles.avatarLabel}>Add Photo</Text>
-        </TouchableOpacity>
-
-        {/* Name Input */}
-        <Input
-          label="Your Name"
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder="Enter your name"
-        />
-
-        {/* Sport Selection */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Primary Sport</Text>
-          <View style={styles.chipRow}>
-            {sports.map((sport) => (
-              <Chip
-                key={sport.value}
-                label={sport.label}
-                selected={selectedSport === sport.value}
-                onPress={() => setSelectedSport(sport.value)}
-              />
-            ))}
-          </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.step}>Step 1 of 3</Text>
+          <Text style={styles.title}>Onboarding</Text>
         </View>
 
-        {/* Experience Level */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Experience Level</Text>
-          <View style={styles.chipRow}>
-            {levels.map((level) => (
-              <Chip
-                key={level.value}
-                label={level.label}
-                selected={experienceLevel === level.value}
-                onPress={() => setExperienceLevel(level.value)}
-              />
-            ))}
-          </View>
+        <View style={styles.avatarPlaceholder}>
+          <Ionicons name="add" size={40} color={colors.primary} />
         </View>
 
-        {/* Goals Selection */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Training Goals (select all that apply)</Text>
-          <View style={styles.chipRow}>
-            {goals.map((goal) => (
-              <Chip
-                key={goal}
-                label={goal}
-                selected={selectedGoals.includes(goal)}
-                onPress={() => toggleGoal(goal)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Continue Button */}
-        {isSaving ? (
-          <View style={[styles.button, styles.loadingButton]}>
-            <ActivityIndicator color={colors.text.primary} />
-          </View>
-        ) : (
-          <Button
-            title="Get Started"
-            onPress={handleContinue}
-            style={styles.button}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            testID="onboarding.name"
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Alex Johnson"
+            placeholderTextColor="#666"
+            style={styles.input}
           />
-        )}
+        </View>
 
-        {/* Secondary Link */}
-        <Button
-          title="Connect Devices (Garmin, Apple Watch)"
-          variant="text"
-          onPress={() => Alert.alert('Coming Soon', 'Device integration will be available soon')}
-        />
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            testID="onboarding.email"
+            value={user?.email || ''}
+            editable={false}
+            style={styles.input}
+            placeholder="alex@email.com"
+            placeholderTextColor="#666"
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Sport</Text>
+          <View style={styles.pillGroup}>
+            {SPORT_OPTIONS.map((option) => (
+              <TouchableOpacity
+                testID={`onboarding.sport.${option.value}`}
+                key={option.value}
+                style={[styles.pill, sport === option.value ? styles.pillSelected : null]}
+                onPress={() => setSport(option.value)}
+              >
+                <Text style={[styles.pillText, sport === option.value ? styles.pillTextSelected : null]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Experience Level</Text>
+          <View style={styles.pillGroup}>
+            {LEVEL_OPTIONS.map((option) => (
+              <TouchableOpacity
+                testID={`onboarding.level.${option.value}`}
+                key={option.value}
+                style={[styles.pill, experienceLevel === option.value ? styles.pillSelected : null]}
+                onPress={() => setExperienceLevel(option.value)}
+              >
+                <Text
+                  style={[
+                    styles.pillText,
+                    experienceLevel === option.value ? styles.pillTextSelected : null,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Goals</Text>
+          <View style={styles.pillGroup}>
+            {GOALS.map((goal) => (
+              <TouchableOpacity
+                testID={`onboarding.goal.${goal.replace(/\s+/g, '_')}`}
+                key={goal}
+                style={[styles.pill, goals.includes(goal) ? styles.pillSelected : null]}
+                onPress={() => toggleGoal(goal)}
+              >
+                <Text style={[styles.pillText, goals.includes(goal) ? styles.pillTextSelected : null]}>
+                  {goal}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            testID="onboarding.continue"
+            style={styles.continueButton}
+            onPress={handleContinue}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text style={styles.continueButtonText}>Continue</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.connectText}>Connect Garmin, Apple Watch</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -191,85 +188,97 @@ export default function OnboardingStep1() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#000',
   },
   content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: 30,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
   },
   step: {
-    ...typography.caption,
     color: colors.primary,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    fontSize: 16,
+    marginBottom: 8,
   },
   title: {
-    ...typography.h1,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '700',
   },
-  subtitle: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginBottom: spacing.xl,
-  },
-  avatarButton: {
+  avatarPlaceholder: {
     alignSelf: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  avatarRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 2,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
     borderColor: colors.primary,
-    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginVertical: 20,
   },
-  avatarImage: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: {
-    ...typography.h1,
-    color: colors.text.primary,
-    fontSize: 36,
-  },
-  avatarLabel: {
-    ...typography.caption,
-    color: colors.text.secondary,
-  },
-  section: {
-    marginBottom: spacing.lg,
+  formGroup: {
+    marginHorizontal: 24,
+    marginBottom: 16,
   },
   label: {
-    ...typography.label,
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
+    color: '#AAA',
+    fontSize: 14,
+    marginBottom: 8,
   },
-  chipRow: {
+  input: {
+    width: '100%',
+    backgroundColor: '#0f0f11',
+    borderRadius: 8,
+    color: '#FFF',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  pillGroup: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: 8,
   },
-  button: {
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+  pill: {
+    backgroundColor: '#0f0f11',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
-  loadingButton: {
-    backgroundColor: colors.primary,
+  pillSelected: {
+    backgroundColor: 'rgba(0,74,204,0.6)',
+  },
+  pillText: {
+    color: '#D6D6D6',
+    fontSize: 14,
+  },
+  pillTextSelected: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  footer: {
+    marginTop: 6,
+    paddingHorizontal: 24,
+  },
+  continueButton: {
+    height: 52,
     borderRadius: 12,
-    paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  continueButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  connectText: {
+    textAlign: 'center',
+    color: colors.primary,
+    marginTop: 16,
+    fontSize: 14,
   },
 });
+

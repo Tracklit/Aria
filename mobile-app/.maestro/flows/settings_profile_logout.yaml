@@ -1,0 +1,54 @@
+appId: com.anonymous.Aria
+---
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+- tapOn:
+    id: "settings.edit_profile"
+- assertVisible:
+    id: "profile.title"
+- tapOn:
+    id: "profile.name"
+- eraseText
+- inputText: "Alex Johnson"
+- tapOn:
+    id: "profile.save"
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+- runFlow:
+    when:
+      visible:
+        id: "profile.back"
+    commands:
+      - tapOn:
+          id: "profile.back"
+- tapOn:
+    id: "tab.more"
+    optional: true
+- swipe:
+    start: 50%,88%
+    end: 50%,20%
+    duration: 700
+- swipe:
+    start: 50%,88%
+    end: 50%,20%
+    duration: 700
+- swipe:
+    start: 50%,88%
+    end: 50%,20%
+    duration: 700
+- tapOn:
+    id: "settings.logout"
+- runFlow:
+    when:
+      visible: "Are you sure you want to log out?"
+    commands:
+      - tapOn:
+          text: "Log Out"
+      - tapOn:
+          text: "Log Out"
+          optional: true

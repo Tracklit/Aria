@@ -1,6 +1,12 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, ViewStyle } from 'react-native';
+import {
+  Button as GSButton,
+  ButtonSpinner,
+  ButtonText,
+  Pressable,
+  Text,
+} from '@gluestack-ui/themed';
 import { colors, typography, borderRadius } from '../../theme';
 
 interface ButtonProps {
@@ -22,64 +28,47 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   if (variant === 'primary') {
     return (
-      <TouchableOpacity
+      <GSButton
         onPress={onPress}
         disabled={disabled || loading}
-        style={[styles.container, style]}
-        activeOpacity={0.8}
+        style={[styles.primaryButton, style]}
+        bg={colors.primary}
+        borderRadius={borderRadius.md}
       >
-        <LinearGradient
-          colors={colors.gradient.primary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.gradient, disabled && styles.disabled]}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.text.primary} />
-          ) : (
-            <Text style={styles.primaryText}>{title}</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+        {loading ? <ButtonSpinner color={colors.text.primary} /> : <ButtonText style={styles.primaryText}>{title}</ButtonText>}
+      </GSButton>
     );
   }
 
   if (variant === 'text') {
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={onPress}
         disabled={disabled || loading}
         style={[styles.textButton, style]}
-        activeOpacity={0.6}
       >
         <Text style={styles.textButtonText}>{title}</Text>
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 
   return (
-    <TouchableOpacity
+    <GSButton
       onPress={onPress}
       disabled={disabled || loading}
       style={[styles.secondaryButton, disabled && styles.disabled, style]}
-      activeOpacity={0.8}
+      bg="transparent"
+      borderColor={colors.primary}
+      borderWidth={2}
+      borderRadius={borderRadius.md}
     >
-      {loading ? (
-        <ActivityIndicator color={colors.primary} />
-      ) : (
-        <Text style={styles.secondaryText}>{title}</Text>
-      )}
-    </TouchableOpacity>
+      {loading ? <ButtonSpinner color={colors.primary} /> : <ButtonText style={styles.secondaryText}>{title}</ButtonText>}
+    </GSButton>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-  },
-  gradient: {
+  primaryButton: {
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
@@ -90,9 +79,6 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     height: 56,
-    borderRadius: borderRadius.md,
-    borderWidth: 2,
-    borderColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },

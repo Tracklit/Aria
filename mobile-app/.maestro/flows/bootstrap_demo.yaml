@@ -1,0 +1,57 @@
+appId: com.anonymous.Aria
+---
+- runFlow:
+    when:
+      visible: "http://localhost:8082"
+    commands:
+      - tapOn: "http://localhost:8082"
+- runFlow:
+    when:
+      visible: "Aria"
+    commands:
+      - tapOn:
+          point: "90%,22%"
+          optional: true
+      - tapOn:
+          text: "Continue"
+          optional: true
+      - tapOn:
+          point: "90%,22%"
+          optional: true
+- runFlow:
+    when:
+      visible: "http://localhost:8082"
+    commands:
+      - tapOn: "http://localhost:8082"
+- runFlow:
+    when:
+      visible: "Get Started"
+    commands:
+      - tapOn:
+          id: "welcome.demo_login"
+          optional: true
+      - tapOn:
+          text: "Try Demo (No Server Required)"
+          optional: true
+- runFlow:
+    when:
+      visible:
+        id: "welcome.demo_login"
+    commands:
+      - tapOn:
+          id: "welcome.demo_login"
+- runFlow:
+    when:
+      visible: "Step 1 of 3"
+    commands:
+      - tapOn:
+          id: "onboarding.name"
+      - eraseText
+      - inputText: "Alex Johnson"
+      - tapOn: "Onboarding"
+      - tapOn:
+          id: "onboarding.continue"
+- extendedWaitUntil:
+    visible:
+      id: "dashboard.start_session"
+    timeout: 60000

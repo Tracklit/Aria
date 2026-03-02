@@ -22,7 +22,8 @@ export async function apiRequest<T = any>(
   options: RequestOptions = {}
 ): Promise<T> {
   const { method = 'GET', data, headers, rawResponse, skipAuth } = options;
-  const url = path.startsWith('http') ? path : `${env.API_BASE_URL}${path}`;
+  const baseUrl = env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL;
+  const url = path.startsWith('http') ? path : `${baseUrl}${path}`;
 
   const requestHeaders: Record<string, string> = {
     ...defaultHeaders,
@@ -43,7 +44,8 @@ export async function apiRequest<T = any>(
     console.log(`[API] ${method} ${path}`, {
       hasToken,
       skipAuth,
-      baseUrl: env.API_BASE_URL,
+      baseUrl,
+      aiBaseUrl: env.AI_API_BASE_URL,
     });
   }
 
@@ -352,7 +354,7 @@ export async function sendChatMessageStream(
   onError?: (error: Error) => void
 ): Promise<void> {
   const token = await getToken();
-  const url = `${env.API_BASE_URL}/api/aria/chat`;
+  const url = `${env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL}/api/aria/chat`;
 
   if (DEBUG_API) {
     console.log('[API] POST /api/aria/chat (streaming)');
@@ -508,7 +510,7 @@ export async function uploadProfilePicture(imageUri: string): Promise<ProfilePic
     type: type,
   });
 
-  const url = `${env.API_BASE_URL}/api/user/public-profile`;
+  const url = `${env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL}/api/user/public-profile`;
 
   if (DEBUG_API) {
     console.log(`[API] POST /api/user/public-profile (multipart)`);

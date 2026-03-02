@@ -6,11 +6,12 @@ import { colors, typography, spacing } from '../../theme';
 interface SettingsRowProps {
   title: string;
   onPress: () => void;
+  testID?: string;
 }
 
-export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress }) => {
+export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress, testID }) => {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity testID={testID} style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <Text style={styles.title}>{title}</Text>
       <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
     </TouchableOpacity>

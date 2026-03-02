@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { AppProviders, useAuth } from '../src/context';
 import { colors } from '../src/theme';
+import { gluestackConfig } from '../src/theme/gluestack';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { ToastContainer } from '../src/components/Toast';
 
@@ -30,7 +32,10 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
     const inTabs = segments[0] === '(tabs)';
+    const inWorkout = segments[0] === 'workout';
     const inPlan = segments[0] === 'plan';
+    const inRaceDay = segments[0] === 'race-day';
+    const inProfile = segments[0] === 'profile';
 
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to welcome screen if not authenticated
@@ -46,7 +51,14 @@ function RootLayoutNav() {
       } else if (!profile?.onboardingCompleted && !inOnboarding) {
         // Redirect to onboarding if not completed
         router.replace('/onboarding/step1');
-      } else if (profile?.onboardingCompleted && !inTabs && !inPlan) {
+      } else if (
+        profile?.onboardingCompleted &&
+        !inTabs &&
+        !inWorkout &&
+        !inPlan &&
+        !inRaceDay &&
+        !inProfile
+      ) {
         // Redirect to dashboard if authenticated and onboarding is complete
         router.replace('/(tabs)/dashboard');
       }
@@ -76,17 +88,19 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background.primary },
-      }}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background.primary },
+        }}
     >
       <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="workout" options={{ headerShown: false }} />
       <Stack.Screen name="plan" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="race-day" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="profile" options={{ headerShown: false, presentation: 'card' }} />
     </Stack>
   );
 }
@@ -94,11 +108,13 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <ErrorBoundary>
-      <AppProviders>
-        <StatusBar style="light" />
-        <RootLayoutNav />
-        <ToastContainer />
-      </AppProviders>
+      <GluestackUIProvider config={gluestackConfig as any}>
+        <AppProviders>
+          <StatusBar style="light" />
+          <RootLayoutNav />
+          <ToastContainer />
+        </AppProviders>
+      </GluestackUIProvider>
     </ErrorBoundary>
   );
 }

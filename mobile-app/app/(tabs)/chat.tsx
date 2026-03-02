@@ -1,22 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { MessageBubble } from '../../src/components/features';
 import { useChat, useAuth } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { MessageBubble } from '../../src/components/features';
+import { colors } from '../../src/theme';
+
+const SUGGESTIONS = [
+  'How should I prepare for my first 5K?',
+  'What to eat before a long run?',
+];
 
 export default function ChatScreen() {
   const {
@@ -35,14 +39,10 @@ export default function ChatScreen() {
     clearError,
   } = useChat();
   const { isAuthenticated, hasValidToken } = useAuth();
-
+  const [showDrawer, setShowDrawer] = useState(false);
   const [inputText, setInputText] = useState('');
-  const [showConversationList, setShowConversationList] = useState(false);
-  const [inputHeight, setInputHeight] = useState(0);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const tabBarHeight = useBottomTabBarHeight();
-  const messagesPaddingBottom = inputHeight + tabBarHeight;
-  const isOutOfPrompts = false;
 
   useEffect(() => {
     if (isAuthenticated && hasValidToken) {
@@ -51,210 +51,189 @@ export default function ChatScreen() {
   }, [isAuthenticated, hasValidToken, loadConversations]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change or streaming message updates
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages, streamingMessage]);
+    const timeout = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    return () => clearTimeout(timeout);
+  }, [messages, streamingMessage, isSending]);
 
-  const handleSend = async () => {
-    if (inputText.trim() && !isSending) {
-      if (!isAuthenticated || !hasValidToken) {
-        return;
-      }
-      const text = inputText.trim();
-      setInputText('');
-      await sendMessage(text);
-    }
-  };
+  const canSend = inputText.trim().length > 0 && !isSending && hasValidToken;
 
-  const handleSelectConversation = async (id: number) => {
-    await selectConversation(id);
-    setShowConversationList(false);
-  };
+  const renderedMessages = useMemo(() => {
+    if (messages.length === 0 && !streamingMessage) return null;
 
-  const handleNewConversation = () => {
-    startNewConversation();
-    setShowConversationList(false);
-  };
-
-  const renderConversationList = () => (
-    <View style={styles.conversationListContainer}>
-      <View style={styles.conversationListHeader}>
-        <Text style={styles.conversationListTitle}>Conversations</Text>
-        <TouchableOpacity onPress={() => setShowConversationList(false)}>
-          <Ionicons name="close" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.newConversationButton} onPress={handleNewConversation}>
-        <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-        <Text style={styles.newConversationText}>New Conversation</Text>
-      </TouchableOpacity>
-
-      <ScrollView style={styles.conversationList}>
-        {conversations.map((conv) => (
-          <TouchableOpacity
-            key={conv.id}
-            style={[
-              styles.conversationItem,
-              currentConversationId === conv.id && styles.conversationItemActive,
-            ]}
-            onPress={() => handleSelectConversation(conv.id)}
-          >
-            <Text
-              style={[
-                styles.conversationTitle,
-                currentConversationId === conv.id && styles.conversationTitleActive,
-              ]}
-              numberOfLines={1}
-            >
-              {conv.title}
-            </Text>
-            <Text style={styles.conversationDate}>
-              {new Date(conv.updatedAt).toLocaleDateString()}
-            </Text>
-          </TouchableOpacity>
+    return (
+      <>
+        {messages.map((message) => (
+          <MessageBubble key={message.id} text={message.text} sender={message.sender} />
         ))}
-      </ScrollView>
-    </View>
-  );
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyStateIcon}>
-        <Ionicons name="chatbubbles-outline" size={48} color={colors.text.tertiary} />
-      </View>
-      <Text style={styles.emptyStateTitle}>
-        {isAuthenticated && hasValidToken ? 'Chat with Aria' : 'Sign In Required'}
-      </Text>
-      <Text style={styles.emptyStateText}>
-        {isAuthenticated && hasValidToken
-          ? "Ask me anything about training, recovery, nutrition, or race strategy. I'm here to help you reach your goals!"
-          : 'Please sign in to chat with Sprinthia AI.'}
-      </Text>
-      <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>Try asking:</Text>
-        {[
-          'How should I prepare for my first 5K?',
-          'What should I eat before a long run?',
-          'How do I prevent running injuries?',
-        ].map((suggestion, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.suggestionChip}
-            onPress={() => {
-              setInputText(suggestion);
-            }}
-          >
-            <Text style={styles.suggestionText}>{suggestion}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
+        {isStreaming && streamingMessage ? (
+          <MessageBubble text={`${streamingMessage}▊`} sender="ai" />
+        ) : null}
+      </>
+    );
+  }, [messages, streamingMessage, isStreaming]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
-        style={styles.keyboardView}
+        style={styles.keyboard}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.menuButton}
-            onPress={() => setShowConversationList(!showConversationList)}
+            testID="chat.menu"
+            style={styles.headerIconBtn}
+            onPress={() => setShowDrawer((s) => !s)}
           >
-            <Ionicons name="menu" size={28} color={colors.text.primary} />
+            <Ionicons name="menu-outline" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.title}>Aria</Text>
-          <TouchableOpacity style={styles.newButton} onPress={handleNewConversation}>
-            <Ionicons name="create-outline" size={24} color={colors.text.primary} />
+          <Text style={styles.headerTitle}>Chat</Text>
+          <TouchableOpacity
+            testID="chat.new_conversation"
+            style={styles.headerIconBtn}
+            onPress={() => {
+              startNewConversation();
+              setShowDrawer(false);
+            }}
+          >
+            <Ionicons name="create-outline" size={22} color="#FFF" />
           </TouchableOpacity>
         </View>
 
-        {showConversationList && renderConversationList()}
+        {showDrawer ? (
+          <View style={styles.drawer}>
+            <Text style={styles.drawerTitle}>Conversation History</Text>
+            <TouchableOpacity
+              style={styles.drawerNew}
+              onPress={() => {
+                startNewConversation();
+                setShowDrawer(false);
+              }}
+            >
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+              <Text style={styles.drawerNewText}>New Chat</Text>
+            </TouchableOpacity>
+            <ScrollView>
+              {conversations.map((conversation) => (
+                <TouchableOpacity
+                  testID={`chat.conversation.${conversation.id}`}
+                  key={conversation.id}
+                  onPress={async () => {
+                    await selectConversation(conversation.id);
+                    setShowDrawer(false);
+                  }}
+                  style={[
+                    styles.drawerRow,
+                    currentConversationId === conversation.id && styles.drawerRowActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.drawerRowText,
+                      currentConversationId === conversation.id && styles.drawerRowTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {conversation.title}
+                  </Text>
+                  <Text style={styles.drawerRowDate}>
+                    {new Date(conversation.updatedAt).toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
-        {(!hasValidToken || error) && (
-          <TouchableOpacity style={styles.errorBanner} onPress={clearError}>
-            <Text style={styles.errorText}>
-              {!hasValidToken ? 'Sign in required to chat with Sprinthia.' : error}
-            </Text>
-            <Ionicons name="close-circle" size={20} color={colors.text.primary} />
+        {error ? (
+          <TouchableOpacity testID="chat.error_banner" style={styles.errorBanner} onPress={clearError}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Ionicons name="close-circle" size={18} color="#FFF" />
           </TouchableOpacity>
-        )}
+        ) : null}
 
         <ScrollView
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
+          ref={scrollRef}
+          style={styles.messages}
           contentContainerStyle={[
             styles.messagesContent,
-            { paddingBottom: messagesPaddingBottom },
-            messages.length === 0 && styles.messagesContentEmpty,
+            { paddingBottom: tabBarHeight + 110 },
+            messages.length === 0 && !streamingMessage ? { flex: 1, justifyContent: 'center' } : null,
           ]}
+          showsVerticalScrollIndicator={false}
         >
           {isLoading && messages.length === 0 ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>Loading conversation...</Text>
+            <View style={styles.center}>
+              <ActivityIndicator color={colors.primary} />
             </View>
-          ) : messages.length === 0 ? (
-            renderEmptyState()
+          ) : renderedMessages ? (
+            renderedMessages
           ) : (
-            <>
-              {messages.map((message) => (
-                <MessageBubble key={message.id} text={message.text} sender={message.sender} />
-              ))}
-              {isStreaming && streamingMessage && (
-                <MessageBubble
-                  key="streaming"
-                  text={streamingMessage + '▊'}
-                  sender="ai"
-                />
-              )}
-              {isSending && !isStreaming && (
-                <View style={styles.typingIndicator}>
-                  <View style={styles.typingDots}>
-                    <View style={[styles.typingDot, styles.typingDot1]} />
-                    <View style={[styles.typingDot, styles.typingDot2]} />
-                    <View style={[styles.typingDot, styles.typingDot3]} />
-                  </View>
-                  <Text style={styles.typingText}>Aria is thinking...</Text>
-                </View>
-              )}
-            </>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>
+                {hasValidToken ? 'Chat with SprintGPT' : 'Sign In Required'}
+              </Text>
+              <Text style={styles.emptyText}>
+                {hasValidToken
+                  ? 'Ask anything about endurance, workouts, and recovery.'
+                  : 'Please sign in to use chat.'}
+              </Text>
+              <View style={styles.suggestions}>
+                <Text style={styles.suggestionsTitle}>Try asking:</Text>
+                {SUGGESTIONS.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion}
+                    testID={`chat.suggestion.${suggestion.replace(/[^a-zA-Z0-9]+/g, '_')}`}
+                    style={styles.suggestionChip}
+                    onPress={() => setInputText(suggestion)}
+                  >
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           )}
+
+          {isSending && !isStreaming ? (
+            <View style={styles.typingIndicator}>
+              <View style={styles.typingDots}>
+                <View style={[styles.typingDot, { opacity: 0.4 }]} />
+                <View style={[styles.typingDot, { opacity: 0.6 }]} />
+                <View style={[styles.typingDot, { opacity: 0.8 }]} />
+              </View>
+              <Text style={styles.typingText}>SprintGPT is thinking...</Text>
+            </View>
+          ) : null}
         </ScrollView>
 
-        <View
-          style={[styles.inputContainer, { paddingBottom: tabBarHeight }]}
-          onLayout={(event: LayoutChangeEvent) => setInputHeight(event.nativeEvent.layout.height)}
-        >
+        <View style={[styles.inputDock, { paddingBottom: tabBarHeight }]}>
           <TextInput
+            testID="chat.input"
             style={styles.input}
-            placeholder="Ask Aria anything..."
-            placeholderTextColor={colors.text.tertiary}
+            placeholder="Type a message"
+            placeholderTextColor="#8E8E93"
             value={inputText}
             onChangeText={setInputText}
-            onSubmitEditing={handleSend}
-            multiline
-            maxLength={2000}
             editable={!isSending && hasValidToken}
+            multiline
           />
+          <TouchableOpacity style={styles.voiceBtn}>
+            <Ionicons name="mic-outline" size={20} color="#FFF" />
+          </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
-            onPress={handleSend}
-            disabled={!inputText.trim() || isSending || !hasValidToken}
+            testID="chat.send"
+            style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
+            disabled={!canSend}
+            onPress={async () => {
+              const value = inputText.trim();
+              if (!value) return;
+              setInputText('');
+              await sendMessage(value, true);
+            }}
           >
             {isSending ? (
-              <ActivityIndicator size="small" color={colors.text.primary} />
+              <ActivityIndicator color="#FFF" size="small" />
             ) : (
-              <Ionicons
-                name="send"
-                size={20}
-                color={inputText.trim() ? colors.text.primary : colors.text.tertiary}
-              />
+              <Ionicons name="add" size={24} color={canSend ? colors.teal : '#666'} />
             )}
           </TouchableOpacity>
         </View>
@@ -266,241 +245,204 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#000',
   },
-  keyboardView: {
+  keyboard: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
+    borderBottomColor: '#111',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  menuButton: {
-    width: 44,
-    height: 44,
+  headerIconBtn: {
+    width: 30,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    ...typography.h2,
-    color: colors.text.primary,
+  headerTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
   },
-  newButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  conversationListContainer: {
+  drawer: {
     position: 'absolute',
-    top: 70,
+    top: 56,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.background.primary,
-    zIndex: 100,
-    paddingHorizontal: spacing.lg,
+    zIndex: 5,
+    backgroundColor: '#000',
+    borderTopWidth: 1,
+    borderTopColor: '#111',
+    paddingHorizontal: 14,
+    paddingTop: 10,
   },
-  conversationListHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
+  drawerTitle: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 10,
   },
-  conversationListTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-  },
-  newConversationButton: {
+  drawerNew: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
+    gap: 8,
+    marginBottom: 12,
   },
-  newConversationText: {
-    ...typography.body,
+  drawerNewText: {
     color: colors.primary,
     fontWeight: '600',
+    fontSize: 14,
   },
-  conversationList: {
-    flex: 1,
-  },
-  conversationItem: {
-    paddingVertical: spacing.md,
+  drawerRow: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
+    borderBottomColor: '#181818',
+    paddingVertical: 10,
   },
-  conversationItemActive: {
-    backgroundColor: colors.background.secondary,
-    marginHorizontal: -spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+  drawerRowActive: {
+    backgroundColor: '#101010',
+    borderRadius: 8,
+    paddingHorizontal: 8,
   },
-  conversationTitle: {
-    ...typography.body,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+  drawerRowText: {
+    color: '#FFF',
+    fontSize: 14,
+    marginBottom: 4,
   },
-  conversationTitleActive: {
+  drawerRowTextActive: {
     color: colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  conversationDate: {
-    ...typography.caption,
-    color: colors.text.tertiary,
+  drawerRowDate: {
+    color: '#8E8E93',
+    fontSize: 11,
   },
   errorBanner: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    borderRadius: borderRadius.md,
+    gap: 8,
   },
   errorText: {
-    ...typography.caption,
-    color: colors.text.primary,
+    color: '#FFF',
     flex: 1,
+    fontSize: 12,
   },
-  messagesContainer: {
+  messages: {
     flex: 1,
   },
   messagesContent: {
-    paddingVertical: spacing.lg,
-    paddingBottom: 100,
+    paddingTop: 14,
   },
-  messagesContentEmpty: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  center: {
+    paddingVertical: 24,
     alignItems: 'center',
-    paddingVertical: spacing.xl,
-  },
-  loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
   },
   emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: 24,
   },
-  emptyStateIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.background.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+  emptyTitle: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
   },
-  emptyStateTitle: {
-    ...typography.h2,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+  emptyText: {
+    color: '#9A9A9A',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  emptyStateText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  suggestionsContainer: {
-    width: '100%',
+  suggestions: {
+    marginTop: 6,
   },
   suggestionsTitle: {
-    ...typography.caption,
-    color: colors.text.tertiary,
-    marginBottom: spacing.sm,
+    color: '#8E8E93',
+    fontSize: 12,
+    marginBottom: 8,
   },
   suggestionChip: {
-    backgroundColor: colors.background.secondary,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.sm,
+    backgroundColor: '#131316',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
   },
   suggestionText: {
-    ...typography.body,
-    color: colors.text.primary,
+    color: '#F2F2F2',
+    fontSize: 14,
   },
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    marginLeft: 16,
+    marginTop: 4,
   },
   typingDots: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
   typingDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.primary,
-    marginHorizontal: 2,
-    opacity: 0.4,
-  },
-  typingDot1: {
-    opacity: 0.4,
-  },
-  typingDot2: {
-    opacity: 0.6,
-  },
-  typingDot3: {
-    opacity: 0.8,
+    marginRight: 3,
   },
   typingText: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    color: '#8E8E93',
+    fontSize: 12,
   },
-  inputContainer: {
+  inputDock: {
+    borderTopWidth: 1,
+    borderTopColor: '#111',
+    backgroundColor: '#000',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: colors.background.secondary,
+    gap: 8,
   },
   input: {
     flex: 1,
-    ...typography.body,
-    backgroundColor: colors.background.cardSolid,
-    color: colors.text.primary,
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginRight: spacing.sm,
+    minHeight: 42,
     maxHeight: 100,
+    borderRadius: 21,
+    backgroundColor: '#151518',
+    color: '#FFF',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
   },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
+  voiceBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#222',
   },
-  sendButtonDisabled: {
-    backgroundColor: colors.background.secondary,
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#004d40',
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#1F3430',
   },
 });

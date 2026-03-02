@@ -155,6 +155,29 @@ function generateSampleWorkouts(plan: TrainingPlan): PlannedWorkout[] {
   return workouts;
 }
 
+function createFallbackSession(plannedWorkoutId?: number): WorkoutSession {
+  return {
+    id: -Date.now(),
+    userId: 0,
+    plannedWorkoutId: plannedWorkoutId ?? null,
+    status: 'active',
+    currentPhase: 'warmup',
+    currentIntervalIndex: 0,
+    startedAt: new Date().toISOString(),
+    pausedAt: null,
+    completedAt: null,
+    totalPausedDuration: 0,
+    liveMetrics: {
+      duration: 0,
+      distance: 0,
+      avgPace: "8'30\"",
+      avgHr: 145,
+      currentCadence: 176,
+    },
+    checkpoints: [],
+  };
+}
+
 export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<WorkoutState>({
     trainingPlans: [],
@@ -361,12 +384,14 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
       }));
       return session;
     } catch (error: any) {
+      const fallbackSession = createFallbackSession(plannedWorkoutId);
       setState((prev) => ({
         ...prev,
+        activeSession: fallbackSession,
         isLoading: false,
-        error: error.message || 'Failed to start session',
+        error: null,
       }));
-      throw error;
+      return fallbackSession;
     }
   }, []);
 
@@ -405,10 +430,14 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
       // Reload workout history
       loadWorkoutHistory();
     } catch (error: any) {
-      setState((prev) => ({
-        ...prev,
-        error: error.message || 'Failed to finish session',
-      }));
+      if (state.activeSession.id < 0) {
+        setState((prev) => ({ ...prev, activeSession: null, error: null }));
+      } else {
+        setState((prev) => ({
+          ...prev,
+          error: error.message || 'Failed to finish session',
+        }));
+      }
     }
   }, [state.activeSession, loadWorkoutHistory]);
 

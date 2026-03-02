@@ -29,6 +29,7 @@ export default function TabsLayout() {
         name="chat"
         options={{
           title: 'Chat',
+          tabBarButtonTestID: 'tab.chat',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble" size={size} color={color} />
           ),
@@ -37,9 +38,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: 'Home',
+          tabBarButtonTestID: 'tab.home',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
@@ -47,8 +49,19 @@ export default function TabsLayout() {
         name="plan"
         options={{
           title: 'Plan',
+          tabBarButtonTestID: 'tab.plan',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarButtonTestID: 'tab.progress',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="pulse-outline" size={size} color={color} />
           ),
         }}
       />
@@ -56,6 +69,7 @@ export default function TabsLayout() {
         name="more"
         options={{
           title: 'More',
+          tabBarButtonTestID: 'tab.more',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal" size={size} color={color} />
           ),

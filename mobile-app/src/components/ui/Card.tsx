@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, ViewStyle } from 'react-native';
+import { Box } from '@gluestack-ui/themed';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, shadows } from '../../theme';
@@ -35,18 +36,18 @@ export const Card: React.FC<CardProps> = ({
 
   if (blur) {
     return (
-      <View style={[styles.card, styles.shadow, style]}>
+      <Box style={[styles.card, styles.shadow, style]}>
         <BlurView intensity={20} tint="dark" style={styles.blurContainer}>
           {children}
         </BlurView>
-      </View>
+      </Box>
     );
   }
 
   return (
-    <View style={[styles.card, styles.solidCard, styles.shadow, style]}>
+    <Box style={[styles.card, styles.solidCard, styles.shadow, style]}>
       {children}
-    </View>
+    </Box>
   );
 };
 

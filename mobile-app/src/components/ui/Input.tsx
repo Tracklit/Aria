@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, TextInput, Text, StyleSheet, TextInputProps } from 'react-native';
+import { StyleSheet, TextInputProps } from 'react-native';
+import {
+  FormControl,
+  FormControlLabel,
+  FormControlLabelText,
+  Input as GSInput,
+  InputField,
+} from '@gluestack-ui/themed';
 import { colors, typography, borderRadius, spacing } from '../../theme';
 
 interface InputProps extends TextInputProps {
@@ -8,14 +15,21 @@ interface InputProps extends TextInputProps {
 
 export const Input: React.FC<InputProps> = ({ label, style, ...props }) => {
   return (
-    <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[styles.input, style]}
-        placeholderTextColor={colors.text.tertiary}
-        {...props}
-      />
-    </View>
+    <FormControl style={styles.container}>
+      {label ? (
+        <FormControlLabel>
+          <FormControlLabelText style={styles.label}>{label}</FormControlLabelText>
+        </FormControlLabel>
+      ) : null}
+      <GSInput style={styles.input}>
+        <InputField
+          style={style as any}
+          color={colors.text.primary}
+          placeholderTextColor={colors.text.tertiary}
+          {...props}
+        />
+      </GSInput>
+    </FormControl>
   );
 };
 

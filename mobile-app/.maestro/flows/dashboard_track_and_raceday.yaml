@@ -1,0 +1,49 @@
+appId: com.anonymous.Aria
+---
+- assertVisible:
+    id: "dashboard.start_session"
+- tapOn:
+    id: "dashboard.start_session"
+- runFlow:
+    when:
+      visible:
+        id: "track.title"
+    commands:
+      - tapOn:
+          id: "track.resume"
+          optional: true
+      - tapOn:
+          id: "track.back"
+          optional: true
+- runFlow:
+    when:
+      visible:
+        id: "track.no_session"
+    commands:
+      - tapOn:
+          id: "track.no_session_back"
+- assertVisible:
+    id: "dashboard.view_strategy"
+- tapOn:
+    id: "dashboard.view_strategy"
+- assertVisible:
+    id: "raceDay.send"
+- tapOn:
+    id: "raceDay.suggestion.What_if_it_rains_"
+- tapOn:
+    id: "raceDay.send"
+- runFlow:
+    when:
+      visible:
+        id: "chat.input"
+    commands:
+      - tapOn:
+          id: "tab.home"
+          optional: true
+- runFlow:
+    when:
+      visible:
+        id: "raceDay.back"
+    commands:
+      - tapOn:
+          id: "raceDay.back"

@@ -1,0 +1,9 @@
+appId: com.anonymous.Aria
+---
+- launchApp:
+    clearState: false
+- runFlow: flows/bootstrap_demo.yaml
+- runFlow: flows/dashboard_track_and_raceday.yaml
+- runFlow: flows/chat_flow.yaml
+- runFlow: flows/plan_and_progress_flow.yaml
+- runFlow: flows/settings_profile_logout.yaml

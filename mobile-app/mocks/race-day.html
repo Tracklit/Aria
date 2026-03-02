@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Race Day - Aria App Mocks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="screen" style="display: flex; flex-direction: column; height: 100vh;">
+            <div class="header"
+                style="flex-direction: row; justify-content: space-between; align-items: center; padding-bottom: 20px; position: relative;">
+                <a href="index.html" style="text-decoration: none;"><svg width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        style="cursor: pointer;">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg></a>
+                <div style="font-size: 18px; font-weight: 600; text-align: center; flex: 1;">Insights</div>
+                <div style="width: 24px;"></div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding-bottom: 20px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <div style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+                    <div class="title-large" style="margin-bottom: 8px;">Congrats Alex!</div>
+                    <div style="font-size: 16px; color: rgba(255,255,255,0.8); padding: 0 32px;">
+                        You're officially ready for the Half Marathon. Here's your final race day strategy.
+                    </div>
+                </div>
+
+                <div style="padding: 0 24px;">
+                    <div class="insight-card tip" style="margin-bottom: 16px;">
+                        <div class="insight-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00E676"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 16v-4"></path>
+                                <path d="M12 8h.01"></path>
+                            </svg>
+                            <div class="insight-title">Pacing Strategy</div>
+                        </div>
+                        <div class="insight-msg">Start conservative at 8:15/mi for the first 3 miles. Settle into
+                            7:55/mi for miles 4-10. Empty the tank the last 5K.</div>
+                    </div>
+
+                    <div class="insight-card tip"
+                        style="background: rgba(0,122,255,0.1); border-left-color: #007aff; margin-bottom: 16px;">
+                        <div class="insight-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007aff"
+                                stroke-width="2">
+                                <path
+                                    d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6">
+                                </path>
+                                <line x1="2" y1="20" x2="2" y2="20"></line>
+                            </svg>
+                            <div class="insight-title">Nutrition</div>
+                        </div>
+                        <div class="insight-msg">Take a gel every 45 minutes. Hydrate at every other aid station. Don't
+                            try anything new on race morning!</div>
+                    </div>
+
+                    <div class="insight-card tip"
+                        style="background: rgba(255,59,48,0.1); border-left-color: #ff3b30; margin-bottom: 32px;">
+                        <div class="insight-header">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff3b30"
+                                stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <div class="insight-title">Race Morning Routine</div>
+                        </div>
+                        <div class="insight-msg">Wake up 3 hours before the gun. Eat your standard pre-long run
+                            breakfast. Arrive at the start line 45 mins early for dynamic warmups.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Embedded AI Chat Interface -->
+            <div style="background: #0f0f11; padding: 16px; border-top: 1px solid #222;">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary);">Ask
+                    SprintGPT about Race Day:</div>
+
+                <div class="suggestions-container" style="padding: 0; margin-bottom: 12px; margin-top: 0;">
+                    <button class="suggestion-chip" style="font-size: 12px;">What if it rains?</button>
+                    <button class="suggestion-chip" style="font-size: 12px;">Pre-race dinner ideas?</button>
+                    <button class="suggestion-chip" style="font-size: 12px;">Warmup drills?</button>
+                </div>
+
+                <div class="chat-input-area" style="position: static; padding: 0; background: none; border: none;">
+                    <input type="text" class="chat-input" placeholder="Type a message" style="background: #1c1c1e;">
+                    <div
+                        style="width: 40px; height: 40px; background: #004d40; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: var(--brand-cyan); flex-shrink: 0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

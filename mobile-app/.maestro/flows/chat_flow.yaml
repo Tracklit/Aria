@@ -1,0 +1,28 @@
+appId: com.anonymous.Aria
+---
+- tapOn:
+    id: "tab.chat"
+- assertVisible:
+    id: "chat.input"
+- tapOn:
+    id: "chat.new_conversation"
+- runFlow:
+    when:
+      visible:
+        id: "chat.suggestion.How_should_I_prepare_for_my_first_5K_"
+    commands:
+      - tapOn:
+          id: "chat.suggestion.How_should_I_prepare_for_my_first_5K_"
+- tapOn:
+    id: "chat.input"
+- inputText: "Give me an easy run session"
+- tapOn:
+    id: "chat.send"
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "chat.error_banner"
+    commands:
+      - tapOn:
+          id: "chat.error_banner"

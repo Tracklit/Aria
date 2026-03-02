@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Pressable, Text } from '@gluestack-ui/themed';
 import { colors, typography, borderRadius } from '../../theme';
 
 interface ChipProps {
@@ -10,15 +11,14 @@ interface ChipProps {
 
 export const Chip: React.FC<ChipProps> = ({ label, selected, onPress }) => {
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       style={[styles.chip, selected ? styles.selected : styles.unselected]}
-      activeOpacity={0.7}
     >
       <Text style={[styles.text, selected ? styles.selectedText : styles.unselectedText]}>
         {label}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
