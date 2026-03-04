@@ -201,7 +201,7 @@ jobs:
 
     environment:
       name: production
-      url: https://aria-dev-api.azurewebsites.net
+      url: https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io
 
     steps:
       - name: Checkout code
@@ -214,13 +214,22 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App (Dev)
-        uses: azure/webapps-deploy@v3
+      - name: Deploy AI API to Container App
+        uses: azure/container-apps-deploy-action@v2
         with:
-          app-name: aria-dev-api
-          images: ${{ env.DOCKER_REGISTRY }}/${{ env.API_IMAGE_NAME }}:latest
+          containerAppName: ca-aria-api-prod
+          resourceGroup: rg-aria-prod
+          imageToDeploy: ${{ env.DOCKER_REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Deploy Mobile Backend to Container App
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          containerAppName: ca-aria-mobile-prod
+          resourceGroup: rg-aria-prod
+          imageToDeploy: ${{ env.DOCKER_REGISTRY }}/${{ env.MOBILE_IMAGE_NAME }}:${{ github.sha }}
 
       - name: Run smoke tests
         run: |
           sleep 30
-          curl -f https://aria-dev-api.azurewebsites.net/health || echo "Health check warning"
+          curl -f https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io/health/live || echo "AI API health check warning"
+          curl -f https://ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io/api/health || echo "Mobile backend health check warning"

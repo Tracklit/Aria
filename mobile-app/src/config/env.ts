@@ -1,16 +1,20 @@
 const PRODUCTION_MOBILE_BACKEND_BASE_URL =
-  'https://app-tracklit-prod-tnrusd.azurewebsites.net';
-const PRODUCTION_AI_API_BASE_URL = 'https://aria-dev-api.azurewebsites.net';
+  'https://ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
+const PRODUCTION_AI_API_BASE_URL =
+  'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
 
 const ALLOWED_MOBILE_BACKEND_HOSTS = new Set([
+  'ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io',
   'app-tracklit-prod-tnrusd.azurewebsites.net',
   'app-tracklit-dev-kvnx2h.azurewebsites.net',
-  'app-aria-mobile-prod.azurewebsites.net',
+  'localhost',
 ]);
 
 const ALLOWED_AI_API_HOSTS = new Set([
+  'ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io',
   'aria-dev-api.azurewebsites.net',
   'aria-dev-api-alt-fqks2g.azurewebsites.net',
+  'localhost',
 ]);
 
 // In some Hermes builds `process` may be undefined. Guard access so
