@@ -63,3 +63,11 @@
 - **Prevention guardrail**: Same fence-stripping pattern as nutrition fix. Backend now also creates sessions from parsed AI response.
 - **Test coverage added**: None
 - **Deployment/runtime caveat**: None
+
+## 9. Nutrition/Program AI JSON Parsing Fails With Preamble Text (2026-03-04)
+- **Symptom**: AI-generated nutrition plans return error or show with 0 macros and no meals. The `JSON.parse` silently fails and falls back to `{ title, description }` with no macro/meal data.
+- **Root cause**: Prior fix (#7) used `^```...` / `...```$` anchored regex to strip markdown fences, which only works if the code fence is at the very start/end of the AI response string. LLMs frequently prepend text like "Here's your nutrition plan:" before the code fence, causing the regex to not match and `JSON.parse` to fail on the raw string.
+- **Exact fix**: In `mobile-backend/server/routes.ts`, replaced the anchored fence-stripping regex with a two-stage extraction: (1) regex `match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i)` to extract content between fences anywhere in the string, (2) fallback to finding the first `{` and last `}` to extract a JSON object from surrounding prose. Applied to both `/api/nutrition/generate` and `/api/programs/generate` endpoints. Added `console.error` logging of raw AI response on parse failure for future debugging.
+- **Prevention guardrail**: The extraction now handles all common LLM response formats (bare JSON, fenced JSON, JSON with preamble/postamble text). AI prompts in `aria-ai.ts` already instruct "no markdown, no code fences" but LLMs are non-deterministic.
+- **Test coverage added**: None -- recommended: unit test for JSON extraction with various LLM response formats
+- **Deployment/runtime caveat**: None

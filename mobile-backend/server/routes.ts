@@ -1390,9 +1390,29 @@ export function registerRoutes(app: Express): void {
 
       let parsedPlan;
       try {
-        const cleanJson = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        // Extract JSON from AI response — handle markdown fences, preamble text, etc.
+        let cleanJson = aiResponse;
+
+        // Try to extract JSON from markdown code fences first
+        const fenceMatch = cleanJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
+        if (fenceMatch) {
+          cleanJson = fenceMatch[1];
+        }
+
+        // If no fence match, try to find raw JSON object in the response
+        cleanJson = cleanJson.trim();
+        if (!cleanJson.startsWith('{')) {
+          const jsonStart = cleanJson.indexOf('{');
+          const jsonEnd = cleanJson.lastIndexOf('}');
+          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+            cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
+          }
+        }
+
         parsedPlan = JSON.parse(cleanJson);
-      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse AI nutrition response as JSON:', parseError);
+        console.error('Raw AI response:', aiResponse.substring(0, 500));
         parsedPlan = { title: 'AI Generated Plan', description: aiResponse };
       }
 
@@ -1549,9 +1569,26 @@ export function registerRoutes(app: Express): void {
 
       let parsedProgram;
       try {
-        const cleanJson = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        let cleanJson = aiResponse;
+
+        const fenceMatch = cleanJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
+        if (fenceMatch) {
+          cleanJson = fenceMatch[1];
+        }
+
+        cleanJson = cleanJson.trim();
+        if (!cleanJson.startsWith('{')) {
+          const jsonStart = cleanJson.indexOf('{');
+          const jsonEnd = cleanJson.lastIndexOf('}');
+          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+            cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
+          }
+        }
+
         parsedProgram = JSON.parse(cleanJson);
-      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse AI program response as JSON:', parseError);
+        console.error('Raw AI response:', aiResponse.substring(0, 500));
         parsedProgram = { title: input.title || 'AI Generated Program', description: aiResponse };
       }
 
