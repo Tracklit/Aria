@@ -159,13 +159,6 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, []);
 
-  const refreshDashboard = useCallback(async () => {
-    // Clear cache and force refresh
-    cache.delete('dashboard:state');
-    cache.delete('dashboard:insights');
-    await loadDashboard(true);
-  }, [loadDashboard]);
-
   const generateAIInsights = useCallback(async (forceRefresh = false) => {
     setState((prev) => ({ ...prev, isGenerating: true, error: null }));
 
@@ -233,6 +226,16 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
       }));
     }
   }, []);
+
+  const refreshDashboard = useCallback(async () => {
+    // Clear cache and force refresh
+    cache.delete('dashboard:state');
+    cache.delete('dashboard:insights');
+    await Promise.all([
+      loadDashboard(true),
+      generateAIInsights(true),
+    ]);
+  }, [loadDashboard, generateAIInsights]);
 
   const loadPatterns = useCallback(async () => {
     try {

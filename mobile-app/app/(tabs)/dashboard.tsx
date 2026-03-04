@@ -19,7 +19,7 @@ function getDisplayName(profileName?: string | null, greeting?: string) {
   if (profileName?.trim()) return profileName.trim();
   if (!greeting) return 'Athlete';
   const match = greeting.match(/,\s*(.+)$/);
-  return match?.[1]?.trim() || 'Alex';
+  return match?.[1]?.trim() || 'Athlete';
 }
 
 export default function DashboardScreen() {

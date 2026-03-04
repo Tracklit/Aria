@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext';
+import { ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MacroDonutChart } from '../../src/components/features/MacroDonutChart';
 import { MacroBar } from '../../src/components/features/MacroBar';
@@ -21,7 +22,7 @@ function getMealIcon(mealName: string): keyof typeof Ionicons.glyphMap {
 
 export default function NutritionPlanDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { plans, deletePlan, updatePlan } = useNutrition();
+  const { plans, deletePlan, updatePlan, generatePlan } = useNutrition();
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -30,6 +31,8 @@ export default function NutritionPlanDetail() {
   const [editProtein, setEditProtein] = useState('');
   const [editCarbs, setEditCarbs] = useState('');
   const [editFats, setEditFats] = useState('');
+  const [aiInstructions, setAiInstructions] = useState('');
+  const [isAdjusting, setIsAdjusting] = useState(false);
 
   useEffect(() => {
     loadPlan();
@@ -74,6 +77,29 @@ export default function NutritionPlanDetail() {
     await updatePlan(plan.id, updates);
     setPlan({ ...plan, ...updates });
     setIsEditing(false);
+  };
+
+  const handleAiAdjust = async () => {
+    if (!plan || !aiInstructions.trim()) {
+      Alert.alert('Instructions Required', 'Please describe how you want AI to adjust this plan.');
+      return;
+    }
+    setIsAdjusting(true);
+    try {
+      const newPlan = await generatePlan({
+        activityLevel: plan.activityLevel || 'moderate',
+        season: plan.season || 'in_season',
+        calorieTarget: plan.calorieTarget || undefined,
+        notes: `Adjust the following existing plan: "${plan.title}" (${plan.calorieTarget} kcal, P:${plan.proteinGrams}g C:${plan.carbsGrams}g F:${plan.fatsGrams}g). User instructions: ${aiInstructions}`,
+      });
+      setAiInstructions('');
+      setIsEditing(false);
+      router.replace(`/nutrition/${newPlan.id}`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to adjust plan with AI. Please try again.');
+    } finally {
+      setIsAdjusting(false);
+    }
   };
 
   const handleArchive = async () => {
@@ -245,6 +271,37 @@ export default function NutritionPlanDetail() {
           </View>
         </View>
 
+        {/* Ask AI to Adjust */}
+        {isEditing && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Ask AI to Adjust</Text>
+            <TextInput
+              style={[styles.aiInstructionsInput]}
+              value={aiInstructions}
+              onChangeText={setAiInstructions}
+              placeholder="e.g. More protein, reduce carbs, add vegan options..."
+              placeholderTextColor={colors.text.tertiary}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <TouchableOpacity
+              style={[styles.aiAdjustButton, isAdjusting && { opacity: 0.6 }]}
+              onPress={handleAiAdjust}
+              disabled={isAdjusting}
+            >
+              {isAdjusting ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="sparkles" size={18} color="#FFF" />
+                  <Text style={styles.aiAdjustText}>Generate Adjusted Plan</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Meal Suggestions */}
         {plan.mealSuggestions && plan.mealSuggestions.length > 0 && (
           <View style={styles.card}>
@@ -324,6 +381,10 @@ const styles = StyleSheet.create({
   // Edit inputs
   editInput: { backgroundColor: colors.background.secondary, color: colors.text.primary, borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   editInputSmall: { backgroundColor: colors.background.secondary, color: colors.text.primary, borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2, minWidth: 50, textAlign: 'center' },
+  // AI adjust
+  aiInstructionsInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.md, minHeight: 80, marginBottom: spacing.md },
+  aiAdjustButton: { backgroundColor: colors.primary, borderRadius: borderRadius.lg, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  aiAdjustText: { ...typography.body, color: '#FFF', fontWeight: '600' },
   // Archive
   archiveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md },
   archiveText: { ...typography.body, color: colors.text.secondary },

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useRef, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { startSession as apiStartSession, finishSession as apiFinishSession } from '../lib/api';
 
 interface Exercise {
   name: string;
@@ -22,13 +23,14 @@ interface LiveSession {
   startedAt: Date;
   isPaused: boolean;
   isComplete: boolean;
+  backendSessionId: number | null;
 }
 
 interface SessionContextType {
   activeSession: LiveSession | null;
   elapsedTime: number;
   restTimeRemaining: number | null;
-  startSession: (programId: number, programTitle: string, sessionTitle: string, exercises: Exercise[]) => void;
+  startSession: (programId: number, programTitle: string, sessionTitle: string, exercises: Exercise[]) => Promise<void>;
   pauseSession: () => void;
   resumeSession: () => void;
   completeSet: (exerciseIndex: number, setIndex: number) => void;
@@ -65,7 +67,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     setRestTimeRemaining(null);
   }, []);
 
-  const startSession = useCallback((programId: number, programTitle: string, sessionTitle: string, exercises: Exercise[]) => {
+  const startSession = useCallback(async (programId: number, programTitle: string, sessionTitle: string, exercises: Exercise[]) => {
     clearElapsedTimer();
     clearRestTimer();
 
@@ -77,6 +79,18 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const now = new Date();
     pausedRef.current = false;
 
+    // Start session on backend (fire-and-forget, don't block UI)
+    let backendSessionId: number | null = null;
+    apiStartSession().then((res: any) => {
+      if (res?.id) {
+        backendSessionId = res.id;
+        setActiveSession(prev => prev ? { ...prev, backendSessionId: res.id } : null);
+      }
+    }).catch(() => {
+      // Backend unavailable — session still works locally
+      if (__DEV__) console.log('[Session] Backend session start failed, continuing locally');
+    });
+
     setActiveSession({
       programId,
       programTitle,
@@ -86,6 +100,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       startedAt: now,
       isPaused: false,
       isComplete: false,
+      backendSessionId: null,
     });
     setElapsedTime(0);
     setRestTimeRemaining(null);
@@ -140,16 +155,20 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         completedSets[setIndex] = !completedSets[setIndex];
         return { ...ex, completedSets };
       });
-
-      const currentEx = exercises[exerciseIndex];
-      const allDone = currentEx.completedSets.every(Boolean);
-      if (allDone && currentEx.rest && currentEx.rest > 0) {
-        // Auto-start rest timer when all sets complete
-        setTimeout(() => startRestTimer(currentEx.rest!), 100);
-      }
-
       return { ...prev, exercises };
     });
+
+    // Check if all sets are done and start rest timer (reads fresh state via timeout)
+    setTimeout(() => {
+      setActiveSession(current => {
+        if (!current) return null;
+        const ex = current.exercises[exerciseIndex];
+        if (ex && ex.completedSets.every(Boolean) && ex.rest && ex.rest > 0) {
+          startRestTimer(ex.rest);
+        }
+        return current; // no state change
+      });
+    }, 50);
   }, [startRestTimer]);
 
   const nextExercise = useCallback(() => {
@@ -173,7 +192,36 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const finishSession = useCallback(() => {
     clearElapsedTimer();
     clearRestTimer();
-    setActiveSession(prev => prev ? { ...prev, isComplete: true } : null);
+
+    setActiveSession(prev => {
+      if (!prev) return null;
+
+      // Persist session to backend
+      if (prev.backendSessionId) {
+        const totalSets = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.length, 0);
+        const completedSets = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.filter(Boolean).length, 0);
+        const workoutData = {
+          programId: prev.programId,
+          programTitle: prev.programTitle,
+          sessionTitle: prev.sessionTitle,
+          duration: Math.floor((Date.now() - prev.startedAt.getTime()) / 1000),
+          exercisesCompleted: prev.exercises.length,
+          totalSets,
+          completedSets,
+          exercises: prev.exercises.map(ex => ({
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            completedSets: ex.completedSets,
+          })),
+        };
+        apiFinishSession(prev.backendSessionId, workoutData).catch(() => {
+          if (__DEV__) console.log('[Session] Backend session finish failed');
+        });
+      }
+
+      return { ...prev, isComplete: true };
+    });
   }, [clearElapsedTimer, clearRestTimer]);
 
   return (
