@@ -15,7 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.aria.coaching",
-      "appleTeamId": "2V636U3DWT"
+      "appleTeamId": "2V636U3DWT",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Aria needs access to your photo library to upload a profile picture.",
+        "NSSpeechRecognitionUsageDescription": "Aria uses speech recognition to let you talk to your AI coach hands-free."
+      }
     },
     "android": {
       "adaptiveIcon": {
