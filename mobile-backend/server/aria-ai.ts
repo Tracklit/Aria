@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { User, UserProfile, TrainingPlan, Workout } from '../shared/schema';
 
-const ARIA_API_URL = process.env.ARIA_API_URL || 'https://aria-dev-api.azurewebsites.net';
+const ARIA_API_URL = process.env.ARIA_API_URL || 'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
 
 // ==================== SYSTEM PROMPT ====================
 
@@ -282,19 +282,15 @@ export async function generateNutritionPlan(userId: number, input: NutritionPlan
 ${input.calorieTarget ? `- Target Calories: ${input.calorieTarget}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
-You MUST return ONLY valid JSON (no markdown, no code fences). Example structure:
-{
-  "title": "Sprint Athlete Nutrition Plan",
-  "description": "A high-performance nutrition plan for sprint athletes",
-  "calorieTarget": 2800,
-  "proteinGrams": 180,
-  "carbsGrams": 350,
-  "fatsGrams": 80,
-  "mealSuggestions": [
-    { "meal": "Breakfast", "calories": 600, "foods": ["3 eggs scrambled", "Oatmeal with banana", "Orange juice"], "macros": { "protein": 35, "carbs": 70, "fats": 20 } },
-    { "meal": "Lunch", "calories": 800, "foods": ["Grilled chicken breast", "Brown rice", "Steamed broccoli"], "macros": { "protein": 50, "carbs": 90, "fats": 20 } }
-  ]
-}`;
+You MUST return your response as a JSON object with "analysis" and "recommendation" fields.
+The "recommendation" field MUST contain a JSON string (escaped) with the nutrition plan.
+The "analysis" field should be a brief summary of the plan.
+
+Example response format:
+{"analysis": "Created a 2800 calorie plan for sprint performance", "recommendation": "{\\"title\\": \\"Sprint Athlete Nutrition Plan\\", \\"description\\": \\"A high-performance nutrition plan\\", \\"calorieTarget\\": 2800, \\"proteinGrams\\": 180, \\"carbsGrams\\": 350, \\"fatsGrams\\": 80, \\"mealSuggestions\\": [{\\"meal\\": \\"Breakfast\\", \\"calories\\": 600, \\"foods\\": [\\"3 eggs scrambled\\", \\"Oatmeal with banana\\"], \\"macros\\": {\\"protein\\": 35, \\"carbs\\": 70, \\"fats\\": 20}}]}"}
+
+The nutrition plan JSON inside "recommendation" MUST include: title, description, calorieTarget (number), proteinGrams (number), carbsGrams (number), fatsGrams (number), and mealSuggestions (array with meal, calories, foods array, and macros object with protein/carbs/fats).
+Include 4-6 meals/snacks.`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
 
@@ -304,7 +300,7 @@ ADDITIONAL INSTRUCTIONS FOR NUTRITION PLAN:
 - Include locally available foods when locality is specified
 - Provide 4-6 meals/snacks per day
 - Ensure macros support athletic performance and recovery
-- RESPOND ONLY WITH THE JSON OBJECT, no additional text`;
+- Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
 
   try {
     const rawResponse = await callAriaAPI({
@@ -343,22 +339,17 @@ export async function generateProgram(userId: number, input: ProgramGenerationIn
 ${input.description ? `- Description: ${input.description}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
-You MUST return ONLY valid JSON (no markdown, no code fences). Use this EXACT structure:
-{
-  "title": "Sprint Power Program",
-  "description": "A periodized sprint training program",
-  "category": "sprint",
-  "level": "intermediate",
-  "duration": 4,
-  "sessions": [
-    { "dayNumber": 1, "title": "Speed Work", "description": "Short sprint repeats with full recovery", "isRestDay": false, "exercises": [
-      { "name": "40m Sprints", "sets": 6, "reps": "6", "rest": 180, "notes": "Full effort" }
-    ]},
-    { "dayNumber": 2, "title": "Recovery", "description": "Light jog and stretching", "isRestDay": true, "exercises": [] }
-  ]
-}
+You MUST return your response as a JSON object with "analysis" and "recommendation" fields.
+The "recommendation" field MUST contain a JSON string (escaped) with the training program.
+The "analysis" field should be a brief summary of the program.
 
-IMPORTANT: "reps" must be a string (e.g. "6", "8-10", "1"). "sets" and "rest" must be numbers. Every session MUST have "dayNumber", "title", "isRestDay", and "exercises" fields.`;
+Example response format:
+{"analysis": "Created a 4-week sprint power program", "recommendation": "{\\"title\\": \\"Sprint Power Program\\", \\"description\\": \\"A periodized sprint training program\\", \\"category\\": \\"sprint\\", \\"level\\": \\"intermediate\\", \\"duration\\": 4, \\"sessions\\": [{\\"dayNumber\\": 1, \\"title\\": \\"Speed Work\\", \\"description\\": \\"Short sprint repeats\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"40m Sprints\\", \\"sets\\": 6, \\"reps\\": \\"6\\", \\"rest\\": 180, \\"notes\\": \\"Full effort\\"}]}, {\\"dayNumber\\": 2, \\"title\\": \\"Recovery\\", \\"description\\": \\"Light jog and stretching\\", \\"isRestDay\\": true, \\"exercises\\": []}]}"}
+
+IMPORTANT rules for the JSON inside "recommendation":
+- "reps" must be a string (e.g. "6", "8-10", "1"). "sets" and "rest" must be numbers.
+- Every session MUST have "dayNumber", "title", "isRestDay", and "exercises" fields.
+- Include at least 3-4 sessions per week.`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
 
@@ -367,7 +358,7 @@ ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
 - Include warm-up and cool-down recommendations
 - Balance training load across the week
 - Include rest days
-- RESPOND ONLY WITH THE JSON OBJECT, no additional text`;
+- Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
 
   try {
     const rawResponse = await callAriaAPI({

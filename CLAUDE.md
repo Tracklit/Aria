@@ -12,6 +12,16 @@ Aria is an AI-powered running coaching app for sprint athletes. The monorepo has
 
 The mobile app talks to both backends: mobile-backend handles CRUD/auth, aria-api handles AI chat and analytics. The mobile-backend proxies chat requests to aria-api via `server/aria-ai.ts`.
 
+### Production URLs
+
+| Service | URL |
+|---------|-----|
+| **aria-api (prod)** | `https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io` |
+| **mobile-backend (prod)** | `https://ca-aria-mobile-prod.calmcliff-31ba567d.westus.azurecontainerapps.io` |
+| **aria-api (dev, often down)** | `https://aria-dev-api.azurewebsites.net` |
+
+**Always use the prod aria-api URL** for AI generation (nutrition plans, programs, chat). The dev API is frequently down.
+
 ## Development Commands
 
 ### aria-api
