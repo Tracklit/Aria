@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { impactLight, impactMedium, impactHeavy } from '../../src/utils/haptics';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 interface Lap {
@@ -40,13 +40,13 @@ export default function StopwatchScreen() {
       setTime(elapsed);
     }, 10);
     setIsRunning(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactLight();
   }, []);
 
   const stop = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRunning(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactMedium();
   }, []);
 
   const reset = useCallback(() => {
@@ -61,7 +61,7 @@ export default function StopwatchScreen() {
     const lastLapTime = laps.length > 0 ? laps[0].time : 0;
     const split = time - lastLapTime;
     setLaps(prev => [{ number: prev.length + 1, time, split }, ...prev]);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    impactHeavy();
   }, [time, laps]);
 
   // Find best and worst split indices (only when 2+ laps)

@@ -347,27 +347,11 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const loadTodaysWorkout = useCallback(async () => {
     try {
-      const workout = await getTodaysWorkout() as PlannedWorkout;
-      setState((prev) => ({ ...prev, todaysWorkout: workout }));
+      const response = await getTodaysWorkout() as { workout: PlannedWorkout | null };
+      setState((prev) => ({ ...prev, todaysWorkout: response.workout }));
     } catch {
-      // API unavailable — provide a mock workout so the dashboard looks populated
-      const fallbackWorkout: PlannedWorkout = {
-        id: 9999,
-        planId: 1,
-        date: new Date().toISOString(),
-        weekNumber: 1,
-        dayOfWeek: new Date().getDay(),
-        type: 'intervals',
-        title: 'Sprint Intervals',
-        description: '6 × 150m at 90% effort',
-        structure: null,
-        targetDuration: 2700, // 45 min
-        targetDistance: 900,
-        targetPace: null,
-        notes: null,
-        priority: 'normal',
-      };
-      setState((prev) => ({ ...prev, todaysWorkout: fallbackWorkout }));
+      // API unavailable — set null rather than spamming with errors
+      setState((prev) => ({ ...prev, todaysWorkout: null }));
     }
   }, []);
 

@@ -343,7 +343,7 @@ export async function generateProgram(userId: number, input: ProgramGenerationIn
 ${input.description ? `- Description: ${input.description}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
-You MUST return ONLY valid JSON (no markdown, no code fences). Example structure:
+You MUST return ONLY valid JSON (no markdown, no code fences). Use this EXACT structure:
 {
   "title": "Sprint Power Program",
   "description": "A periodized sprint training program",
@@ -352,11 +352,13 @@ You MUST return ONLY valid JSON (no markdown, no code fences). Example structure
   "duration": 4,
   "sessions": [
     { "dayNumber": 1, "title": "Speed Work", "description": "Short sprint repeats with full recovery", "isRestDay": false, "exercises": [
-      { "name": "40m Sprints", "sets": 6, "reps": 1, "rest": 180, "notes": "Full effort" }
+      { "name": "40m Sprints", "sets": 6, "reps": "6", "rest": 180, "notes": "Full effort" }
     ]},
     { "dayNumber": 2, "title": "Recovery", "description": "Light jog and stretching", "isRestDay": true, "exercises": [] }
   ]
-}`;
+}
+
+IMPORTANT: "reps" must be a string (e.g. "6", "8-10", "1"). "sets" and "rest" must be numbers. Every session MUST have "dayNumber", "title", "isRestDay", and "exercises" fields.`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
 
@@ -378,7 +380,7 @@ ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
     return rawResponse;
   } catch (error) {
     console.error('Program generation failed:', error);
-    throw new Error('Failed to generate program');
+    throw error;
   }
 }
 

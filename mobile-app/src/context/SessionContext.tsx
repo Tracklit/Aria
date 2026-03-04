@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect, ReactNode } from 'react';
 import { router } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { startSession as apiStartSession, finishSession as apiFinishSession } from '../lib/api';
+import { notificationSuccess, impactMedium } from '../utils/haptics';
 import {
   announceSetComplete,
   announceRestTimer,
@@ -139,7 +139,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       setRestTimeRemaining(prev => {
         if (prev === null || prev <= 1) {
           clearRestTimer();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          notificationSuccess();
           return null;
         }
         const next = prev - 1;
@@ -157,7 +157,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [clearRestTimer]);
 
   const completeSet = useCallback((exerciseIndex: number, setIndex: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactMedium();
 
     setActiveSession(prev => {
       if (!prev) return null;

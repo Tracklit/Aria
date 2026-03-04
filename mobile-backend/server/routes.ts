@@ -598,10 +598,7 @@ export function registerRoutes(app: Express): void {
   app.get('/api/workouts/today', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const workout = await storage.getTodaysPlannedWorkout(req.userId!);
-      if (!workout) {
-        return res.status(404).json({ error: 'No workout planned for today' });
-      }
-      res.json(workout);
+      res.json({ workout: workout || null });
     } catch (error: any) {
       console.error('Get today workout error:', error);
       res.status(500).json({ error: 'Failed to fetch today\'s workout' });
@@ -1619,11 +1616,12 @@ export function registerRoutes(app: Express): void {
 
       const sessions = await storage.getProgramSessions(program.id);
       res.status(201).json({ ...program, sessions });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
-      console.error('Program generation error:', error);
+      console.error('Program generation error:', error?.message || error);
+      if (error?.stack) console.error('Stack:', error.stack);
       res.status(500).json({ error: 'Failed to generate program' });
     }
   });
