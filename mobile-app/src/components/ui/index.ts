@@ -6,3 +6,4 @@ export { Avatar } from './Avatar';
 export { CircularProgress } from './CircularProgress';
 export { FadeIn } from './FadeIn';
 export { SkeletonLoader, SkeletonCard, SkeletonStatsCard } from './SkeletonLoader';
+export { GradientCard } from './GradientCard';

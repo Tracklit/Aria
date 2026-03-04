@@ -6,6 +6,7 @@ import { ChatProvider } from './ChatContext';
 import { DashboardProvider } from './DashboardContext';
 import { NutritionProvider } from './NutritionContext';
 import { ProgramsProvider } from './ProgramsContext';
+import { SessionProvider } from './SessionContext';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -27,7 +28,9 @@ export const AppProviders: React.FC<{ children: ReactNode }> = ({ children }) =>
             <DashboardProvider>
               <NutritionProvider>
                 <ProgramsProvider>
-                  {children}
+                  <SessionProvider>
+                    {children}
+                  </SessionProvider>
                 </ProgramsProvider>
               </NutritionProvider>
             </DashboardProvider>

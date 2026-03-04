@@ -7,6 +7,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { SettingsRow } from '../../src/components/features';
 import { Avatar } from '../../src/components/ui';
 import { useAuth } from '../../src/context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { ToastManager } from '../../src/components/Toast';
 
@@ -96,7 +97,12 @@ export default function MoreScreen() {
 
         {/* Profile Header */}
         {profile && (
-          <View style={styles.profileCard}>
+          <LinearGradient
+            colors={['#1C1C1E', '#004D40', '#1C1C1E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.profileCard}
+          >
             <TouchableOpacity testID="settings.change_photo" onPress={handleChangePhoto} disabled={isUploadingPhoto}>
               {isUploadingPhoto ? (
                 <View style={styles.profileAvatar}>
@@ -119,28 +125,18 @@ export default function MoreScreen() {
                 {profile.experienceLevel ? `(${profile.experienceLevel})` : ''}
               </Text>
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
         )}
-
-        {/* Quick Access Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeader}>QUICK ACCESS</Text>
-          <View style={styles.group}>
-            <SettingsRow title="Progress & Analytics" onPress={() => router.push('/(tabs)/progress')} testID="settings.progress" />
-            <View style={styles.divider} />
-            <SettingsRow title="Sprint Tools" onPress={() => router.push('/tools')} testID="settings.quick_sprint_tools" />
-          </View>
-        </View>
 
         {/* Account Section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>ACCOUNT</Text>
           <View style={styles.group}>
-            <SettingsRow title="Edit Profile" onPress={handleEditProfile} testID="settings.edit_profile" />
+            <SettingsRow title="Edit Profile" icon="person-outline" onPress={handleEditProfile} testID="settings.edit_profile" />
             <View style={styles.divider} />
-            <SettingsRow title="Notifications" onPress={() => handlePress('Notifications')} testID="settings.notifications" />
+            <SettingsRow title="Notifications" icon="notifications-outline" onPress={() => handlePress('Notifications')} testID="settings.notifications" />
             <View style={styles.divider} />
-            <SettingsRow title="Privacy" onPress={() => handlePress('Privacy')} testID="settings.privacy" />
+            <SettingsRow title="Privacy" icon="shield-outline" onPress={() => handlePress('Privacy')} testID="settings.privacy" />
           </View>
         </View>
 
@@ -150,17 +146,18 @@ export default function MoreScreen() {
           <View style={styles.group}>
             <SettingsRow
               title="Units of Measure"
-              onPress={() => handlePress('Units of Measure')}
+              icon="resize-outline"
+              onPress={() => router.push('/settings/units')}
               testID="settings.units"
             />
             <View style={styles.divider} />
-            <SettingsRow title="AI Coaching Style" onPress={() => handlePress('AI Coaching Style')} testID="settings.ai_style" />
+            <SettingsRow title="AI Coaching Style" icon="sparkles-outline" onPress={() => router.push('/settings/ai-coaching')} testID="settings.ai_style" />
             <View style={styles.divider} />
-            <SettingsRow title="Voice Feedback" onPress={() => handlePress('Voice Feedback')} testID="settings.voice_feedback" />
+            <SettingsRow title="Voice Feedback" icon="volume-high-outline" onPress={() => router.push('/settings/voice-feedback')} testID="settings.voice_feedback" />
             <View style={styles.divider} />
-            <SettingsRow title="Athlete Profile" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
+            <SettingsRow title="Athlete Profile" icon="body-outline" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
             <View style={styles.divider} />
-            <SettingsRow title="Training Plans" onPress={() => router.push('/plan')} testID="settings.training_plans" />
+            <SettingsRow title="Training Plans" icon="calendar-outline" onPress={() => router.push('/plan')} testID="settings.training_plans" />
           </View>
         </View>
 
@@ -168,11 +165,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>INTEGRATIONS</Text>
           <View style={styles.group}>
-            <SettingsRow title="Apple Health" onPress={() => handlePress('Apple Health')} testID="settings.apple_health" />
+            <SettingsRow title="Apple Health" icon="heart-outline" onPress={() => handlePress('Apple Health')} testID="settings.apple_health" />
             <View style={styles.divider} />
-            <SettingsRow title="Garmin" onPress={() => handlePress('Garmin')} testID="settings.garmin" />
+            <SettingsRow title="Garmin" icon="watch-outline" onPress={() => handlePress('Garmin')} testID="settings.garmin" />
             <View style={styles.divider} />
-            <SettingsRow title="Strava" onPress={() => handlePress('Strava')} testID="settings.strava" />
+            <SettingsRow title="Strava" icon="bicycle-outline" onPress={() => handlePress('Strava')} testID="settings.strava" />
           </View>
         </View>
 
@@ -180,11 +177,11 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>SUPPORT</Text>
           <View style={styles.group}>
-            <SettingsRow title="Help & FAQ" onPress={() => handlePress('Help')} testID="settings.help" />
+            <SettingsRow title="Help & FAQ" icon="help-circle-outline" onPress={() => handlePress('Help')} testID="settings.help" />
             <View style={styles.divider} />
-            <SettingsRow title="Contact Us" onPress={() => handlePress('Contact')} testID="settings.contact" />
+            <SettingsRow title="Contact Us" icon="mail-outline" onPress={() => handlePress('Contact')} testID="settings.contact" />
             <View style={styles.divider} />
-            <SettingsRow title="Rate the App" onPress={() => handlePress('Rate')} testID="settings.rate" />
+            <SettingsRow title="Rate the App" icon="star-outline" onPress={() => handlePress('Rate')} testID="settings.rate" />
           </View>
         </View>
 

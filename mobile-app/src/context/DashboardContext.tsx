@@ -47,7 +47,7 @@ interface DashboardState {
 interface DashboardContextType extends DashboardState {
   loadDashboard: () => Promise<void>;
   refreshDashboard: () => Promise<void>;
-  generateAIInsights: () => Promise<void>;
+  generateAIInsights: (forceRefresh?: boolean) => Promise<void>;
   loadPatterns: () => Promise<void>;
   clearError: () => void;
 }
@@ -162,22 +162,25 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
   const refreshDashboard = useCallback(async () => {
     // Clear cache and force refresh
     cache.delete('dashboard:state');
+    cache.delete('dashboard:insights');
     await loadDashboard(true);
   }, [loadDashboard]);
 
-  const generateAIInsights = useCallback(async () => {
+  const generateAIInsights = useCallback(async (forceRefresh = false) => {
     setState((prev) => ({ ...prev, isGenerating: true, error: null }));
 
     try {
-      // Check cache first
-      const cachedInsights = cache.get<any>('dashboard:insights');
-      if (cachedInsights) {
-        setState((prev) => ({
-          ...prev,
-          insights: cachedInsights,
-          isGenerating: false,
-        }));
-        return;
+      // Check cache first (unless forcing refresh)
+      if (!forceRefresh) {
+        const cachedInsights = cache.get<any>('dashboard:insights');
+        if (cachedInsights) {
+          setState((prev) => ({
+            ...prev,
+            insights: cachedInsights,
+            isGenerating: false,
+          }));
+          return;
+        }
       }
 
       // Aggregate user context

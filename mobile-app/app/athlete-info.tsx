@@ -13,6 +13,8 @@ const DIETARY_OPTIONS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'ke
 export default function AthleteInfoScreen() {
   const { profile, updateProfile } = useAuth();
 
+  const [height, setHeight] = useState(profile?.height?.toString() || '');
+  const [weight, setWeight] = useState(profile?.weight?.toString() || '');
   const [bodyFat, setBodyFat] = useState(profile?.bodyFatPercentage?.toString() || '');
   const [activityLevel, setActivityLevel] = useState<string[]>(profile?.activityLevel ? [profile.activityLevel] : []);
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>(profile?.dietaryRestrictions || []);
@@ -24,6 +26,8 @@ export default function AthleteInfoScreen() {
     setIsSaving(true);
     try {
       await updateProfile({
+        height: height ? parseFloat(height) : null,
+        weight: weight ? parseFloat(weight) : null,
         bodyFatPercentage: bodyFat ? parseFloat(bodyFat) : null,
         activityLevel: activityLevel[0] || null,
         dietaryRestrictions,
@@ -67,12 +71,32 @@ export default function AthleteInfoScreen() {
         <View style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Height</Text>
-            <Text style={styles.value}>{profile?.height ? `${profile.height} cm` : 'Not set'}</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={height}
+                onChangeText={setHeight}
+                placeholder="e.g. 180"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="numeric"
+              />
+              <Text style={styles.unitLabel}>cm</Text>
+            </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.label}>Weight</Text>
-            <Text style={styles.value}>{profile?.weight ? `${profile.weight} kg` : 'Not set'}</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={styles.input}
+                value={weight}
+                onChangeText={setWeight}
+                placeholder="e.g. 75"
+                placeholderTextColor={colors.text.tertiary}
+                keyboardType="numeric"
+              />
+              <Text style={styles.unitLabel}>kg</Text>
+            </View>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
@@ -153,7 +177,9 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.background.secondary },
   label: { ...typography.body, color: colors.text.primary },
   value: { ...typography.body, color: colors.text.secondary },
-  input: { ...typography.body, color: colors.text.primary, textAlign: 'right', minWidth: 80 },
+  input: { ...typography.body, color: colors.text.primary, textAlign: 'right', minWidth: 60 },
+  inputRow: { flexDirection: 'row' as const, alignItems: 'center' as const },
+  unitLabel: { ...typography.caption, color: colors.text.secondary, marginLeft: spacing.xs },
   fieldLabel: { ...typography.caption, color: colors.text.secondary, fontWeight: '600', marginBottom: spacing.xs },
   textInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.md },
   textArea: { minHeight: 100 },

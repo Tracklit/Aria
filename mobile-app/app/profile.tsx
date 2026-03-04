@@ -6,10 +6,13 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../src/context';
 import { colors } from '../src/theme';
 
@@ -17,12 +20,31 @@ export default function ProfileScreen() {
   const { profile, updateProfile } = useAuth();
   const [name, setName] = useState(profile?.displayName || '');
   const [gender, setGender] = useState(profile?.gender || '');
-  const [dob, setDob] = useState(
-    profile?.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString('en-US') : ''
+  const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
+    profile?.dateOfBirth ? new Date(profile.dateOfBirth) : null
   );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const initial = useMemo(() => (name?.trim()?.charAt(0) || 'A').toUpperCase(), [name]);
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const handleDateChange = (_event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setDateOfBirth(selectedDate);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -30,6 +52,7 @@ export default function ProfileScreen() {
       await updateProfile({
         displayName: name || null,
         gender: gender || null,
+        dateOfBirth: dateOfBirth ? dateOfBirth.toISOString() : null,
       });
       Alert.alert('Saved', 'Profile updated.');
       router.back();
@@ -87,16 +110,60 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Date of Birth</Text>
-            <TextInput
+            <TouchableOpacity
               testID="profile.dob"
-              style={styles.input}
-              value={dob}
-              onChangeText={setDob}
-              placeholder="MM/DD/YYYY"
-              placeholderTextColor="#666"
-            />
+              onPress={() => setShowDatePicker(true)}
+              style={styles.dobButton}
+            >
+              <Text style={[styles.dobText, !dateOfBirth && styles.dobPlaceholder]}>
+                {dateOfBirth ? formatDate(dateOfBirth) : 'MM/DD/YYYY'}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color="#666" />
+            </TouchableOpacity>
           </View>
         </View>
+
+        {Platform.OS === 'ios' ? (
+          <Modal
+            visible={showDatePicker}
+            transparent
+            animationType="slide"
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.modalCancel}>Cancel</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>Date of Birth</Text>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.modalDone}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={dateOfBirth || new Date(2000, 0, 1)}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1930, 0, 1)}
+                  themeVariant="dark"
+                />
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          showDatePicker && (
+            <DateTimePicker
+              value={dateOfBirth || new Date(2000, 0, 1)}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              minimumDate={new Date(1930, 0, 1)}
+            />
+          )
+        )}
 
         <TouchableOpacity
           testID="profile.save"
@@ -179,6 +246,52 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     paddingVertical: 4,
+  },
+  dobButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  dobText: {
+    color: '#FFF',
+    fontSize: 16,
+  },
+  dobPlaceholder: {
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 34,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  modalCancel: {
+    color: '#8E8E93',
+    fontSize: 16,
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalDone: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   saveButton: {
     marginTop: 24,

@@ -169,6 +169,7 @@ export default function ChatScreen() {
             renderedMessages
           ) : (
             <View style={styles.emptyState}>
+              <Ionicons name="sparkles" size={36} color="#00E5FF" style={styles.emptyIcon} />
               <Text style={styles.emptyTitle}>
                 {hasValidToken ? 'Chat with SprintGPT' : 'Sign In Required'}
               </Text>
@@ -206,6 +207,9 @@ export default function ChatScreen() {
         </ScrollView>
 
         <View style={[styles.inputDock, { paddingBottom: tabBarHeight }]}>
+          <TouchableOpacity style={styles.attachBtn}>
+            <Ionicons name="add" size={24} color="#FFF" />
+          </TouchableOpacity>
           <TextInput
             testID="chat.input"
             style={styles.input}
@@ -233,7 +237,7 @@ export default function ChatScreen() {
             {isSending ? (
               <ActivityIndicator color="#FFF" size="small" />
             ) : (
-              <Ionicons name="add" size={24} color={canSend ? colors.teal : '#666'} />
+              <Ionicons name="arrow-up" size={24} color={canSend ? colors.teal : '#666'} />
             )}
           </TouchableOpacity>
         </View>
@@ -371,10 +375,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 8,
   },
+  emptyIcon: {
+    marginBottom: 12,
+  },
   suggestionChip: {
     backgroundColor: '#131316',
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: 'rgba(0, 229, 255, 0.3)',
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -425,6 +432,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
+  },
+  attachBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1C1C1E',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
   voiceBtn: {
     width: 40,

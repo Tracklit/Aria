@@ -282,21 +282,17 @@ export async function generateNutritionPlan(userId: number, input: NutritionPlan
 ${input.calorieTarget ? `- Target Calories: ${input.calorieTarget}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
-Please respond with a JSON object (and nothing else) with this exact structure:
+You MUST return ONLY valid JSON (no markdown, no code fences). Example structure:
 {
-  "title": "Plan name",
-  "description": "Brief description",
-  "calorieTarget": 2500,
-  "proteinGrams": 150,
-  "carbsGrams": 300,
+  "title": "Sprint Athlete Nutrition Plan",
+  "description": "A high-performance nutrition plan for sprint athletes",
+  "calorieTarget": 2800,
+  "proteinGrams": 180,
+  "carbsGrams": 350,
   "fatsGrams": 80,
   "mealSuggestions": [
-    {
-      "meal": "Breakfast",
-      "foods": ["food1", "food2"],
-      "calories": 600,
-      "macros": { "protein": 30, "carbs": 70, "fats": 20 }
-    }
+    { "meal": "Breakfast", "calories": 600, "foods": ["3 eggs scrambled", "Oatmeal with banana", "Orange juice"], "macros": { "protein": 35, "carbs": 70, "fats": 20 } },
+    { "meal": "Lunch", "calories": 800, "foods": ["Grilled chicken breast", "Brown rice", "Steamed broccoli"], "macros": { "protein": 50, "carbs": 90, "fats": 20 } }
   ]
 }`;
 
@@ -347,23 +343,18 @@ export async function generateProgram(userId: number, input: ProgramGenerationIn
 ${input.description ? `- Description: ${input.description}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
-Please respond with a JSON object (and nothing else) with this exact structure:
+You MUST return ONLY valid JSON (no markdown, no code fences). Example structure:
 {
-  "title": "Program name",
-  "description": "Brief description",
+  "title": "Sprint Power Program",
+  "description": "A periodized sprint training program",
   "category": "sprint",
   "level": "intermediate",
   "duration": 4,
   "sessions": [
-    {
-      "dayNumber": 1,
-      "title": "Session title",
-      "description": "Session description",
-      "exercises": [
-        { "name": "Exercise name", "sets": 3, "reps": "10", "rest": 60, "notes": "" }
-      ],
-      "isRestDay": false
-    }
+    { "dayNumber": 1, "title": "Speed Work", "description": "Short sprint repeats with full recovery", "isRestDay": false, "exercises": [
+      { "name": "40m Sprints", "sets": 6, "reps": 1, "rest": 180, "notes": "Full effort" }
+    ]},
+    { "dayNumber": 2, "title": "Recovery", "description": "Light jog and stretching", "isRestDay": true, "exercises": [] }
   ]
 }`;
 

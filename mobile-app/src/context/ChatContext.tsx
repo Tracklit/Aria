@@ -120,6 +120,64 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }));
   }, []);
 
+  // Non-streaming helper that reuses an existing user message (no duplicate)
+  const _sendNonStreaming = useCallback(async (text: string, existingUserMessage: Message) => {
+    const chatInput = {
+      message: text,
+      conversationId: state.currentConversationId || undefined,
+    };
+
+    const response: ChatResponse = await retryWithBackoff(
+      async () => {
+        const res = await sendChatMessage(chatInput);
+        if (res.response?.trim() === FALLBACK_AI_RESPONSE) {
+          const error = new Error('AI service temporarily unavailable');
+          (error as any).status = 503;
+          throw error;
+        }
+        return res;
+      },
+      {
+        maxRetries: 2,
+        baseDelay: 750,
+        shouldRetry: (error) => isRetryableError(error),
+      }
+    ).catch(() => ({
+      response: FALLBACK_AI_RESPONSE,
+      conversationId: state.currentConversationId || 0,
+    }));
+
+    const aiMessage: Message = {
+      id: `ai-${Date.now()}`,
+      text: response.response,
+      timestamp: new Date(),
+      sender: 'ai',
+    };
+
+    setState((prev) => {
+      const updatedMessages = prev.messages.map((msg) =>
+        msg.id === existingUserMessage.id ? { ...msg, id: `user-${Date.now()}` } : msg
+      );
+
+      return {
+        ...prev,
+        currentConversationId: response.conversationId,
+        messages: [...updatedMessages, aiMessage],
+        isSending: false,
+        isStreaming: false,
+        streamingMessage: null,
+        error:
+          response.response?.trim() === FALLBACK_AI_RESPONSE
+            ? 'Sprinthia AI is unavailable. Please try again.'
+            : null,
+      };
+    });
+
+    if (!state.currentConversationId) {
+      loadConversations();
+    }
+  }, [state.currentConversationId, loadConversations]);
+
   const sendMessage = useCallback(async (text: string, useStreaming = true) => {
     const token = await getToken();
     if (!token) {
@@ -207,7 +265,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             streamingMessageRef.current = '';
           },
           (error: Error) => {
-            // On error, fall back to non-streaming
+            // On error, fall back to non-streaming without adding duplicate user message
             if (__DEV__) {
               console.log('[Chat] Streaming failed, falling back to non-streaming:', error.message);
             }
@@ -216,69 +274,12 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               streamingMessage: null,
               isStreaming: false,
             }));
-            // Retry without streaming
-            sendMessage(text, false);
+            _sendNonStreaming(text, userMessage);
           }
         );
       } else {
-        // Non-streaming mode (fallback) with retry logic
-        const response: ChatResponse = await retryWithBackoff(
-          async () => {
-            const res = await sendChatMessage(chatInput);
-            // Treat fallback AI response as retryable error
-            if (res.response?.trim() === FALLBACK_AI_RESPONSE) {
-              const error = new Error('AI service temporarily unavailable');
-              (error as any).status = 503; // Service unavailable
-              throw error;
-            }
-            return res;
-          },
-          {
-            maxRetries: 2,
-            baseDelay: 750,
-            shouldRetry: (error) => {
-              // Retry on network errors or 5xx errors
-              return isRetryableError(error);
-            },
-          }
-        ).catch((error) => {
-          // If all retries fail, return fallback response instead of throwing
-          return {
-            response: FALLBACK_AI_RESPONSE,
-            conversationId: state.currentConversationId || 0,
-          };
-        });
-
-        const aiMessage: Message = {
-          id: `ai-${Date.now()}`,
-          text: response.response,
-          timestamp: new Date(),
-          sender: 'ai',
-        };
-
-        setState((prev) => {
-          const updatedMessages = prev.messages.map((msg) =>
-            msg.id === userMessage.id ? { ...msg, id: `user-${Date.now()}` } : msg
-          );
-
-          return {
-            ...prev,
-            currentConversationId: response.conversationId,
-            messages: [...updatedMessages, aiMessage],
-            isSending: false,
-            isStreaming: false,
-            streamingMessage: null,
-            error:
-              response.response?.trim() === FALLBACK_AI_RESPONSE
-                ? 'Sprinthia AI is unavailable. Please try again.'
-                : null,
-          };
-        });
-
-        // Refresh conversations list if this was a new conversation
-        if (!state.currentConversationId) {
-          loadConversations();
-        }
+        // Non-streaming mode (fallback)
+        await _sendNonStreaming(text, userMessage);
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to send message';
@@ -291,7 +292,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         error: errorMessage,
       }));
     }
-  }, [state.currentConversationId, loadConversations]);
+  }, [state.currentConversationId, loadConversations, _sendNonStreaming]);
 
   const deleteCurrentConversation = useCallback(async () => {
     if (!state.currentConversationId) return;

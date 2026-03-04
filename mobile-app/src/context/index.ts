@@ -4,6 +4,7 @@ export { ChatProvider, useChat } from './ChatContext';
 export { DashboardProvider, useDashboard } from './DashboardContext';
 export { NutritionProvider, useNutrition } from './NutritionContext';
 export { ProgramsProvider, usePrograms } from './ProgramsContext';
+export { SessionProvider, useSession } from './SessionContext';
 export { AppProviders } from './AppContext';
 
 // Re-export types

@@ -7,10 +7,11 @@ const containerName = process.env.AZURE_STORAGE_CONTAINER || 'program-files';
 export async function uploadFileToBlob(
   buffer: Buffer,
   originalName: string,
-  mimeType: string
+  mimeType: string,
+  container?: string
 ): Promise<{ url: string; blobName: string }> {
   const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-  const containerClient = blobServiceClient.getContainerClient(containerName);
+  const containerClient = blobServiceClient.getContainerClient(container || containerName);
   await containerClient.createIfNotExists();
 
   const ext = originalName.split('.').pop() || 'bin';

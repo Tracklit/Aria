@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MacroDonutChart } from '../../src/components/features/MacroDonutChart';
 import { MacroBar } from '../../src/components/features/MacroBar';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
@@ -23,6 +24,12 @@ export default function NutritionPlanDetail() {
   const { plans, deletePlan, updatePlan } = useNutrition();
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCalories, setEditCalories] = useState('');
+  const [editProtein, setEditProtein] = useState('');
+  const [editCarbs, setEditCarbs] = useState('');
+  const [editFats, setEditFats] = useState('');
 
   useEffect(() => {
     loadPlan();
@@ -43,6 +50,30 @@ export default function NutritionPlanDetail() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const startEditing = () => {
+    if (!plan) return;
+    setEditTitle(plan.title || '');
+    setEditCalories(plan.calorieTarget?.toString() || '');
+    setEditProtein(plan.proteinGrams?.toString() || '');
+    setEditCarbs(plan.carbsGrams?.toString() || '');
+    setEditFats(plan.fatsGrams?.toString() || '');
+    setIsEditing(true);
+  };
+
+  const saveEdits = async () => {
+    if (!plan) return;
+    const updates: Partial<NutritionPlan> = {
+      title: editTitle,
+      calorieTarget: parseInt(editCalories) || 0,
+      proteinGrams: parseInt(editProtein) || 0,
+      carbsGrams: parseInt(editCarbs) || 0,
+      fatsGrams: parseInt(editFats) || 0,
+    };
+    await updatePlan(plan.id, updates);
+    setPlan({ ...plan, ...updates });
+    setIsEditing(false);
   };
 
   const handleArchive = async () => {
@@ -84,29 +115,67 @@ export default function NutritionPlanDetail() {
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{plan.title}</Text>
-        <TouchableOpacity onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={22} color={colors.red} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {isEditing ? (
+            <TouchableOpacity onPress={saveEdits} style={styles.saveButton}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={startEditing} style={{ marginRight: spacing.sm }}>
+              <Ionicons name="pencil-outline" size={22} color={colors.text.primary} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={isEditing ? () => setIsEditing(false) : handleDelete}>
+            <Ionicons name={isEditing ? 'close' : 'trash-outline'} size={22} color={isEditing ? colors.text.secondary : colors.red} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        {/* Gradient Header */}
+        <LinearGradient
+          colors={['#1a237e', '#0d47a1', '#0A0A0A']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.summaryCard}
+        >
           <View style={styles.summaryTop}>
-            <Text style={styles.summaryTitle}>{plan.title}</Text>
+            {isEditing ? (
+              <TextInput
+                style={[styles.summaryTitle, styles.editInput]}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Plan title"
+                placeholderTextColor={colors.text.tertiary}
+              />
+            ) : (
+              <Text style={styles.summaryTitle}>{plan.title}</Text>
+            )}
             <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusArchived]}>
               <Text style={[styles.statusText, isActive ? styles.statusTextActive : styles.statusTextArchived]}>
                 {isActive ? 'Active' : 'Archived'}
               </Text>
             </View>
           </View>
-          {plan.calorieTarget && (
+          {isEditing ? (
+            <View style={styles.calorieRow}>
+              <TextInput
+                style={[styles.calorieValue, styles.editInput, { flex: 0, minWidth: 100 }]}
+                value={editCalories}
+                onChangeText={setEditCalories}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={colors.text.tertiary}
+              />
+              <Text style={styles.calorieUnit}>kcal / day</Text>
+            </View>
+          ) : plan.calorieTarget ? (
             <View style={styles.calorieRow}>
               <Text style={styles.calorieValue}>{plan.calorieTarget.toLocaleString()}</Text>
               <Text style={styles.calorieUnit}>kcal / day</Text>
             </View>
-          )}
-        </View>
+          ) : null}
+        </LinearGradient>
 
         {/* Donut Chart */}
         <View style={styles.chartSection}>
@@ -128,17 +197,50 @@ export default function NutritionPlanDetail() {
             <View style={styles.macroItem}>
               <View style={[styles.macroDot, { backgroundColor: colors.primary }]} />
               <Text style={styles.macroLabel}>Protein</Text>
-              <Text style={styles.macroValue}>{plan.proteinGrams || 0}g</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.macroValue, styles.editInputSmall]}
+                  value={editProtein}
+                  onChangeText={setEditProtein}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.text.tertiary}
+                />
+              ) : (
+                <Text style={styles.macroValue}>{plan.proteinGrams || 0}g</Text>
+              )}
             </View>
             <View style={styles.macroItem}>
               <View style={[styles.macroDot, { backgroundColor: colors.yellow }]} />
               <Text style={styles.macroLabel}>Carbs</Text>
-              <Text style={styles.macroValue}>{plan.carbsGrams || 0}g</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.macroValue, styles.editInputSmall]}
+                  value={editCarbs}
+                  onChangeText={setEditCarbs}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.text.tertiary}
+                />
+              ) : (
+                <Text style={styles.macroValue}>{plan.carbsGrams || 0}g</Text>
+              )}
             </View>
             <View style={styles.macroItem}>
               <View style={[styles.macroDot, { backgroundColor: colors.orange }]} />
               <Text style={styles.macroLabel}>Fats</Text>
-              <Text style={styles.macroValue}>{plan.fatsGrams || 0}g</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.macroValue, styles.editInputSmall]}
+                  value={editFats}
+                  onChangeText={setEditFats}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.text.tertiary}
+                />
+              ) : (
+                <Text style={styles.macroValue}>{plan.fatsGrams || 0}g</Text>
+              )}
             </View>
           </View>
         </View>
@@ -151,7 +253,9 @@ export default function NutritionPlanDetail() {
               <View key={index} style={[styles.mealItem, index > 0 && styles.mealDivider]}>
                 <View style={styles.mealHeader}>
                   <View style={styles.mealNameRow}>
-                    <Ionicons name={getMealIcon(meal.meal)} size={18} color={colors.teal} style={styles.mealIcon} />
+                    <View style={styles.mealIconBg}>
+                      <Ionicons name={getMealIcon(meal.meal)} size={16} color={colors.teal} />
+                    </View>
                     <Text style={styles.mealName}>{meal.meal}</Text>
                   </View>
                   <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
@@ -182,7 +286,7 @@ const styles = StyleSheet.create({
   loadingText: { ...typography.body, color: colors.text.secondary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 40, gap: spacing.md },
   // Summary card
-  summaryCard: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.lg },
+  summaryCard: { borderRadius: borderRadius.lg, padding: spacing.lg },
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   summaryTitle: { ...typography.h2, color: colors.text.primary, flex: 1, marginRight: spacing.sm },
   statusBadge: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full },
@@ -209,10 +313,17 @@ const styles = StyleSheet.create({
   mealDivider: { borderTopWidth: 1, borderTopColor: colors.background.secondary },
   mealHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   mealNameRow: { flexDirection: 'row', alignItems: 'center' },
-  mealIcon: { marginRight: spacing.sm },
+  mealIconBg: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(48, 213, 200, 0.12)', alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
   mealName: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
   mealCalories: { ...typography.caption, color: colors.primary },
   foodItem: { ...typography.caption, color: colors.text.secondary, marginLeft: 30, marginVertical: 1 },
+  // Header actions
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
+  saveButton: { backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.sm, marginRight: spacing.sm },
+  saveButtonText: { ...typography.caption, color: '#fff', fontWeight: '600' },
+  // Edit inputs
+  editInput: { backgroundColor: colors.background.secondary, color: colors.text.primary, borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  editInputSmall: { backgroundColor: colors.background.secondary, color: colors.text.primary, borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2, minWidth: 50, textAlign: 'center' },
   // Archive
   archiveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md },
   archiveText: { ...typography.body, color: colors.text.secondary },

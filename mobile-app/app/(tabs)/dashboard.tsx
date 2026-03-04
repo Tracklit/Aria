@@ -17,7 +17,7 @@ import { colors } from '../../src/theme';
 
 function getDisplayName(profileName?: string | null, greeting?: string) {
   if (profileName?.trim()) return profileName.trim();
-  if (!greeting) return 'Alex';
+  if (!greeting) return 'Athlete';
   const match = greeting.match(/,\s*(.+)$/);
   return match?.[1]?.trim() || 'Alex';
 }
@@ -59,11 +59,15 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.microphoneContainer}>
+        <TouchableOpacity
+          style={styles.microphoneContainer}
+          onPress={() => router.push('/(tabs)/chat')}
+          activeOpacity={0.7}
+        >
           <View style={styles.microphoneBubble}>
             <Ionicons name="mic-outline" size={20} color={colors.teal} />
           </View>
-        </View>
+        </TouchableOpacity>
 
         <Text style={styles.greeting}>Good Morning, {displayName}</Text>
         <Text style={styles.subtitle}>{subtitle || "Let's get faster today 🚀"}</Text>
@@ -104,6 +108,7 @@ export default function DashboardScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.workoutCard}
         >
+          <Text style={styles.workoutLabel}>Today's Workout</Text>
           <Text style={styles.workoutTitle}>{workoutTitle}</Text>
           <Text style={styles.workoutSubtitle}>{workoutSubtitle}</Text>
           <TouchableOpacity
@@ -162,15 +167,20 @@ export default function DashboardScreen() {
                     suggestedAction: 'View Form Analysis',
                   },
                 ]
-            ).map((insight) => (
+            ).map((insight, idx) => {
+              const insightColors = ['#00E676', '#00E5FF', '#7C4DFF'];
+              const insightIcons: Array<keyof typeof Ionicons.glyphMap> = ['bulb-outline', 'trending-up-outline', 'fitness-outline'];
+              const accent = insightColors[idx % insightColors.length];
+              const icon = insightIcons[idx % insightIcons.length];
+              return (
               <TouchableOpacity
                 key={String(insight.id)}
                 testID={`dashboard.insight.${insight.id}`}
-                style={styles.insightCard}
+                style={[styles.insightCard, { borderLeftColor: accent, backgroundColor: `${accent}14` }]}
                 onPress={() => router.push('/(tabs)/chat')}
               >
                 <View style={styles.insightHeader}>
-                  <Ionicons name="bulb-outline" size={18} color={colors.green} />
+                  <Ionicons name={icon} size={18} color={accent} />
                   <Text style={styles.insightTitle}>{insight.title}</Text>
                 </View>
                 <Text style={styles.insightText}>{insight.message}</Text>
@@ -178,7 +188,8 @@ export default function DashboardScreen() {
                   <Text style={styles.insightAction}>→ {insight.suggestedAction}</Text>
                 ) : null}
               </TouchableOpacity>
-            ))
+              );
+            })
           )}
         </View>
 
@@ -364,6 +375,14 @@ const styles = StyleSheet.create({
   loadingState: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  workoutLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   insightCard: {
     backgroundColor: 'rgba(0,230,118,0.08)',

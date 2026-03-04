@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,10 @@ interface Lap {
   time: number;
   split: number;
 }
+
+const screenWidth = Dimensions.get('window').width;
+const timerSize = Math.min(screenWidth * 0.55, 240);
+const timerFontSize = Math.min(screenWidth * 0.12, 60);
 
 export default function StopwatchScreen() {
   const [time, setTime] = useState(0);
@@ -86,7 +90,7 @@ export default function StopwatchScreen() {
 
       <View style={styles.timerSection}>
         <View style={styles.timerCircle}>
-          <Text style={styles.timerText}>{formatTime(time)}</Text>
+          <Text style={styles.timerText} adjustsFontSizeToFit numberOfLines={1}>{formatTime(time)}</Text>
         </View>
       </View>
 
@@ -146,8 +150,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },
   timerSection: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
-  timerCircle: { width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: colors.background.secondary, alignItems: 'center', justifyContent: 'center' },
-  timerText: { fontSize: 72, fontWeight: '100', color: colors.text.primary, fontVariant: ['tabular-nums'] },
+  timerCircle: { width: timerSize, height: timerSize, borderRadius: timerSize / 2, borderWidth: 1, borderColor: colors.background.secondary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  timerText: { fontSize: timerFontSize, fontWeight: '100', color: colors.text.primary, fontVariant: ['tabular-nums'] },
   buttonRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl },
   button: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center' },
   lapButton: { backgroundColor: colors.background.cardSolid },

@@ -77,6 +77,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tools"
+        options={{
+          title: 'Tools',
+          tabBarButtonTestID: 'tab.tools',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="construct-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'More',

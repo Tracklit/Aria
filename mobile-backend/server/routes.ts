@@ -398,6 +398,30 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // ==================== PHOTO UPLOAD ROUTE ====================
+
+  app.post('/api/user/public-profile', authMiddleware, upload.single('profileImage'), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      const { url: blobUrl } = await uploadFileToBlob(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype,
+        'profile-images',
+      );
+
+      await storage.updateUserProfile(req.userId!, { photoUrl: blobUrl });
+
+      res.json({ photoUrl: blobUrl });
+    } catch (error: any) {
+      console.error('Photo upload error:', error);
+      res.status(500).json({ error: 'Failed to upload profile image' });
+    }
+  });
+
   // ==================== TRAINING PLAN ROUTES ====================
 
   app.get('/api/plans', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
@@ -1357,7 +1381,8 @@ export function registerRoutes(app: Express): void {
 
       let parsedPlan;
       try {
-        parsedPlan = JSON.parse(aiResponse);
+        const cleanJson = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        parsedPlan = JSON.parse(cleanJson);
       } catch {
         parsedPlan = { title: 'AI Generated Plan', description: aiResponse };
       }
@@ -1515,7 +1540,8 @@ export function registerRoutes(app: Express): void {
 
       let parsedProgram;
       try {
-        parsedProgram = JSON.parse(aiResponse);
+        const cleanJson = aiResponse.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+        parsedProgram = JSON.parse(cleanJson);
       } catch {
         parsedProgram = { title: input.title || 'AI Generated Program', description: aiResponse };
       }
