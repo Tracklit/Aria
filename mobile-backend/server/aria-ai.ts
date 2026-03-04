@@ -258,6 +258,139 @@ export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
   }
 }
 
+// ==================== NUTRITION PLAN GENERATION ====================
+
+export interface NutritionPlanInput {
+  activityLevel?: string;
+  season?: string;
+  dietaryRestrictions?: string[];
+  foodPreferences?: Record<string, any>;
+  locality?: string;
+  calorieTarget?: number;
+  notes?: string;
+}
+
+export async function generateNutritionPlan(userId: number, input: NutritionPlanInput): Promise<string> {
+  const userContext = await buildUserContext(userId);
+  const contextString = formatUserContextForAI(userContext);
+
+  const nutritionRequest = `Create a personalized nutrition plan for me with these parameters:
+- Activity Level: ${input.activityLevel || 'moderate'}
+- Season: ${input.season || 'in_season'}
+- Dietary Restrictions: ${input.dietaryRestrictions?.join(', ') || 'None'}
+- Food Preferences/Locality: ${input.locality || 'No preference'}
+${input.calorieTarget ? `- Target Calories: ${input.calorieTarget}` : ''}
+${input.notes ? `- Notes: ${input.notes}` : ''}
+
+Please respond with a JSON object (and nothing else) with this exact structure:
+{
+  "title": "Plan name",
+  "description": "Brief description",
+  "calorieTarget": 2500,
+  "proteinGrams": 150,
+  "carbsGrams": 300,
+  "fatsGrams": 80,
+  "mealSuggestions": [
+    {
+      "meal": "Breakfast",
+      "foods": ["food1", "food2"],
+      "calories": 600,
+      "macros": { "protein": 30, "carbs": 70, "fats": 20 }
+    }
+  ]
+}`;
+
+  const systemPrompt = buildAriaSystemPrompt() + `
+
+ADDITIONAL INSTRUCTIONS FOR NUTRITION PLAN:
+- Create a structured nutrition plan optimized for sprint athletes
+- Consider the athlete's activity level, season, and dietary restrictions
+- Include locally available foods when locality is specified
+- Provide 4-6 meals/snacks per day
+- Ensure macros support athletic performance and recovery
+- RESPOND ONLY WITH THE JSON OBJECT, no additional text`;
+
+  try {
+    const rawResponse = await callAriaAPI({
+      user_id: userId.toString(),
+      user_input: nutritionRequest + '\n\n' + contextString,
+      system_prompt: systemPrompt,
+      conversation_history: [],
+    });
+
+    return rawResponse;
+  } catch (error) {
+    console.error('Nutrition plan generation failed:', error);
+    throw new Error('Failed to generate nutrition plan');
+  }
+}
+
+// ==================== PROGRAM GENERATION ====================
+
+export interface ProgramGenerationInput {
+  title?: string;
+  category?: string;
+  level?: string;
+  durationWeeks?: number;
+  description?: string;
+  notes?: string;
+}
+
+export async function generateProgram(userId: number, input: ProgramGenerationInput): Promise<string> {
+  const userContext = await buildUserContext(userId);
+  const contextString = formatUserContextForAI(userContext);
+
+  const programRequest = `Create a training program with these parameters:
+- Category: ${input.category || 'sprint'}
+- Level: ${input.level || 'intermediate'}
+- Duration: ${input.durationWeeks || 4} weeks
+${input.description ? `- Description: ${input.description}` : ''}
+${input.notes ? `- Notes: ${input.notes}` : ''}
+
+Please respond with a JSON object (and nothing else) with this exact structure:
+{
+  "title": "Program name",
+  "description": "Brief description",
+  "category": "sprint",
+  "level": "intermediate",
+  "duration": 4,
+  "sessions": [
+    {
+      "dayNumber": 1,
+      "title": "Session title",
+      "description": "Session description",
+      "exercises": [
+        { "name": "Exercise name", "sets": 3, "reps": "10", "rest": 60, "notes": "" }
+      ],
+      "isRestDay": false
+    }
+  ]
+}`;
+
+  const systemPrompt = buildAriaSystemPrompt() + `
+
+ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
+- Create a periodized training program with progressive overload
+- Include warm-up and cool-down recommendations
+- Balance training load across the week
+- Include rest days
+- RESPOND ONLY WITH THE JSON OBJECT, no additional text`;
+
+  try {
+    const rawResponse = await callAriaAPI({
+      user_id: userId.toString(),
+      user_input: programRequest + '\n\n' + contextString,
+      system_prompt: systemPrompt,
+      conversation_history: [],
+    });
+
+    return rawResponse;
+  } catch (error) {
+    console.error('Program generation failed:', error);
+    throw new Error('Failed to generate program');
+  }
+}
+
 // ==================== CHAT HANDLER ====================
 
 export interface ChatInput {

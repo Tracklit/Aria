@@ -18,7 +18,14 @@ import {
   determineDashboardMode,
   generateDashboardContent,
   PlanGenerationInput,
+  generateNutritionPlan,
+  generateProgram,
+  NutritionPlanInput,
+  ProgramGenerationInput,
 } from './aria-ai';
+import { uploadFileToBlob, deleteBlob } from './azure-storage';
+import { parseDocument } from './document-parser';
+import multer from 'multer';
 
 // ==================== VALIDATION SCHEMAS ====================
 
@@ -57,6 +64,12 @@ const updateProfileSchema = z.object({
   weight: z.number().optional(),
   weeklyGoalDistance: z.number().optional(),
   weeklyGoalDuration: z.number().optional(),
+  country: z.string().optional(),
+  activityLevel: z.string().optional(),
+  bodyFatPercentage: z.number().optional(),
+  dietaryRestrictions: z.array(z.string()).optional(),
+  foodPreferences: z.record(z.any()).optional(),
+  injuryHistory: z.string().optional(),
 });
 
 const updatePreferencesSchema = z.object({
@@ -195,6 +208,59 @@ const updateRaceSchema = z.object({
   finishTime: z.number().optional(),
   finishPlace: z.number().optional(),
   ageGroupPlace: z.number().optional(),
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+
+const createNutritionPlanSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  activityLevel: z.string().optional(),
+  season: z.string().optional(),
+  calorieTarget: z.number().optional(),
+  proteinGrams: z.number().optional(),
+  carbsGrams: z.number().optional(),
+  fatsGrams: z.number().optional(),
+  mealSuggestions: z.any().optional(),
+  createdBy: z.enum(['user', 'ai']).optional(),
+});
+
+const generateNutritionSchema = z.object({
+  activityLevel: z.string().optional(),
+  season: z.string().optional(),
+  dietaryRestrictions: z.array(z.string()).optional(),
+  foodPreferences: z.record(z.any()).optional(),
+  locality: z.string().optional(),
+  calorieTarget: z.number().optional(),
+  notes: z.string().optional(),
+});
+
+const createProgramSchema2 = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  level: z.string().optional(),
+  duration: z.number().optional(),
+  totalSessions: z.number().optional(),
+  generatedBy: z.enum(['user', 'ai']).optional(),
+});
+
+const generateProgramSchema = z.object({
+  title: z.string().optional(),
+  category: z.string().optional(),
+  level: z.string().optional(),
+  durationWeeks: z.number().optional(),
+  description: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const importSheetSchema = z.object({
+  title: z.string().min(1),
+  googleSheetUrl: z.string().url(),
+  description: z.string().optional(),
 });
 
 // ==================== ROUTE REGISTRATION ====================
@@ -1219,6 +1285,274 @@ export function registerRoutes(app: Express): void {
     } catch (error: any) {
       console.error('Record race result error:', error);
       res.status(500).json({ error: 'Failed to record race result' });
+    }
+  });
+
+  // ==================== NUTRITION PLANS ====================
+
+  app.get('/api/nutrition/plans', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const plans = await storage.getNutritionPlans(req.userId!);
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch nutrition plans' });
+    }
+  });
+
+  app.post('/api/nutrition/plans', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const data = createNutritionPlanSchema.parse(req.body);
+      const plan = await storage.createNutritionPlan({ ...data, userId: req.userId! });
+      res.status(201).json(plan);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to create nutrition plan' });
+    }
+  });
+
+  app.get('/api/nutrition/plans/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const plan = await storage.getNutritionPlan(parseInt(req.params.id));
+      if (!plan || plan.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Nutrition plan not found' });
+      }
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch nutrition plan' });
+    }
+  });
+
+  app.patch('/api/nutrition/plans/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getNutritionPlan(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Nutrition plan not found' });
+      }
+      const plan = await storage.updateNutritionPlan(parseInt(req.params.id), req.body);
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update nutrition plan' });
+    }
+  });
+
+  app.delete('/api/nutrition/plans/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getNutritionPlan(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Nutrition plan not found' });
+      }
+      await storage.deleteNutritionPlan(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete nutrition plan' });
+    }
+  });
+
+  app.post('/api/nutrition/generate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const input = generateNutritionSchema.parse(req.body);
+      const aiResponse = await generateNutritionPlan(req.userId!, input);
+
+      let parsedPlan;
+      try {
+        parsedPlan = JSON.parse(aiResponse);
+      } catch {
+        parsedPlan = { title: 'AI Generated Plan', description: aiResponse };
+      }
+
+      const plan = await storage.createNutritionPlan({
+        userId: req.userId!,
+        title: parsedPlan.title || 'AI Generated Nutrition Plan',
+        description: parsedPlan.description,
+        activityLevel: input.activityLevel,
+        season: input.season,
+        calorieTarget: parsedPlan.calorieTarget,
+        proteinGrams: parsedPlan.proteinGrams,
+        carbsGrams: parsedPlan.carbsGrams,
+        fatsGrams: parsedPlan.fatsGrams,
+        mealSuggestions: parsedPlan.mealSuggestions,
+        createdBy: 'ai',
+        aiPromptUsed: JSON.stringify(input),
+      });
+
+      res.status(201).json(plan);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Nutrition generation error:', error);
+      res.status(500).json({ error: 'Failed to generate nutrition plan' });
+    }
+  });
+
+  // ==================== PROGRAMS ====================
+
+  app.get('/api/programs', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const progs = await storage.getPrograms(req.userId!);
+      res.json(progs);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch programs' });
+    }
+  });
+
+  app.post('/api/programs', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const data = createProgramSchema2.parse(req.body);
+      const program = await storage.createProgram({ ...data, userId: req.userId! });
+      res.status(201).json(program);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to create program' });
+    }
+  });
+
+  app.get('/api/programs/templates', authMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
+    const csv = 'Day,Title,Description,Exercises,IsRestDay\n1,Sprint Drills,Warm up then sprint drills,"[{""name"":""100m Sprint"",""sets"":3,""reps"":""1"",""rest"":180}]",false\n2,Rest Day,Recovery day,,true';
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=program-template.csv');
+    res.send(csv);
+  });
+
+  app.get('/api/programs/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const program = await storage.getProgram(parseInt(req.params.id));
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const sessions = await storage.getProgramSessions(program.id);
+      res.json({ ...program, sessions });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch program' });
+    }
+  });
+
+  app.patch('/api/programs/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getProgram(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const program = await storage.updateProgram(parseInt(req.params.id), req.body);
+      res.json(program);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update program' });
+    }
+  });
+
+  app.delete('/api/programs/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getProgram(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      if (existing.programFileUrl) {
+        try {
+          const blobName = existing.programFileUrl.split('/').pop();
+          if (blobName) await deleteBlob(blobName);
+        } catch (e) { console.error('Failed to delete blob:', e); }
+      }
+      await storage.deleteProgram(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete program' });
+    }
+  });
+
+  app.post('/api/programs/upload', authMiddleware, upload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const { url, blobName } = await uploadFileToBlob(req.file.buffer, req.file.originalname, req.file.mimetype);
+      const parsed = await parseDocument(req.file.buffer, req.file.mimetype);
+
+      const program = await storage.createProgram({
+        userId: req.userId!,
+        title: req.body.title || req.file.originalname,
+        description: req.body.description || `Imported from ${req.file.originalname}`,
+        isUploadedProgram: true,
+        programFileUrl: url,
+        programFileType: req.file.mimetype,
+        textContent: parsed.text,
+      });
+
+      res.status(201).json(program);
+    } catch (error) {
+      console.error('File upload error:', error);
+      res.status(500).json({ error: 'Failed to upload program file' });
+    }
+  });
+
+  app.post('/api/programs/import-sheet', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const data = importSheetSchema.parse(req.body);
+      const program = await storage.createProgram({
+        userId: req.userId!,
+        title: data.title,
+        description: data.description || 'Imported from Google Sheets',
+        importedFromSheet: true,
+        googleSheetUrl: data.googleSheetUrl,
+      });
+      res.status(201).json(program);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to import Google Sheet' });
+    }
+  });
+
+  app.post('/api/programs/generate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const input = generateProgramSchema.parse(req.body);
+      const aiResponse = await generateProgram(req.userId!, input);
+
+      let parsedProgram;
+      try {
+        parsedProgram = JSON.parse(aiResponse);
+      } catch {
+        parsedProgram = { title: input.title || 'AI Generated Program', description: aiResponse };
+      }
+
+      const program = await storage.createProgram({
+        userId: req.userId!,
+        title: parsedProgram.title || 'AI Generated Program',
+        description: parsedProgram.description,
+        category: parsedProgram.category || input.category,
+        level: parsedProgram.level || input.level,
+        duration: parsedProgram.duration || input.durationWeeks,
+        totalSessions: parsedProgram.sessions?.length,
+        generatedBy: 'ai',
+      });
+
+      // Create sessions if AI provided them
+      if (parsedProgram.sessions && Array.isArray(parsedProgram.sessions)) {
+        for (const session of parsedProgram.sessions) {
+          await storage.createProgramSession({
+            programId: program.id,
+            dayNumber: session.dayNumber,
+            title: session.title,
+            description: session.description,
+            exercises: session.exercises,
+            isRestDay: session.isRestDay || false,
+          });
+        }
+      }
+
+      const sessions = await storage.getProgramSessions(program.id);
+      res.status(201).json({ ...program, sessions });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Program generation error:', error);
+      res.status(500).json({ error: 'Failed to generate program' });
     }
   });
 

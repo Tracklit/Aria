@@ -481,6 +481,86 @@ export async function recordRaceResult(id: number, data: any) {
   return apiRequest(`/api/races/${id}/result`, { method: 'POST', data });
 }
 
+// ==================== NUTRITION PLANS ====================
+
+export async function getNutritionPlans() {
+  return apiRequest('/api/nutrition/plans');
+}
+
+export async function createNutritionPlan(data: any) {
+  return apiRequest('/api/nutrition/plans', { method: 'POST', data });
+}
+
+export async function getNutritionPlan(id: number) {
+  return apiRequest(`/api/nutrition/plans/${id}`);
+}
+
+export async function updateNutritionPlan(id: number, data: any) {
+  return apiRequest(`/api/nutrition/plans/${id}`, { method: 'PATCH', data });
+}
+
+export async function deleteNutritionPlan(id: number) {
+  return apiRequest(`/api/nutrition/plans/${id}`, { method: 'DELETE' });
+}
+
+export async function generateNutritionPlan(data: any) {
+  return apiRequest('/api/nutrition/generate', { method: 'POST', data });
+}
+
+// ==================== PROGRAMS ====================
+
+export async function getPrograms() {
+  return apiRequest('/api/programs');
+}
+
+export async function createProgram(data: any) {
+  return apiRequest('/api/programs', { method: 'POST', data });
+}
+
+export async function getProgram(id: number) {
+  return apiRequest(`/api/programs/${id}`);
+}
+
+export async function updateProgram(id: number, data: any) {
+  return apiRequest(`/api/programs/${id}`, { method: 'PATCH', data });
+}
+
+export async function deleteProgram(id: number) {
+  return apiRequest(`/api/programs/${id}`, { method: 'DELETE' });
+}
+
+export async function uploadProgramFile(formData: FormData) {
+  const token = await getToken();
+  const url = `${env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL}/api/programs/upload`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Failed to upload program file');
+  }
+
+  return response.json();
+}
+
+export async function importGoogleSheet(data: { title: string; googleSheetUrl: string; description?: string }) {
+  return apiRequest('/api/programs/import-sheet', { method: 'POST', data });
+}
+
+export async function generateProgram(data: any) {
+  return apiRequest('/api/programs/generate', { method: 'POST', data });
+}
+
+export async function getProgramTemplateCSV() {
+  return apiRequest('/api/programs/templates', { rawResponse: true });
+}
+
 // Health check
 export async function healthCheck() {
   return apiRequest('/api/health', { skipAuth: true });

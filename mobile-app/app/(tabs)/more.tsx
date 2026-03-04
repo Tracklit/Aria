@@ -147,6 +147,14 @@ export default function MoreScreen() {
             <SettingsRow title="AI Coaching Style" onPress={() => handlePress('AI Coaching Style')} testID="settings.ai_style" />
             <View style={styles.divider} />
             <SettingsRow title="Voice Feedback" onPress={() => handlePress('Voice Feedback')} testID="settings.voice_feedback" />
+            <View style={styles.divider} />
+            <SettingsRow title="Athlete Profile" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
+            <View style={styles.divider} />
+            <SettingsRow title="Training Plans" onPress={() => router.push('/plan')} testID="settings.training_plans" />
+            <View style={styles.divider} />
+            <SettingsRow title="Sprint Tools" onPress={() => router.push('/tools')} testID="settings.sprint_tools" />
+            <View style={styles.divider} />
+            <SettingsRow title="My Programs" onPress={() => router.push('/programs')} testID="settings.programs" />
           </View>
         </View>
 

@@ -46,12 +46,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="plan"
+        name="nutrition"
         options={{
-          title: 'Plan',
-          tabBarButtonTestID: 'tab.plan',
+          title: 'Nutrition',
+          tabBarButtonTestID: 'tab.nutrition',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+            <Ionicons name="restaurant-outline" size={size} color={color} />
           ),
         }}
       />
@@ -73,6 +73,12 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="plan"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

@@ -54,6 +54,12 @@ export interface UserProfile {
   gender?: string | null;
   height?: number | null;
   weight?: number | null;
+  country?: string | null;
+  activityLevel?: string | null;
+  bodyFatPercentage?: number | null;
+  dietaryRestrictions?: string[] | null;
+  foodPreferences?: Record<string, any> | null;
+  injuryHistory?: string | null;
   weeklyGoalDistance?: number | null;
   weeklyGoalDuration?: number | null;
   onboardingCompleted: boolean;
@@ -122,6 +128,12 @@ const createDemoProfile = (existingProfile?: Partial<UserProfile>): UserProfile 
   gender: null,
   height: null,
   weight: null,
+  country: null,
+  activityLevel: null,
+  bodyFatPercentage: null,
+  dietaryRestrictions: null,
+  foodPreferences: null,
+  injuryHistory: null,
   weeklyGoalDistance: null,
   weeklyGoalDuration: null,
   onboardingCompleted: existingProfile?.onboardingCompleted || false,
@@ -160,6 +172,12 @@ const createDefaultProfile = (user?: User | null): UserProfile => ({
   gender: null,
   height: null,
   weight: null,
+  country: null,
+  activityLevel: null,
+  bodyFatPercentage: null,
+  dietaryRestrictions: null,
+  foodPreferences: null,
+  injuryHistory: null,
   weeklyGoalDistance: null,
   weeklyGoalDuration: null,
   onboardingCompleted: true,

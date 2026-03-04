@@ -36,6 +36,10 @@ function RootLayoutNav() {
     const inPlan = segments[0] === 'plan';
     const inRaceDay = segments[0] === 'race-day';
     const inProfile = segments[0] === 'profile';
+    const inTools = segments[0] === 'tools';
+    const inNutrition = segments[0] === 'nutrition';
+    const inPrograms = segments[0] === 'programs';
+    const inAthleteInfo = segments[0] === 'athlete-info';
 
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to welcome screen if not authenticated
@@ -57,7 +61,11 @@ function RootLayoutNav() {
         !inWorkout &&
         !inPlan &&
         !inRaceDay &&
-        !inProfile
+        !inProfile &&
+        !inTools &&
+        !inNutrition &&
+        !inPrograms &&
+        !inAthleteInfo
       ) {
         // Redirect to dashboard if authenticated and onboarding is complete
         router.replace('/(tabs)/dashboard');
@@ -101,6 +109,10 @@ function RootLayoutNav() {
       <Stack.Screen name="plan" options={{ headerShown: false, presentation: 'modal' }} />
       <Stack.Screen name="race-day" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="profile" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="tools" options={{ headerShown: false }} />
+      <Stack.Screen name="nutrition" options={{ headerShown: false }} />
+      <Stack.Screen name="programs" options={{ headerShown: false }} />
+      <Stack.Screen name="athlete-info" options={{ headerShown: false, presentation: 'card' }} />
     </Stack>
   );
 }

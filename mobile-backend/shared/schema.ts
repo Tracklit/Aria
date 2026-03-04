@@ -40,6 +40,12 @@ export const userProfiles = pgTable('user_profiles', {
   gender: varchar('gender', { length: 20 }),
   height: real('height'), // in cm
   weight: real('weight'), // in kg
+  country: varchar('country', { length: 100 }),
+  activityLevel: varchar('activity_level', { length: 50 }), // sedentary, light, moderate, active, very_active
+  bodyFatPercentage: real('body_fat_percentage'),
+  dietaryRestrictions: json('dietary_restrictions').$type<string[]>().default([]),
+  foodPreferences: json('food_preferences').$type<Record<string, any>>(),
+  injuryHistory: text('injury_history'),
   weeklyGoalDistance: real('weekly_goal_distance'), // in meters
   weeklyGoalDuration: integer('weekly_goal_duration'), // in minutes
   onboardingCompleted: boolean('onboarding_completed').default(false),
@@ -371,6 +377,83 @@ export const races = pgTable('races', {
   userDateIdx: index('races_user_date_idx').on(table.userId, table.date),
 }));
 
+// ==================== NUTRITION PLANS ====================
+
+export const nutritionPlans = pgTable('nutrition_plans', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  title: varchar('title', { length: 200 }).notNull(),
+  description: text('description'),
+  activityLevel: varchar('activity_level', { length: 50 }),
+  season: varchar('season', { length: 50 }), // off_season, pre_season, in_season, post_season
+  calorieTarget: integer('calorie_target'),
+  proteinGrams: real('protein_grams'),
+  carbsGrams: real('carbs_grams'),
+  fatsGrams: real('fats_grams'),
+  mealSuggestions: json('meal_suggestions').$type<Array<{
+    meal: string;
+    foods: string[];
+    calories: number;
+    macros: { protein: number; carbs: number; fats: number };
+  }>>(),
+  createdBy: varchar('created_by', { length: 20 }).default('user'), // user, ai
+  aiPromptUsed: text('ai_prompt_used'),
+  status: varchar('status', { length: 20 }).default('active'), // active, archived
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userStatusIdx: index('nutrition_plans_user_status_idx').on(table.userId, table.status),
+}));
+
+// ==================== PROGRAMS ====================
+
+export const programs = pgTable('programs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  title: varchar('title', { length: 200 }).notNull(),
+  description: text('description'),
+  category: varchar('category', { length: 50 }), // sprint, endurance, strength, flexibility
+  level: varchar('level', { length: 50 }), // beginner, intermediate, advanced, elite
+  duration: integer('duration'), // weeks
+  totalSessions: integer('total_sessions'),
+  visibility: varchar('visibility', { length: 20 }).default('private'),
+  isUploadedProgram: boolean('is_uploaded_program').default(false),
+  programFileUrl: varchar('program_file_url', { length: 500 }),
+  programFileType: varchar('program_file_type', { length: 20 }),
+  importedFromSheet: boolean('imported_from_sheet').default(false),
+  googleSheetUrl: varchar('google_sheet_url', { length: 500 }),
+  isTextBased: boolean('is_text_based').default(false),
+  textContent: text('text_content'),
+  generatedBy: varchar('generated_by', { length: 20 }).default('user'), // user, ai
+  status: varchar('status', { length: 20 }).default('active'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userStatusIdx: index('programs_user_status_idx').on(table.userId, table.status),
+}));
+
+export const programSessions = pgTable('program_sessions', {
+  id: serial('id').primaryKey(),
+  programId: integer('program_id').references(() => programs.id).notNull(),
+  dayNumber: integer('day_number').notNull(),
+  title: varchar('title', { length: 200 }),
+  description: text('description'),
+  exercises: json('exercises').$type<Array<{
+    name: string;
+    sets?: number;
+    reps?: string;
+    duration?: number;
+    rest?: number;
+    notes?: string;
+  }>>(),
+  isRestDay: boolean('is_rest_day').default(false),
+  isCompleted: boolean('is_completed').default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  programDayIdx: index('program_sessions_program_day_idx').on(table.programId, table.dayNumber),
+}));
+
 // ==================== RELATIONS ====================
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -393,6 +476,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   ariaConversations: many(ariaConversations),
   races: many(races),
+  nutritionPlans: many(nutritionPlans),
+  programs: many(programs),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -504,6 +589,28 @@ export const ariaMessagesRelations = relations(ariaMessages, ({ one }) => ({
   }),
 }));
 
+export const nutritionPlansRelations = relations(nutritionPlans, ({ one }) => ({
+  user: one(users, {
+    fields: [nutritionPlans.userId],
+    references: [users.id],
+  }),
+}));
+
+export const programsRelations = relations(programs, ({ one, many }) => ({
+  user: one(users, {
+    fields: [programs.userId],
+    references: [users.id],
+  }),
+  sessions: many(programSessions),
+}));
+
+export const programSessionsRelations = relations(programSessions, ({ one }) => ({
+  program: one(programs, {
+    fields: [programSessions.programId],
+    references: [programs.id],
+  }),
+}));
+
 export const racesRelations = relations(races, ({ one }) => ({
   user: one(users, {
     fields: [races.userId],
@@ -561,3 +668,12 @@ export type InsertAriaMessage = typeof ariaMessages.$inferInsert;
 
 export type Race = typeof races.$inferSelect;
 export type InsertRace = typeof races.$inferInsert;
+
+export type NutritionPlan = typeof nutritionPlans.$inferSelect;
+export type InsertNutritionPlan = typeof nutritionPlans.$inferInsert;
+
+export type Program = typeof programs.$inferSelect;
+export type InsertProgram = typeof programs.$inferInsert;
+
+export type ProgramSession = typeof programSessions.$inferSelect;
+export type InsertProgramSession = typeof programSessions.$inferInsert;

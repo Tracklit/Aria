@@ -16,6 +16,9 @@ import {
   ariaConversations,
   ariaMessages,
   races,
+  nutritionPlans,
+  programs,
+  programSessions,
   User,
   InsertUser,
   UserProfile,
@@ -46,6 +49,12 @@ import {
   InsertAriaMessage,
   Race,
   InsertRace,
+  NutritionPlan,
+  InsertNutritionPlan,
+  Program,
+  InsertProgram,
+  ProgramSession,
+  InsertProgramSession,
 } from '../shared/schema';
 
 export interface IStorage {
@@ -146,6 +155,27 @@ export interface IStorage {
   createRace(data: InsertRace): Promise<Race>;
   updateRace(id: number, data: Partial<InsertRace>): Promise<Race | undefined>;
   deleteRace(id: number): Promise<void>;
+
+  // Nutrition Plans
+  getNutritionPlans(userId: number): Promise<NutritionPlan[]>;
+  getNutritionPlan(id: number): Promise<NutritionPlan | undefined>;
+  createNutritionPlan(data: InsertNutritionPlan): Promise<NutritionPlan>;
+  updateNutritionPlan(id: number, data: Partial<InsertNutritionPlan>): Promise<NutritionPlan | undefined>;
+  deleteNutritionPlan(id: number): Promise<void>;
+
+  // Programs
+  getPrograms(userId: number): Promise<Program[]>;
+  getProgram(id: number): Promise<Program | undefined>;
+  createProgram(data: InsertProgram): Promise<Program>;
+  updateProgram(id: number, data: Partial<InsertProgram>): Promise<Program | undefined>;
+  deleteProgram(id: number): Promise<void>;
+
+  // Program Sessions
+  getProgramSessions(programId: number): Promise<ProgramSession[]>;
+  getProgramSession(id: number): Promise<ProgramSession | undefined>;
+  createProgramSession(data: InsertProgramSession): Promise<ProgramSession>;
+  updateProgramSession(id: number, data: Partial<InsertProgramSession>): Promise<ProgramSession | undefined>;
+  deleteProgramSession(id: number): Promise<void>;
 
   // Analytics helpers
   getWeeklyStats(userId: number, weekStart: Date): Promise<{
@@ -684,6 +714,98 @@ export class DatabaseStorage implements IStorage {
       workoutCount: weekWorkouts.length,
       avgPace,
     };
+  }
+
+  // ==================== NUTRITION PLANS ====================
+
+  async getNutritionPlans(userId: number): Promise<NutritionPlan[]> {
+    return db.select().from(nutritionPlans)
+      .where(eq(nutritionPlans.userId, userId))
+      .orderBy(desc(nutritionPlans.createdAt));
+  }
+
+  async getNutritionPlan(id: number): Promise<NutritionPlan | undefined> {
+    const [plan] = await db.select().from(nutritionPlans).where(eq(nutritionPlans.id, id));
+    return plan;
+  }
+
+  async createNutritionPlan(data: InsertNutritionPlan): Promise<NutritionPlan> {
+    const [plan] = await db.insert(nutritionPlans).values(data).returning();
+    return plan;
+  }
+
+  async updateNutritionPlan(id: number, data: Partial<InsertNutritionPlan>): Promise<NutritionPlan | undefined> {
+    const [plan] = await db.update(nutritionPlans)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(nutritionPlans.id, id))
+      .returning();
+    return plan;
+  }
+
+  async deleteNutritionPlan(id: number): Promise<void> {
+    await db.delete(nutritionPlans).where(eq(nutritionPlans.id, id));
+  }
+
+  // ==================== PROGRAMS ====================
+
+  async getPrograms(userId: number): Promise<Program[]> {
+    return db.select().from(programs)
+      .where(eq(programs.userId, userId))
+      .orderBy(desc(programs.createdAt));
+  }
+
+  async getProgram(id: number): Promise<Program | undefined> {
+    const [program] = await db.select().from(programs).where(eq(programs.id, id));
+    return program;
+  }
+
+  async createProgram(data: InsertProgram): Promise<Program> {
+    const [program] = await db.insert(programs).values(data).returning();
+    return program;
+  }
+
+  async updateProgram(id: number, data: Partial<InsertProgram>): Promise<Program | undefined> {
+    const [program] = await db.update(programs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(programs.id, id))
+      .returning();
+    return program;
+  }
+
+  async deleteProgram(id: number): Promise<void> {
+    // Delete associated sessions first
+    await db.delete(programSessions).where(eq(programSessions.programId, id));
+    await db.delete(programs).where(eq(programs.id, id));
+  }
+
+  // ==================== PROGRAM SESSIONS ====================
+
+  async getProgramSessions(programId: number): Promise<ProgramSession[]> {
+    return db.select().from(programSessions)
+      .where(eq(programSessions.programId, programId))
+      .orderBy(asc(programSessions.dayNumber));
+  }
+
+  async getProgramSession(id: number): Promise<ProgramSession | undefined> {
+    const [session] = await db.select().from(programSessions).where(eq(programSessions.id, id));
+    return session;
+  }
+
+  async createProgramSession(data: InsertProgramSession): Promise<ProgramSession> {
+    const [session] = await db.insert(programSessions).values(data).returning();
+    return session;
+  }
+
+  async updateProgramSession(id: number, data: Partial<InsertProgramSession>): Promise<ProgramSession | undefined> {
+    const [session] = await db.update(programSessions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(programSessions.id, id))
+      .returning();
+    return session;
+  }
+
+  async deleteProgramSession(id: number): Promise<void> {
+    await db.delete(programSessions).where(eq(programSessions.id, id));
   }
 }
 
