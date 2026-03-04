@@ -3,11 +3,16 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
+import { useFonts, SpaceGrotesk_300Light, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
+import { SpaceMono_400Regular } from '@expo-google-fonts/space-mono';
+import * as SplashScreen from 'expo-splash-screen';
 import { AppProviders, useAuth } from '../src/context';
 import { colors } from '../src/theme';
 import { gluestackConfig } from '../src/theme/gluestack';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { ToastContainer } from '../src/components/Toast';
+
+SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading, profile } = useAuth();
@@ -118,6 +123,14 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ SpaceGrotesk_300Light, SpaceGrotesk_700Bold, SpaceMono_400Regular });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <ErrorBoundary>
       <GluestackUIProvider config={gluestackConfig as any}>

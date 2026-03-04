@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h2, color: colors.text.primary },
   timerSection: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
   timerCircle: { width: timerSize, height: timerSize, borderRadius: timerSize / 2, borderWidth: 1, borderColor: colors.background.secondary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  timerText: { fontSize: timerFontSize, fontWeight: '100', color: colors.text.primary, fontVariant: ['tabular-nums'] },
+  timerText: { fontFamily: 'SpaceMono_400Regular', fontSize: timerFontSize, fontWeight: '100', color: colors.text.primary, fontVariant: ['tabular-nums'] },
   buttonRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl },
   button: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center' },
   lapButton: { backgroundColor: colors.background.cardSolid },

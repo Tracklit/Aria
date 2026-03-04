@@ -1,15 +1,70 @@
-import React, { useState } from 'react';
-import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Switch, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import {
+  getVoiceSettings,
+  saveVoiceSettings,
+  speak,
+  stopSpeaking,
+  type VoiceSettings,
+} from '../../src/services/voiceFeedback';
 
-const VOLUME_LEVELS = [25, 50, 75, 100];
+const RATE_OPTIONS = [
+  { label: '0.75x', value: 0.75 },
+  { label: '1x', value: 1.0 },
+  { label: '1.25x', value: 1.25 },
+  { label: '1.5x', value: 1.5 },
+];
+
+const VOLUME_LEVELS = [
+  { label: '25%', value: 0.25 },
+  { label: '50%', value: 0.5 },
+  { label: '75%', value: 0.75 },
+  { label: '100%', value: 1.0 },
+];
 
 export default function VoiceFeedbackScreen() {
-  const [enabled, setEnabled] = useState(false);
-  const [volume, setVolume] = useState(75);
+  const [settings, setSettings] = useState<VoiceSettings | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    getVoiceSettings().then(setSettings);
+    return () => stopSpeaking();
+  }, []);
+
+  const updateSettings = (patch: Partial<VoiceSettings>) => {
+    if (!settings) return;
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    saveVoiceSettings(next);
+  };
+
+  const handleTestVoice = async () => {
+    if (!settings) return;
+    setTesting(true);
+    // Temporarily force enabled so speak() works during test
+    const prev = settings.enabled;
+    await saveVoiceSettings({ ...settings, enabled: true });
+    await speak('Ready, set, go!');
+    // Restore original enabled state after a short delay
+    if (!prev) {
+      setTimeout(async () => {
+        await saveVoiceSettings(settings);
+      }, 2000);
+    }
+    setTesting(false);
+  };
+
+  if (!settings) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -29,33 +84,65 @@ export default function VoiceFeedbackScreen() {
               <Text style={styles.description}>Audio cues during workouts</Text>
             </View>
             <Switch
-              value={enabled}
-              onValueChange={setEnabled}
+              value={settings.enabled}
+              onValueChange={(enabled) => updateSettings({ enabled })}
               trackColor={{ false: colors.background.secondary, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
         </View>
 
-        {enabled && (
-          <View style={styles.card}>
-            <Text style={styles.label}>Volume</Text>
-            <View style={styles.volumeRow}>
-              {VOLUME_LEVELS.map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[styles.volumeButton, volume === level && styles.volumeButtonSelected]}
-                  onPress={() => setVolume(level)}
-                >
-                  <Text style={[styles.volumeText, volume === level && styles.volumeTextSelected]}>{level}%</Text>
-                </TouchableOpacity>
-              ))}
+        {settings.enabled && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.label}>Volume</Text>
+              <View style={styles.chipRow}>
+                {VOLUME_LEVELS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.chip, settings.volume === opt.value && styles.chipSelected]}
+                    onPress={() => updateSettings({ volume: opt.value })}
+                  >
+                    <Text style={[styles.chipText, settings.volume === opt.value && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
+
+            <View style={styles.card}>
+              <Text style={styles.label}>Speech Rate</Text>
+              <View style={styles.chipRow}>
+                {RATE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.chip, settings.rate === opt.value && styles.chipSelected]}
+                    onPress={() => updateSettings({ rate: opt.value })}
+                  >
+                    <Text style={[styles.chipText, settings.rate === opt.value && styles.chipTextSelected]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={handleTestVoice}
+              disabled={testing}
+            >
+              <Ionicons name="volume-high" size={20} color={colors.text.primary} />
+              <Text style={styles.testButtonText}>
+                {testing ? 'Speaking...' : 'Test Voice'}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <Text style={styles.footnote}>
-          Voice feedback is saved locally and will be available in a future update.
+          Voice feedback provides audio coaching cues during live workout sessions.
         </Text>
       </View>
     </SafeAreaView>
@@ -72,10 +159,22 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1, marginRight: spacing.md },
   label: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
   description: { ...typography.caption, color: colors.text.secondary, marginTop: 2 },
-  volumeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  volumeButton: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.md, backgroundColor: colors.background.secondary, alignItems: 'center' },
-  volumeButtonSelected: { backgroundColor: colors.primary },
-  volumeText: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
-  volumeTextSelected: { color: colors.text.primary },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  chip: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.md, backgroundColor: colors.background.secondary, alignItems: 'center' },
+  chipSelected: { backgroundColor: colors.primary },
+  chipText: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
+  chipTextSelected: { color: colors.text.primary },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  testButtonText: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
   footnote: { ...typography.caption, color: colors.text.tertiary, textAlign: 'center', marginTop: spacing.sm },
 });

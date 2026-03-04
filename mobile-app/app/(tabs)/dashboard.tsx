@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ function getDisplayName(profileName?: string | null, greeting?: string) {
 }
 
 export default function DashboardScreen() {
+  const reducedMotion = useReducedMotion();
   const { profile } = useAuth();
   const { startWorkoutSession, todaysWorkout, loadTodaysWorkout } = useWorkout();
   const {
@@ -79,7 +81,7 @@ export default function DashboardScreen() {
           />
         }
       >
-        <View style={styles.headerRow}>
+        <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(400)} style={styles.headerRow}>
           <View style={styles.headerText}>
             <Text style={styles.greeting}>Good Morning, {displayName}</Text>
             <Text style={styles.subtitle}>{subtitle || "Let's get faster today"}</Text>
@@ -93,10 +95,10 @@ export default function DashboardScreen() {
               </View>
             )}
           </View>
-        </View>
+        </Animated.View>
 
         {fatigueScore?.riskLevel === 'high' && (
-          <View style={styles.warningCard}>
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.warningCard}>
             <View style={styles.warningHeader}>
               <Ionicons name="warning-outline" size={20} color={colors.red} />
               <Text style={styles.warningTitle}>High Fatigue Detected</Text>
@@ -112,11 +114,12 @@ export default function DashboardScreen() {
             <Text style={styles.warningRecommendation}>
               Recommendation: {fatigueScore.recommendation}
             </Text>
-          </View>
+          </Animated.View>
         )}
 
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(500).delay(100)}>
         <LinearGradient
-          colors={['#0d47a1', '#1976d2', '#004d40']}
+          colors={colors.gradient.workout}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.workoutCard}
@@ -140,8 +143,9 @@ export default function DashboardScreen() {
             <Text style={styles.workoutButtonText}>Start Session</Text>
           </TouchableOpacity>
         </LinearGradient>
+        </Animated.View>
 
-        <View style={styles.section}>
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.section}>
           <Text style={styles.sectionTitle}>AI Insights</Text>
           {isLoading && insights.length === 0 ? (
             <View style={styles.loadingState}>
@@ -165,8 +169,8 @@ export default function DashboardScreen() {
               const accent = insightColors[idx % insightColors.length];
               const icon = insightIcons[idx % insightIcons.length];
               return (
+              <Animated.View key={String(insight.id)} entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(200 + idx * 80)}>
               <TouchableOpacity
-                key={String(insight.id)}
                 testID={`dashboard.insight.${insight.id}`}
                 style={[styles.insightCard, { borderLeftColor: accent, backgroundColor: `${accent}14` }]}
                 onPress={() => router.push('/(tabs)/chat')}
@@ -180,10 +184,11 @@ export default function DashboardScreen() {
                   <Text style={styles.insightAction}>{insight.suggestedAction}</Text>
                 ) : null}
               </TouchableOpacity>
+              </Animated.View>
               );
             })
           )}
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

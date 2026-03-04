@@ -15,8 +15,10 @@ import {
   updateUser as apiUpdateUser,
   completeOnboarding as apiCompleteOnboarding,
   uploadProfilePicture as apiUploadProfilePicture,
+  appleSignIn as apiAppleSignIn,
   LoginInput,
   RegisterInput,
+  AppleSignInInput,
 } from '../lib/api';
 import {
   clearAuthStorage,
@@ -99,6 +101,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
+  appleLogin: (input: AppleSignInInput) => Promise<void>;
   demoLogin: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -318,6 +321,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [fetchUser]);
 
+  const appleLogin = useCallback(async (input: AppleSignInInput) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await apiAppleSignIn(input);
+      if (!response.token) {
+        throw new Error('Missing auth token');
+      }
+      await setToken(response.token);
+      const ok = await fetchUser();
+      if (!ok) {
+        throw new Error('Apple Sign In failed. Please try again.');
+      }
+      setState((prev) => ({ ...prev, error: null, isLoading: false }));
+    } catch (error: any) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error.message || 'Apple Sign In failed',
+        hasValidToken: false,
+      }));
+      throw error;
+    }
+  }, [fetchUser]);
+
   // Demo login - works without server connection
   const demoLogin = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -495,6 +522,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...state,
         login,
         register,
+        appleLogin,
         demoLogin,
         logout,
         updateProfile,

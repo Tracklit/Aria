@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '../../src/context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
@@ -26,7 +28,14 @@ type FieldErrors = {
 };
 
 export default function RegisterScreen() {
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, appleLogin, isLoading, error, clearError } = useAuth();
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleAuthAvailable);
+    }
+  }, []);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -69,6 +78,39 @@ export default function RegisterScreen() {
 
   const clearFieldError = (field: keyof FieldErrors) => {
     setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        Alert.alert('Sign Up Failed', 'No identity token received from Apple.');
+        return;
+      }
+
+      await appleLogin({
+        identityToken: credential.identityToken,
+        authorizationCode: credential.authorizationCode || '',
+        user: {
+          email: credential.email || undefined,
+          name: credential.fullName ? {
+            firstName: credential.fullName.givenName || undefined,
+            lastName: credential.fullName.familyName || undefined,
+          } : undefined,
+        },
+      });
+    } catch (err: any) {
+      if (err.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      Alert.alert('Apple Sign Up Failed', err.message || 'An unexpected error occurred.');
+    }
   };
 
   return (
@@ -243,10 +285,16 @@ export default function RegisterScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.appleButtonDisabled}>
-            <Ionicons name="logo-apple" size={24} color={colors.text.tertiary} />
-            <Text style={styles.appleButtonTextDisabled}>Continue with Apple - Coming Soon</Text>
-          </View>
+          {appleAuthAvailable && (
+            <TouchableOpacity
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+              disabled={isLoading}
+            >
+              <Ionicons name="logo-apple" size={24} color="#000" />
+              <Text style={styles.appleButtonText}>Continue with Apple</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
@@ -410,19 +458,18 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginHorizontal: spacing.md,
   },
-  appleButtonDisabled: {
+  appleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.secondary,
+    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
-    opacity: 0.5,
   },
-  appleButtonTextDisabled: {
+  appleButtonText: {
     ...typography.body,
-    color: colors.text.tertiary,
+    color: '#000',
     fontWeight: '600',
     marginLeft: spacing.sm,
   },

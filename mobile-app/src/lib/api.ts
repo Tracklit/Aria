@@ -172,6 +172,26 @@ export async function logout(): Promise<void> {
   await apiRequest('/api/auth/logout', { method: 'POST', rawResponse: true });
 }
 
+export interface AppleSignInInput {
+  identityToken: string;
+  authorizationCode: string;
+  user?: {
+    email?: string;
+    name?: {
+      firstName?: string;
+      lastName?: string;
+    };
+  };
+}
+
+export async function appleSignIn(input: AppleSignInInput): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/api/auth/apple', {
+    method: 'POST',
+    data: input,
+    skipAuth: true,
+  });
+}
+
 // User
 export async function getCurrentUser() {
   return apiRequest('/api/user');

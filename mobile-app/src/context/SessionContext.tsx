@@ -2,6 +2,13 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { startSession as apiStartSession, finishSession as apiFinishSession } from '../lib/api';
+import {
+  announceSetComplete,
+  announceRestTimer,
+  announceExerciseStart,
+  announceWorkoutComplete,
+  stopSpeaking,
+} from '../services/voiceFeedback';
 
 interface Exercise {
   name: string;
@@ -135,7 +142,12 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           return null;
         }
-        return prev - 1;
+        const next = prev - 1;
+        // Voice countdown for last 3 seconds
+        if (next >= 1 && next <= 3) {
+          announceRestTimer(next);
+        }
+        return next;
       });
     }, 1000);
   }, [clearRestTimer]);
@@ -155,6 +167,14 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         completedSets[setIndex] = !completedSets[setIndex];
         return { ...ex, completedSets };
       });
+
+      // Announce set completion via voice feedback
+      const ex = exercises[exerciseIndex];
+      if (ex) {
+        const completed = ex.completedSets.filter(Boolean).length;
+        announceSetComplete(completed, ex.completedSets.length);
+      }
+
       return { ...prev, exercises };
     });
 
@@ -176,6 +196,9 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     setActiveSession(prev => {
       if (!prev) return null;
       const next = Math.min(prev.currentExerciseIndex + 1, prev.exercises.length - 1);
+      if (next !== prev.currentExerciseIndex) {
+        announceExerciseStart(prev.exercises[next].name);
+      }
       return { ...prev, currentExerciseIndex: next };
     });
   }, [clearRestTimer]);
@@ -192,9 +215,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   const finishSession = useCallback(() => {
     clearElapsedTimer();
     clearRestTimer();
+    stopSpeaking();
 
     setActiveSession(prev => {
       if (!prev) return null;
+
+      // Announce workout complete with duration
+      const durationSec = Math.floor((Date.now() - prev.startedAt.getTime()) / 1000);
+      const mins = Math.floor(durationSec / 60);
+      const secs = durationSec % 60;
+      const durationStr = mins > 0 ? `${mins} minutes and ${secs} seconds` : `${secs} seconds`;
+      announceWorkoutComplete(durationStr);
 
       // Persist session to backend
       if (prev.backendSessionId) {

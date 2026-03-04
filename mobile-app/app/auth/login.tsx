@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,62 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '../../src/context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 export default function LoginScreen() {
-  const { login, isLoading, error, clearError } = useAuth();
+  const reducedMotion = useReducedMotion();
+  const { login, appleLogin, isLoading, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleAuthAvailable);
+    }
+  }, []);
+
+  const handleAppleSignIn = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        Alert.alert('Sign In Failed', 'No identity token received from Apple.');
+        return;
+      }
+
+      await appleLogin({
+        identityToken: credential.identityToken,
+        authorizationCode: credential.authorizationCode || '',
+        user: {
+          email: credential.email || undefined,
+          name: credential.fullName ? {
+            firstName: credential.fullName.givenName || undefined,
+            lastName: credential.fullName.familyName || undefined,
+          } : undefined,
+        },
+      });
+    } catch (err: any) {
+      if (err.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      Alert.alert('Apple Sign In Failed', err.message || 'An unexpected error occurred.');
+    }
+  };
 
   const handleLogin = async () => {
     const errors: { email?: string; password?: string } = {};
@@ -63,13 +106,13 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.content}>
-          <View style={styles.logoContainer}>
+          <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(500).delay(200)} style={styles.logoContainer}>
             <View style={styles.logoCircle}>
               <Text style={styles.logoText}>A</Text>
             </View>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue your training</Text>
-          </View>
+          </Animated.View>
 
           {error && (
             <TouchableOpacity style={styles.errorBanner} onPress={clearError}>
@@ -79,6 +122,7 @@ export default function LoginScreen() {
           )}
 
           <View style={styles.form}>
+            <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(300)}>
             <View
               style={[
                 styles.inputContainer,
@@ -101,7 +145,9 @@ export default function LoginScreen() {
               />
             </View>
             {fieldErrors.email && <Text style={styles.fieldError}>{fieldErrors.email}</Text>}
+            </Animated.View>
 
+            <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(360)}>
             <View
               style={[
                 styles.inputContainer,
@@ -129,11 +175,13 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             {fieldErrors.password && <Text style={styles.fieldError}>{fieldErrors.password}</Text>}
+            </Animated.View>
 
             <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
+            <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(500)}>
             <TouchableOpacity
               style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
@@ -145,18 +193,27 @@ export default function LoginScreen() {
                 <Text style={styles.loginButtonText}>Sign In</Text>
               )}
             </TouchableOpacity>
+            </Animated.View>
           </View>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(600)}>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-          <View style={styles.appleButtonDisabled}>
-            <Ionicons name="logo-apple" size={24} color={colors.text.tertiary} />
-            <Text style={styles.appleButtonTextDisabled}>Continue with Apple - Coming Soon</Text>
-          </View>
+            {appleAuthAvailable && (
+              <TouchableOpacity
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+                disabled={isLoading}
+              >
+                <Ionicons name="logo-apple" size={24} color="#000" />
+                <Text style={styles.appleButtonText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
@@ -305,19 +362,18 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginHorizontal: spacing.md,
   },
-  appleButtonDisabled: {
+  appleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.secondary,
+    backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
-    opacity: 0.5,
   },
-  appleButtonTextDisabled: {
+  appleButtonText: {
     ...typography.body,
-    color: colors.text.tertiary,
+    color: '#000',
     fontWeight: '600',
     marginLeft: spacing.sm,
   },

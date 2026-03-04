@@ -314,7 +314,9 @@ export function registerRoutes(app: Express): void {
     try {
       const data = appleSignInSchema.parse(req.body);
       const result = await appleSignIn(data);
-      res.json(result);
+      // Map accessToken to token for mobile app compatibility
+      const { accessToken, ...rest } = result;
+      res.json({ ...rest, token: accessToken });
     } catch (error: any) {
       console.error('Apple Sign In error:', error);
       if (error.name === 'ZodError') {

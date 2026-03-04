@@ -1,30 +1,120 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
+import Slider from '@react-native-community/slider';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+
+const FRAME_STEP = 1 / 30; // ~33ms for 30fps
+const SPEED_OPTIONS = [0.25, 0.5, 1] as const;
+
+function formatTimestamp(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+}
 
 export default function PhotoFinishScreen() {
   const [videoUri, setVideoUri] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [speed, setSpeed] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
 
   const player = useVideoPlayer(videoUri || '', (p) => {
     p.loop = false;
+    p.timeUpdateEventInterval = 0.05;
   });
+
+  useEffect(() => {
+    if (!player) return;
+
+    const statusSub = player.addListener('statusChange', ({ status }) => {
+      setIsLoading(status === 'loading');
+      if (status === 'readyToPlay') {
+        setDuration(player.duration);
+      }
+    });
+
+    const playingSub = player.addListener('playingChange', ({ isPlaying: playing }) => {
+      setIsPlaying(playing);
+    });
+
+    const timeSub = player.addListener('timeUpdate', ({ currentTime: time }) => {
+      if (!isSeeking) {
+        setCurrentTime(time);
+      }
+    });
+
+    const sourceSub = player.addListener('sourceLoad', ({ duration: dur }) => {
+      setDuration(dur);
+    });
+
+    return () => {
+      statusSub.remove();
+      playingSub.remove();
+      timeSub.remove();
+      sourceSub.remove();
+    };
+  }, [player, isSeeking]);
 
   const pickVideo = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: 'video/*' });
       if (!result.canceled && result.assets?.[0]) {
+        setCurrentTime(0);
+        setDuration(0);
+        setIsPlaying(false);
+        setSpeed(1);
         setVideoUri(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Failed to pick video:', error);
     }
   }, []);
+
+  const togglePlayPause = useCallback(() => {
+    if (!player) return;
+    if (player.playing) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [player]);
+
+  const stepFrame = useCallback((direction: -1 | 1) => {
+    if (!player) return;
+    player.pause();
+    player.seekBy(direction * FRAME_STEP);
+  }, [player]);
+
+  const changeSpeed = useCallback((newSpeed: number) => {
+    if (!player) return;
+    setSpeed(newSpeed);
+    player.playbackRate = newSpeed;
+  }, [player]);
+
+  const onSliderValueChange = useCallback((value: number) => {
+    setCurrentTime(value);
+  }, []);
+
+  const onSlidingStart = useCallback(() => {
+    setIsSeeking(true);
+  }, []);
+
+  const onSlidingComplete = useCallback((value: number) => {
+    if (!player) return;
+    player.currentTime = value;
+    setCurrentTime(value);
+    setIsSeeking(false);
+  }, [player]);
 
   const STEPS = [
     { num: '1', text: 'Record a sprint finish' },
@@ -45,7 +135,95 @@ export default function PhotoFinishScreen() {
       <View style={styles.content}>
         {videoUri ? (
           <View style={styles.videoContainer}>
-            <VideoView player={player} style={styles.video} contentFit="contain" />
+            <View style={styles.videoWrapper}>
+              <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
+              {isLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={styles.loadingText}>Loading video...</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Timestamp */}
+            <View style={styles.timestampContainer}>
+              <Text style={styles.timestamp}>{formatTimestamp(currentTime)}</Text>
+              <Text style={styles.timestampSeparator}>/</Text>
+              <Text style={styles.timestampTotal}>{formatTimestamp(duration)}</Text>
+            </View>
+
+            {/* Timeline Scrubber */}
+            <View style={styles.sliderContainer}>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={duration || 1}
+                value={currentTime}
+                onValueChange={onSliderValueChange}
+                onSlidingStart={onSlidingStart}
+                onSlidingComplete={onSlidingComplete}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.text.tertiary}
+                thumbTintColor={colors.primary}
+              />
+            </View>
+
+            {/* Playback Controls */}
+            <View style={styles.controlsBar}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => stepFrame(-1)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="play-back" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={togglePlayPause}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={isPlaying ? 'pause' : 'play'}
+                  size={32}
+                  color={colors.background.primary}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => stepFrame(1)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="play-forward" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Speed Selector */}
+            <View style={styles.speedRow}>
+              {SPEED_OPTIONS.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[
+                    styles.speedButton,
+                    speed === s && styles.speedButtonActive,
+                  ]}
+                  onPress={() => changeSpeed(s)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.speedText,
+                      speed === s && styles.speedTextActive,
+                    ]}
+                  >
+                    {s}x
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Change Video */}
             <TouchableOpacity style={styles.changeButton} onPress={pickVideo}>
               <Ionicons name="refresh-outline" size={20} color={colors.text.primary} />
               <Text style={styles.changeText}>Change Video</Text>
@@ -94,7 +272,96 @@ const styles = StyleSheet.create({
   headerTitle: { ...typography.h2, color: colors.text.primary },
   content: { flex: 1 },
   videoContainer: { flex: 1 },
+  videoWrapper: { flex: 1, position: 'relative' },
   video: { flex: 1 },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  loadingText: { ...typography.caption, color: colors.text.secondary },
+  timestampContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.xs,
+  },
+  timestamp: {
+    ...typography.data,
+    fontSize: 20,
+    color: colors.primary,
+  },
+  timestampSeparator: {
+    ...typography.data,
+    fontSize: 16,
+    color: colors.text.tertiary,
+  },
+  timestampTotal: {
+    ...typography.data,
+    fontSize: 16,
+    color: colors.text.secondary,
+  },
+  sliderContainer: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+  },
+  controlsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  controlButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background.cardSolid,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  speedButton: {
+    minWidth: 56,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background.cardSolid,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  speedText: {
+    ...typography.bodyBold,
+    color: colors.text.secondary,
+  },
+  speedTextActive: {
+    color: colors.background.primary,
+  },
   changeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: colors.background.cardSolid },
   changeText: { ...typography.body, color: colors.text.primary },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },

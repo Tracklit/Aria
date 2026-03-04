@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import Animated, { FadeIn, FadeInUp, FadeInRight, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,10 +48,13 @@ const trainingItems = [
 ];
 
 export default function ToolsScreen() {
+  const reducedMotion = useReducedMotion();
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Tools</Text>
+        <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(300)}>
+          <Text style={styles.title}>Tools</Text>
+        </Animated.View>
 
         {/* Sprint Tools */}
         <View style={styles.sectionHeaderRow}>
@@ -59,23 +63,23 @@ export default function ToolsScreen() {
           <View style={styles.sectionLine} />
         </View>
         <View style={styles.grid}>
-          {sprintTools.map((tool) => (
-            <TouchableOpacity
-              key={tool.title}
-              style={styles.gridItem}
-              activeOpacity={0.7}
-              onPress={() => router.push(tool.route as any)}
-            >
-              <LinearGradient
-                colors={tool.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.card}
+          {sprintTools.map((tool, index) => (
+            <Animated.View key={tool.title} entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(index * 60)} style={styles.gridItem}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push(tool.route as any)}
               >
-                <Ionicons name={tool.icon} size={28} color={colors.text.primary} />
-                <Text style={styles.cardTitle}>{tool.title}</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={tool.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.card}
+                >
+                  <Ionicons name={tool.icon} size={28} color={colors.text.primary} />
+                  <Text style={styles.cardTitle}>{tool.title}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
 
@@ -85,17 +89,18 @@ export default function ToolsScreen() {
           <Text style={styles.sectionHeader}>TRAINING</Text>
           <View style={styles.sectionLine} />
         </View>
-        {trainingItems.map((item) => (
-          <TouchableOpacity
-            key={item.title}
-            style={styles.trainingCard}
-            activeOpacity={0.7}
-            onPress={() => router.push(item.route as any)}
-          >
-            <Ionicons name={item.icon} size={24} color={colors.primary} />
-            <Text style={styles.trainingTitle}>{item.title}</Text>
-            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
-          </TouchableOpacity>
+        {trainingItems.map((item, index) => (
+          <Animated.View key={item.title} entering={reducedMotion ? undefined : FadeInRight.duration(350).delay(300 + index * 80)}>
+            <TouchableOpacity
+              style={styles.trainingCard}
+              activeOpacity={0.7}
+              onPress={() => router.push(item.route as any)}
+            >
+              <Ionicons name={item.icon} size={24} color={colors.primary} />
+              <Text style={styles.trainingTitle}>{item.title}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+            </TouchableOpacity>
+          </Animated.View>
         ))}
       </ScrollView>
     </SafeAreaView>
