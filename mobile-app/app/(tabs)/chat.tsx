@@ -148,7 +148,7 @@ export default function ChatScreen() {
             style={styles.headerIconBtn}
             onPress={() => setShowDrawer((s) => !s)}
           >
-            <Ionicons name="menu-outline" size={24} color="#FFF" />
+            <Ionicons name="menu-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chat</Text>
           <TouchableOpacity
@@ -159,7 +159,7 @@ export default function ChatScreen() {
               setShowDrawer(false);
             }}
           >
-            <Ionicons name="create-outline" size={22} color="#FFF" />
+            <Ionicons name="create-outline" size={22} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
@@ -211,7 +211,7 @@ export default function ChatScreen() {
         {error ? (
           <TouchableOpacity testID="chat.error_banner" style={styles.errorBanner} onPress={clearError}>
             <Text style={styles.errorText}>{error}</Text>
-            <Ionicons name="close-circle" size={18} color="#FFF" />
+            <Ionicons name="close-circle" size={18} color={colors.text.primary} />
           </TouchableOpacity>
         ) : null}
 
@@ -233,7 +233,7 @@ export default function ChatScreen() {
             renderedMessages
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="sparkles" size={36} color="#00E5FF" style={styles.emptyIcon} />
+              <Ionicons name="sparkles" size={36} color={colors.teal} style={styles.emptyIcon} />
               <Text style={styles.emptyTitle}>
                 {hasValidToken ? 'Chat with Aria' : 'Sign In Required'}
               </Text>
@@ -272,13 +272,13 @@ export default function ChatScreen() {
 
         <View style={[styles.inputDock, { paddingBottom: tabBarHeight }]}>
           <TouchableOpacity style={styles.attachBtn}>
-            <Ionicons name="add" size={24} color="#FFF" />
+            <Ionicons name="add" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <TextInput
             testID="chat.input"
             style={styles.input}
             placeholder="Type a message"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.text.secondary}
             value={inputText}
             onChangeText={setInputText}
             editable={!isSending && hasValidToken}
@@ -286,7 +286,7 @@ export default function ChatScreen() {
           />
           <TouchableOpacity style={[styles.voiceBtn, isRecording && styles.voiceBtnRecording]} onPress={handleVoiceInput}>
             <Animated.View style={{ transform: [{ scale: isRecording ? pulseAnim : 1 }] }}>
-              <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={20} color={isRecording ? '#FF3B30' : '#FFF'} />
+              <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={20} color={isRecording ? colors.red : colors.text.primary} />
             </Animated.View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -301,9 +301,9 @@ export default function ChatScreen() {
             }}
           >
             {isSending ? (
-              <ActivityIndicator color="#FFF" size="small" />
+              <ActivityIndicator color={colors.text.primary} size="small" />
             ) : (
-              <Ionicons name="arrow-up" size={24} color={canSend ? colors.teal : '#666'} />
+              <Ionicons name="arrow-up" size={24} color={canSend ? colors.teal : colors.text.tertiary} />
             )}
           </TouchableOpacity>
         </View>
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   inputDock: {
     borderTopWidth: 1,
     borderTopColor: colors.background.secondary,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
     paddingHorizontal: 12,
     paddingVertical: 10,
     flexDirection: 'row',
@@ -493,8 +493,8 @@ const styles = StyleSheet.create({
     minHeight: 42,
     maxHeight: 100,
     borderRadius: 21,
-    backgroundColor: '#151518',
-    color: '#FFF',
+    backgroundColor: colors.background.secondary,
+    color: colors.text.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
@@ -505,9 +505,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.background.cardSolid,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: colors.background.secondary,
   },
   voiceBtn: {
     width: 40,
@@ -515,12 +515,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#222',
+    backgroundColor: colors.background.secondary,
   },
   voiceBtnRecording: {
     backgroundColor: 'rgba(255, 59, 48, 0.2)',
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: colors.red,
   },
   sendBtn: {
     width: 40,
