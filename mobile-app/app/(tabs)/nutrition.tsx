@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -7,8 +7,12 @@ import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext'
 import { NutritionPlanCard } from '../../src/components/features/NutritionPlanCard';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
+type FilterOption = 'All' | 'Active' | 'Archived';
+const FILTERS: FilterOption[] = ['All', 'Active', 'Archived'];
+
 export default function NutritionScreen() {
   const { plans, isLoading, fetchPlans } = useNutrition();
+  const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
   useEffect(() => {
     fetchPlans();
@@ -17,6 +21,11 @@ export default function NutritionScreen() {
   const onRefresh = useCallback(() => {
     fetchPlans();
   }, [fetchPlans]);
+
+  const filteredPlans = useMemo(() => {
+    if (activeFilter === 'All') return plans;
+    return plans.filter(p => p.status === activeFilter.toLowerCase());
+  }, [plans, activeFilter]);
 
   const renderItem = ({ item }: { item: NutritionPlan }) => (
     <NutritionPlanCard
@@ -39,26 +48,55 @@ export default function NutritionScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Text style={styles.title}>Nutrition</Text>
+      <View style={styles.filterRow}>
+        {FILTERS.map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[styles.filterChip, activeFilter === filter && styles.filterChipActive]}
+            onPress={() => setActiveFilter(filter)}
+          >
+            <Text style={[styles.filterChipText, activeFilter === filter && styles.filterChipTextActive]}>
+              {filter}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <FlatList
-        data={plans}
+        data={filteredPlans}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={!isLoading ? renderEmpty : null}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={colors.primary} />}
       />
-      {plans.length > 0 && (
-        <TouchableOpacity style={styles.fab} onPress={() => router.push('/nutrition/create')}>
-          <Ionicons name="add" size={28} color={colors.text.primary} />
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/nutrition/create')}>
+        <Ionicons name="add" size={28} color={colors.text.primary} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
-  title: { ...typography.h1, color: colors.text.primary, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.lg },
+  title: { ...typography.h1, color: colors.text.primary, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.md },
+  filterRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
+  filterChip: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.background.cardSolid,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+  },
+  filterChipText: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: colors.text.primary,
+  },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 120 },
   emptyContainer: { alignItems: 'center', paddingTop: 80, paddingHorizontal: spacing.xl },
   emptyTitle: { ...typography.h2, color: colors.text.primary, marginTop: spacing.lg },

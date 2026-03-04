@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
 export default function PhotoFinishScreen() {
@@ -24,6 +25,12 @@ export default function PhotoFinishScreen() {
       console.error('Failed to pick video:', error);
     }
   }, []);
+
+  const STEPS = [
+    { num: '1', text: 'Record a sprint finish' },
+    { num: '2', text: 'Scrub frame-by-frame' },
+    { num: '3', text: 'Determine the winner' },
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -46,13 +53,34 @@ export default function PhotoFinishScreen() {
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="videocam-outline" size={64} color={colors.text.tertiary} />
+            <View style={styles.iconCircle}>
+              <Ionicons name="videocam-outline" size={48} color={colors.primary} />
+            </View>
             <Text style={styles.emptyTitle}>Select a Video</Text>
             <Text style={styles.emptySubtitle}>Pick a finish-line video to analyze frame by frame</Text>
-            <TouchableOpacity style={styles.pickButton} onPress={pickVideo}>
-              <Ionicons name="folder-open-outline" size={20} color={colors.text.primary} />
-              <Text style={styles.pickText}>Choose Video</Text>
+
+            <TouchableOpacity onPress={pickVideo} activeOpacity={0.8}>
+              <LinearGradient
+                colors={[colors.primary, '#0066CC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.pickButton}
+              >
+                <Ionicons name="folder-open-outline" size={20} color={colors.text.primary} />
+                <Text style={styles.pickText}>Choose Video</Text>
+              </LinearGradient>
             </TouchableOpacity>
+
+            <View style={styles.stepsContainer}>
+              {STEPS.map((step) => (
+                <View key={step.num} style={styles.stepRow}>
+                  <View style={styles.stepBadge}>
+                    <Text style={styles.stepNum}>{step.num}</Text>
+                  </View>
+                  <Text style={styles.stepText}>{step.text}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
       </View>
@@ -70,8 +98,14 @@ const styles = StyleSheet.create({
   changeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: colors.background.cardSolid },
   changeText: { ...typography.body, color: colors.text.primary },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  emptyTitle: { ...typography.h2, color: colors.text.primary, marginTop: spacing.lg },
+  iconCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(10, 132, 255, 0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  emptyTitle: { ...typography.h2, color: colors.text.primary },
   emptySubtitle: { ...typography.body, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.sm },
-  pickButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.lg, marginTop: spacing.lg },
+  pickButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: borderRadius.lg, marginTop: spacing.xl },
   pickText: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
+  stepsContainer: { marginTop: spacing.xl * 2, width: '100%', gap: spacing.md },
+  stepRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stepBadge: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.background.cardSolid, alignItems: 'center', justifyContent: 'center' },
+  stepNum: { ...typography.captionBold, color: colors.text.secondary },
+  stepText: { ...typography.body, color: colors.text.secondary },
 });

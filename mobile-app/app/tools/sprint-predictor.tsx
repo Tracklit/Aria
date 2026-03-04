@@ -14,22 +14,30 @@ const CONVERSION_FACTORS: Record<number, number> = {
 
 const DISTANCES = Object.keys(CONVERSION_FACTORS).map(Number);
 
+function getDistanceColor(distance: number): string {
+  if (distance <= 60) return colors.green;
+  if (distance <= 110) return colors.primary;
+  return colors.orange;
+}
+
 export default function SprintPredictorScreen() {
   const [selectedDistance, setSelectedDistance] = useState(100);
   const [inputTime, setInputTime] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const inputTimeNum = parseFloat(inputTime);
+
   const predictions = (() => {
-    const time = parseFloat(inputTime);
-    if (!time || time <= 0) return [];
+    if (!inputTimeNum || inputTimeNum <= 0) return [];
 
     const baseFactor = CONVERSION_FACTORS[selectedDistance];
-    const equivalent100m = time / baseFactor;
+    const equivalent100m = inputTimeNum / baseFactor;
 
-    return DISTANCES.filter(d => d !== selectedDistance).map(d => ({
-      distance: d,
-      time: +(equivalent100m * CONVERSION_FACTORS[d]).toFixed(2),
-    }));
+    return DISTANCES.filter(d => d !== selectedDistance).map(d => {
+      const predicted = +(equivalent100m * CONVERSION_FACTORS[d]).toFixed(2);
+      const delta = +(predicted - inputTimeNum).toFixed(2);
+      return { distance: d, time: predicted, delta };
+    });
   })();
 
   return (
@@ -48,7 +56,7 @@ export default function SprintPredictorScreen() {
         <View style={styles.inputSection}>
           <TouchableOpacity style={styles.distancePicker} onPress={() => setShowPicker(true)}>
             <Text style={styles.distanceText}>{selectedDistance}m</Text>
-            <Ionicons name="chevron-down" size={20} color={colors.text.secondary} />
+            <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </TouchableOpacity>
 
           <TextInput
@@ -61,15 +69,25 @@ export default function SprintPredictorScreen() {
           />
         </View>
 
-        {predictions.length > 0 && (
+        {predictions.length > 0 ? (
           <View style={styles.resultsSection}>
             <Text style={styles.resultsTitle}>Predicted Times</Text>
             {predictions.map((p) => (
-              <View key={p.distance} style={styles.resultCard}>
-                <Text style={styles.resultDistance}>{p.distance}m</Text>
+              <View key={p.distance} style={[styles.resultCard, { borderLeftColor: getDistanceColor(p.distance) }]}>
+                <View>
+                  <Text style={styles.resultDistance}>{p.distance}m</Text>
+                  <Text style={styles.resultDelta}>
+                    {p.delta >= 0 ? '+' : ''}{p.delta.toFixed(2)}s
+                  </Text>
+                </View>
                 <Text style={styles.resultTime}>{p.time}s</Text>
               </View>
             ))}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="fitness-outline" size={56} color={colors.text.tertiary} />
+            <Text style={styles.emptyText}>Enter your time above to see predictions</Text>
           </View>
         )}
       </ScrollView>
@@ -109,14 +127,17 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
   description: { ...typography.caption, color: colors.text.secondary, marginBottom: spacing.lg },
   inputSection: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  distancePicker: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md },
-  distanceText: { ...typography.h3, color: colors.text.primary },
+  distancePicker: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.primary },
+  distanceText: { ...typography.h3, color: colors.primary },
   timeInput: { flex: 1, ...typography.body, color: colors.text.primary, backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md },
   resultsSection: { gap: spacing.sm },
   resultsTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', marginBottom: spacing.sm },
-  resultCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.md, padding: spacing.md },
+  resultCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.md, padding: spacing.md, borderLeftWidth: 3 },
   resultDistance: { ...typography.body, color: colors.text.secondary, fontWeight: '600' },
+  resultDelta: { ...typography.caption, color: colors.text.tertiary, marginTop: 2 },
   resultTime: { ...typography.h3, color: colors.primary },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl * 3 },
+  emptyText: { ...typography.body, color: colors.text.tertiary, marginTop: spacing.lg, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: colors.background.cardSolid, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, maxHeight: '50%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.background.secondary },

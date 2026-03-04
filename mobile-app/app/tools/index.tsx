@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,10 +7,34 @@ import { ToolCard } from '../../src/components/features/ToolCard';
 import { colors, typography, spacing } from '../../src/theme';
 
 const tools = [
-  { id: 'photo-finish', title: 'Photo Finish', subtitle: 'Video analysis', icon: 'camera-outline' },
-  { id: 'start-gun', title: 'Start Gun', subtitle: 'Audio sequence', icon: 'volume-high-outline' },
-  { id: 'stopwatch', title: 'Stopwatch', subtitle: 'Lap timing', icon: 'timer-outline' },
-  { id: 'sprint-predictor', title: 'Sprint Predictor', subtitle: 'Time conversion', icon: 'calculator-outline' },
+  {
+    id: 'photo-finish',
+    title: 'Photo Finish',
+    description: 'Analyze race finishes frame by frame',
+    icon: 'camera-outline',
+    accentColor: colors.teal,
+  },
+  {
+    id: 'start-gun',
+    title: 'Start Gun',
+    description: 'Realistic race start audio sequence',
+    icon: 'volume-high-outline',
+    accentColor: colors.green,
+  },
+  {
+    id: 'stopwatch',
+    title: 'Stopwatch',
+    description: 'Precision timing with lap splits',
+    icon: 'timer-outline',
+    accentColor: colors.orange,
+  },
+  {
+    id: 'sprint-predictor',
+    title: 'Sprint Predictor',
+    description: 'Predict times across distances',
+    icon: 'calculator-outline',
+    accentColor: colors.primary,
+  },
 ];
 
 export default function ToolsScreen() {
@@ -20,31 +44,62 @@ export default function ToolsScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sprint Tools</Text>
         <View style={{ width: 28 }} />
       </View>
-      <FlatList
-        data={tools}
-        numColumns={2}
-        renderItem={({ item }) => (
-          <ToolCard
-            title={item.title}
-            subtitle={item.subtitle}
-            icon={item.icon}
-            onPress={() => router.push(`/tools/${item.id}` as any)}
-            testID={`tool.${item.id}`}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.grid}
-      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.heroSection}>
+          <Text style={styles.heroTitle}>Sprint Tools</Text>
+          <Text style={styles.heroSubtitle}>Professional timing & analysis tools</Text>
+        </View>
+        <View style={styles.cardList}>
+          {tools.map((tool) => (
+            <ToolCard
+              key={tool.id}
+              title={tool.title}
+              description={tool.description}
+              icon={tool.icon}
+              accentColor={tool.accentColor}
+              variant="list"
+              onPress={() => router.push(`/tools/${tool.id}` as any)}
+              testID={`tool.${tool.id}`}
+            />
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.primary },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  headerTitle: { ...typography.h2, color: colors.text.primary },
-  grid: { padding: spacing.md },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  heroSection: {
+    marginBottom: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  heroTitle: {
+    ...typography.h1,
+    color: colors.text.primary,
+  },
+  heroSubtitle: {
+    ...typography.body,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  cardList: {
+    gap: spacing.md,
+  },
 });

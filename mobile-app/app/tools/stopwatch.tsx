@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -60,6 +60,20 @@ export default function StopwatchScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   }, [time, laps]);
 
+  // Find best and worst split indices (only when 2+ laps)
+  const { bestSplit, worstSplit } = useMemo(() => {
+    if (laps.length < 2) return { bestSplit: -1, worstSplit: -1 };
+    let best = Infinity;
+    let worst = -Infinity;
+    let bestIdx = -1;
+    let worstIdx = -1;
+    laps.forEach((l, i) => {
+      if (l.split < best) { best = l.split; bestIdx = i; }
+      if (l.split > worst) { worst = l.split; worstIdx = i; }
+    });
+    return { bestSplit: bestIdx, worstSplit: worstIdx };
+  }, [laps]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -71,7 +85,9 @@ export default function StopwatchScreen() {
       </View>
 
       <View style={styles.timerSection}>
-        <Text style={styles.timerText}>{formatTime(time)}</Text>
+        <View style={styles.timerCircle}>
+          <Text style={styles.timerText}>{formatTime(time)}</Text>
+        </View>
       </View>
 
       <View style={styles.buttonRow}>
@@ -96,16 +112,29 @@ export default function StopwatchScreen() {
         )}
       </View>
 
+      {laps.length > 0 && (
+        <View style={styles.lapHeader}>
+          <Text style={styles.lapCount}>Laps: {laps.length}</Text>
+        </View>
+      )}
+
       <FlatList
         data={laps}
         keyExtractor={(item) => item.number.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.lapRow}>
-            <Text style={styles.lapNumber}>Lap {item.number}</Text>
-            <Text style={styles.lapSplit}>{formatTime(item.split)}</Text>
-            <Text style={styles.lapTime}>{formatTime(item.time)}</Text>
-          </View>
-        )}
+        renderItem={({ item, index }) => {
+          const isBest = index === bestSplit;
+          const isWorst = index === worstSplit;
+          const rowBg = index % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+          return (
+            <View style={[styles.lapRow, { backgroundColor: rowBg }]}>
+              <Text style={styles.lapNumber}>Lap {item.number}</Text>
+              <Text style={[styles.lapSplit, isBest && styles.bestSplit, isWorst && styles.worstSplit]}>
+                {formatTime(item.split)}
+              </Text>
+              <Text style={styles.lapTime}>{formatTime(item.time)}</Text>
+            </View>
+          );
+        }}
         contentContainerStyle={styles.lapList}
       />
     </SafeAreaView>
@@ -117,17 +146,22 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },
   timerSection: { alignItems: 'center', paddingVertical: spacing.xl * 2 },
-  timerText: { fontSize: 64, fontWeight: '200', color: colors.text.primary, fontVariant: ['tabular-nums'] },
+  timerCircle: { width: 200, height: 200, borderRadius: 100, borderWidth: 1, borderColor: colors.background.secondary, alignItems: 'center', justifyContent: 'center' },
+  timerText: { fontSize: 72, fontWeight: '100', color: colors.text.primary, fontVariant: ['tabular-nums'] },
   buttonRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl },
-  button: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  button: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center' },
   lapButton: { backgroundColor: colors.background.cardSolid },
   stopButton: { backgroundColor: colors.red },
   resetBtn: { backgroundColor: colors.background.cardSolid },
   startBtn: { backgroundColor: colors.green },
   buttonText: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
-  lapList: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-  lapRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.background.secondary },
+  lapHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
+  lapCount: { ...typography.captionBold, color: colors.text.secondary, textTransform: 'uppercase', letterSpacing: 1 },
+  lapList: { paddingHorizontal: spacing.lg },
+  lapRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.background.secondary, borderRadius: borderRadius.sm },
   lapNumber: { ...typography.body, color: colors.text.secondary, width: 70 },
   lapSplit: { ...typography.body, color: colors.text.primary, fontVariant: ['tabular-nums'] },
+  bestSplit: { color: colors.green },
+  worstSplit: { color: colors.red },
   lapTime: { ...typography.caption, color: colors.text.tertiary, fontVariant: ['tabular-nums'] },
 });
