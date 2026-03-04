@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "autoIncrement": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "autoIncrement": true
+      }
+    },
+    "production": {
+      "ios": {
+        "autoIncrement": true
+      },
+      "android": {
+        "autoIncrement": true
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "",
+        "ascAppId": "",
+        "appleTeamId": "2V636U3DWT"
+      }
+    }
+  }
+}
