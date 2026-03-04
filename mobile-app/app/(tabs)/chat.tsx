@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
 import { colors } from '../../src/theme';
@@ -41,8 +44,69 @@ export default function ChatScreen() {
   const { isAuthenticated, hasValidToken } = useAuth();
   const [showDrawer, setShowDrawer] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   const tabBarHeight = useBottomTabBarHeight();
+
+  const startPulse = useCallback(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.3, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [pulseAnim]);
+
+  const stopPulse = useCallback(() => {
+    pulseAnim.stopAnimation();
+    pulseAnim.setValue(1);
+  }, [pulseAnim]);
+
+  const handleVoiceInput = useCallback(async () => {
+    if (isRecording) {
+      // Stop recording
+      try {
+        setIsRecording(false);
+        stopPulse();
+        if (recordingRef.current) {
+          await recordingRef.current.stopAndUnloadAsync();
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+          // Recording captured — transcription requires a cloud STT service or dev build with @react-native-voice/voice
+          Alert.alert(
+            'Voice Recorded',
+            'Voice-to-text transcription requires a development build. Audio was captured but cannot be transcribed in Expo Go.',
+          );
+          recordingRef.current = null;
+        }
+      } catch (err) {
+        console.error('Failed to stop recording:', err);
+      }
+    } else {
+      // Start recording
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Microphone access is needed for voice input.');
+          return;
+        }
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        await recording.startAsync();
+        recordingRef.current = recording;
+        setIsRecording(true);
+        startPulse();
+      } catch (err) {
+        console.error('Failed to start recording:', err);
+        Alert.alert('Error', 'Could not start voice recording.');
+      }
+    }
+  }, [isRecording, startPulse, stopPulse]);
 
   useEffect(() => {
     if (isAuthenticated && hasValidToken) {
@@ -220,8 +284,10 @@ export default function ChatScreen() {
             editable={!isSending && hasValidToken}
             multiline
           />
-          <TouchableOpacity style={styles.voiceBtn}>
-            <Ionicons name="mic-outline" size={20} color="#FFF" />
+          <TouchableOpacity style={[styles.voiceBtn, isRecording && styles.voiceBtnRecording]} onPress={handleVoiceInput}>
+            <Animated.View style={{ transform: [{ scale: isRecording ? pulseAnim : 1 }] }}>
+              <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={20} color={isRecording ? '#FF3B30' : '#FFF'} />
+            </Animated.View>
           </TouchableOpacity>
           <TouchableOpacity
             testID="chat.send"
@@ -450,6 +516,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#222',
+  },
+  voiceBtnRecording: {
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
   },
   sendBtn: {
     width: 40,
