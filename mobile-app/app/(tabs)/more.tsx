@@ -122,6 +122,16 @@ export default function MoreScreen() {
           </View>
         )}
 
+        {/* Quick Access Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>QUICK ACCESS</Text>
+          <View style={styles.group}>
+            <SettingsRow title="Progress & Analytics" onPress={() => router.push('/(tabs)/progress')} testID="settings.progress" />
+            <View style={styles.divider} />
+            <SettingsRow title="Sprint Tools" onPress={() => router.push('/tools')} testID="settings.quick_sprint_tools" />
+          </View>
+        </View>
+
         {/* Account Section */}
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>ACCOUNT</Text>
@@ -151,10 +161,6 @@ export default function MoreScreen() {
             <SettingsRow title="Athlete Profile" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
             <View style={styles.divider} />
             <SettingsRow title="Training Plans" onPress={() => router.push('/plan')} testID="settings.training_plans" />
-            <View style={styles.divider} />
-            <SettingsRow title="Sprint Tools" onPress={() => router.push('/tools')} testID="settings.sprint_tools" />
-            <View style={styles.divider} />
-            <SettingsRow title="My Programs" onPress={() => router.push('/programs')} testID="settings.programs" />
           </View>
         </View>
 

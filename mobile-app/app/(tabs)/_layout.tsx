@@ -60,8 +60,19 @@ export default function TabsLayout() {
         options={{
           title: 'Progress',
           tabBarButtonTestID: 'tab.progress',
+          href: null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="pulse-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="programs"
+        options={{
+          title: 'Programs',
+          tabBarButtonTestID: 'tab.programs',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
