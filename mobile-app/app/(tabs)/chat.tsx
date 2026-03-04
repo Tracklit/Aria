@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { useLocalSearchParams } from 'expo-router';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
 import { colors } from '../../src/theme';
@@ -42,6 +43,7 @@ export default function ChatScreen() {
     clearError,
   } = useChat();
   const { isAuthenticated, hasValidToken } = useAuth();
+  const { prefill } = useLocalSearchParams<{ prefill?: string }>();
   const [showDrawer, setShowDrawer] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -107,6 +109,12 @@ export default function ChatScreen() {
       }
     }
   }, [isRecording, startPulse, stopPulse]);
+
+  useEffect(() => {
+    if (prefill && hasValidToken) {
+      setInputText(prefill);
+    }
+  }, [prefill, hasValidToken]);
 
   useEffect(() => {
     if (isAuthenticated && hasValidToken) {

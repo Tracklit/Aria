@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth, useDashboard, useWorkout } from '../../src/context';
-import { colors } from '../../src/theme';
+import { colors, spacing, borderRadius } from '../../src/theme';
 
 function getDisplayName(profileName?: string | null, greeting?: string) {
   if (profileName?.trim()) return profileName.trim();
@@ -62,6 +63,24 @@ export default function DashboardScreen() {
     [profile?.displayName, greeting]
   );
 
+  const [chatInput, setChatInput] = useState('');
+
+  const navigateToChat = (message?: string) => {
+    const text = message || chatInput;
+    if (text.trim()) {
+      router.push({ pathname: '/(tabs)/chat', params: { prefill: text.trim() } });
+    } else {
+      router.push('/(tabs)/chat');
+    }
+    setChatInput('');
+  };
+
+  const suggestionChips = [
+    'What should I train today?',
+    'Analyze my last sprint',
+    'Help me warm up',
+  ];
+
   const workoutCard = cards.find((card) => card.type === 'workout_card');
   const workoutTitle = workoutCard?.title || 'Sprint Intervals';
   const workoutSubtitle = workoutCard?.subtitle || '6 x 150m, 90% effort';
@@ -86,14 +105,61 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>Good Morning, {displayName}</Text>
             <Text style={styles.subtitle}>{subtitle || "Let's get faster today"}</Text>
           </View>
-          <View style={styles.avatarWrap}>
-            {profile?.photoUrl ? (
-              <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarFallback}>
-                <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
+          <View style={styles.headerRight}>
+            <View style={styles.avatarWrap}>
+              {profile?.photoUrl ? (
+                <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              testID="dashboard.settings"
+              style={styles.settingsButton}
+              onPress={() => router.push('/(tabs)/more')}
+            >
+              <Ionicons name="settings-outline" size={22} color={colors.text.secondary} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.chatSection}>
+          <View style={styles.chatHeader}>
+            <Ionicons name="sparkles" size={16} color={colors.primary} />
+            <Text style={styles.chatLabel}>Ask Aria</Text>
+          </View>
+          <View style={styles.chipsWrap}>
+            {suggestionChips.map((chip) => (
+              <TouchableOpacity
+                key={chip}
+                testID={`dashboard.chip.${chip.replace(/[^a-zA-Z0-9]+/g, '_')}`}
+                style={styles.chip}
+                onPress={() => navigateToChat(chip)}
+              >
+                <Text style={styles.chipText}>{chip}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.chatInputRow}>
+            <TouchableOpacity
+              testID="dashboard.mic"
+              style={styles.micButton}
+              onPress={() => router.push('/(tabs)/chat')}
+            >
+              <Ionicons name="mic" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TextInput
+              testID="dashboard.chat_input"
+              style={styles.chatInput}
+              placeholder="Ask Aria anything..."
+              placeholderTextColor={colors.text.tertiary}
+              value={chatInput}
+              onChangeText={setChatInput}
+              onSubmitEditing={() => navigateToChat()}
+              returnKeyType="send"
+            />
           </View>
         </Animated.View>
 
@@ -228,6 +294,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.teal,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingsButton: {
+    padding: 4,
+  },
   avatarWrap: {},
   avatar: {
     width: 40,
@@ -250,6 +324,64 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 18,
     fontWeight: '700',
+  },
+  chatSection: {
+    marginHorizontal: 24,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    paddingTop: spacing.lg,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  chatLabel: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  chipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  chip: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  chipText: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  micButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatInput: {
+    flex: 1,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: colors.text.primary,
+    fontSize: 15,
   },
   warningCard: {
     marginHorizontal: 24,

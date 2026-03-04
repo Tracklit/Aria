@@ -66,6 +66,16 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tools"
+        options={{
+          title: 'Tools',
+          tabBarButtonTestID: 'tab.tools',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="construct-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: 'More',
@@ -73,12 +83,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipsis-horizontal-outline" size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="tools"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen

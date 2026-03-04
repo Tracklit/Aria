@@ -156,10 +156,6 @@ export default function MoreScreen() {
             <SettingsRow title="Voice Feedback" icon="volume-high-outline" onPress={() => router.push('/settings/voice-feedback')} testID="settings.voice_feedback" />
             <View style={styles.divider} />
             <SettingsRow title="Athlete Profile" icon="body-outline" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
-            <View style={styles.divider} />
-            <SettingsRow title="Training Plans" icon="calendar-outline" onPress={() => router.push('/plan')} testID="settings.training_plans" />
-            <View style={styles.divider} />
-            <SettingsRow title="Sprint Tools" icon="construct-outline" onPress={() => router.push('/(tabs)/tools')} testID="settings.sprint_tools" />
           </View>
         </View>
 
