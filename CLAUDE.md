@@ -17,10 +17,35 @@ The mobile app talks to both backends: mobile-backend handles CRUD/auth, aria-ap
 | Service | URL |
 |---------|-----|
 | **aria-api (prod)** | `https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io` |
-| **mobile-backend (prod)** | `https://ca-aria-mobile-prod.calmcliff-31ba567d.westus.azurecontainerapps.io` |
+| **mobile-backend (prod)** | `https://ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io` |
 | **aria-api (dev, often down)** | `https://aria-dev-api.azurewebsites.net` |
 
 **Always use the prod aria-api URL** for AI generation (nutrition plans, programs, chat). The dev API is frequently down.
+
+### Manual Deployment (Docker + ACR)
+
+**Never use GitHub Actions for deployment.** Always deploy manually:
+
+```bash
+# 1. Switch to dev subscription (where ACR + container apps live)
+az account set --subscription "ME-MngEnvMCAP568620-anrugama-dev"
+az acr login --name tracklitdevkvnx2h
+
+# 2. Build for linux/amd64 and push to ACR
+docker buildx build --platform linux/amd64 -f mobile-backend/Dockerfile mobile-backend \
+  -t tracklitdevkvnx2h.azurecr.io/aria-mobile-app:latest --push
+
+# 3. Deploy to Container App
+az containerapp update --name ca-aria-mobile-prod --resource-group rg-aria-prod \
+  --image tracklitdevkvnx2h.azurecr.io/aria-mobile-app:latest
+```
+
+Key details:
+- ACR and container apps are both in `ME-MngEnvMCAP568620-anrugama-dev` subscription
+- Resource group: `rg-aria-prod` (despite being in dev subscription)
+- Must build with `--platform linux/amd64` (macOS builds ARM by default)
+- ACR registry: `tracklitdevkvnx2h.azurecr.io`
+- Mobile backend image: `aria-mobile-app`, AI API image: `aria-api`
 
 ## Development Commands
 
