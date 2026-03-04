@@ -8,14 +8,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+
+type FieldErrors = {
+  name?: string;
+  email?: string;
+  username?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function RegisterScreen() {
   const { register, isLoading, error, clearError } = useAuth();
@@ -25,33 +33,23 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const validateForm = (): boolean => {
-    if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
-      return false;
-    }
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return false;
-    }
-    if (!username.trim()) {
-      Alert.alert('Error', 'Please enter a username');
-      return false;
-    }
+    const errors: FieldErrors = {};
+    if (!name.trim()) errors.name = 'Please enter your name';
+    if (!email.trim()) errors.email = 'Please enter your email';
+    if (!username.trim()) errors.username = 'Please enter a username';
     if (!password.trim()) {
-      Alert.alert('Error', 'Please enter a password');
-      return false;
+      errors.password = 'Please enter a password';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     }
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
-      return false;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return false;
-    }
-    return true;
+    if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleRegister = async () => {
@@ -64,15 +62,13 @@ export default function RegisterScreen() {
         username: username.trim(),
         password,
       });
-      // Navigation will be handled by the root layout based on auth state
     } catch (err: any) {
       // Error is handled in context
     }
   };
 
-  const handleAppleSignIn = async () => {
-    // Apple Sign In will be implemented with expo-apple-authentication
-    Alert.alert('Coming Soon', 'Apple Sign In will be available soon');
+  const clearFieldError = (field: keyof FieldErrors) => {
+    setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   return (
@@ -95,6 +91,7 @@ export default function RegisterScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View style={styles.logoContainer}>
             <View style={styles.logoCircle}>
@@ -112,53 +109,88 @@ export default function RegisterScreen() {
           )}
 
           <View style={styles.form}>
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'name' && styles.inputContainerFocused,
+                fieldErrors.name && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="person-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Name"
                 placeholderTextColor={colors.text.tertiary}
                 value={name}
-                onChangeText={setName}
+                onChangeText={(text) => { setName(text); clearFieldError('name'); }}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
                 autoCapitalize="words"
               />
             </View>
+            {fieldErrors.name && <Text style={styles.fieldError}>{fieldErrors.name}</Text>}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'email' && styles.inputContainerFocused,
+                fieldErrors.email && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
                 placeholderTextColor={colors.text.tertiary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => { setEmail(text); clearFieldError('email'); }}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
+            {fieldErrors.email && <Text style={styles.fieldError}>{fieldErrors.email}</Text>}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'username' && styles.inputContainerFocused,
+                fieldErrors.username && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="person-circle-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Username"
                 placeholderTextColor={colors.text.tertiary}
                 value={username}
-                onChangeText={setUsername}
+                onChangeText={(text) => { setUsername(text); clearFieldError('username'); }}
+                onFocus={() => setFocusedField('username')}
+                onBlur={() => setFocusedField(null)}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
             </View>
+            {fieldErrors.username && <Text style={styles.fieldError}>{fieldErrors.username}</Text>}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'password' && styles.inputContainerFocused,
+                fieldErrors.password && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Password (min 8 characters)"
                 placeholderTextColor={colors.text.tertiary}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => { setPassword(text); clearFieldError('password'); }}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -169,18 +201,28 @@ export default function RegisterScreen() {
                 />
               </TouchableOpacity>
             </View>
+            {fieldErrors.password && <Text style={styles.fieldError}>{fieldErrors.password}</Text>}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'confirmPassword' && styles.inputContainerFocused,
+                fieldErrors.confirmPassword && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Confirm Password"
                 placeholderTextColor={colors.text.tertiary}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(text) => { setConfirmPassword(text); clearFieldError('confirmPassword'); }}
+                onFocus={() => setFocusedField('confirmPassword')}
+                onBlur={() => setFocusedField(null)}
                 secureTextEntry={!showPassword}
               />
             </View>
+            {fieldErrors.confirmPassword && <Text style={styles.fieldError}>{fieldErrors.confirmPassword}</Text>}
 
             <TouchableOpacity
               style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
@@ -201,10 +243,10 @@ export default function RegisterScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.appleButton} onPress={handleAppleSignIn}>
-            <Ionicons name="logo-apple" size={24} color={colors.text.primary} />
-            <Text style={styles.appleButtonText}>Continue with Apple</Text>
-          </TouchableOpacity>
+          <View style={styles.appleButtonDisabled}>
+            <Ionicons name="logo-apple" size={24} color={colors.text.tertiary} />
+            <Text style={styles.appleButtonTextDisabled}>Continue with Apple - Coming Soon</Text>
+          </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
@@ -214,7 +256,20 @@ export default function RegisterScreen() {
           </View>
 
           <Text style={styles.termsText}>
-            By creating an account, you agree to our Terms of Service and Privacy Policy
+            By creating an account, you agree to our{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://aria.coach/terms')}
+            >
+              Terms of Service
+            </Text>
+            {' '}and{' '}
+            <Text
+              style={styles.termsLink}
+              onPress={() => Linking.openURL('https://aria.coach/privacy')}
+            >
+              Privacy Policy
+            </Text>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -302,6 +357,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputContainerFocused: {
+    borderColor: colors.primary,
+  },
+  inputContainerError: {
+    borderColor: '#FF3B30',
   },
   input: {
     flex: 1,
@@ -309,6 +372,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingVertical: spacing.md,
     marginLeft: spacing.sm,
+  },
+  fieldError: {
+    ...typography.caption,
+    color: '#FF3B30',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    marginLeft: spacing.md,
   },
   registerButton: {
     backgroundColor: colors.primary,
@@ -340,18 +410,19 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginHorizontal: spacing.md,
   },
-  appleButton: {
+  appleButtonDisabled: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.background.secondary,
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
+    opacity: 0.5,
   },
-  appleButtonText: {
+  appleButtonTextDisabled: {
     ...typography.body,
-    color: colors.background.primary,
+    color: colors.text.tertiary,
     fontWeight: '600',
     marginLeft: spacing.sm,
   },
@@ -373,5 +444,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.text.tertiary,
     textAlign: 'center',
+  },
+  termsLink: {
+    color: colors.primary,
+    textDecorationLine: 'underline',
   },
 });

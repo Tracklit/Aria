@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,6 +45,7 @@ export default function CreateProgramScreen() {
       router.back();
     } catch (error) {
       console.error('Failed to create program:', error);
+      Alert.alert('Error', 'Failed to create program. Please try again.');
     } finally {
       setIsGenerating(false);
     }

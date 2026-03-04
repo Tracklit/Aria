@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,7 @@ export default function CreateNutritionPlan() {
       router.back();
     } catch (error) {
       console.error('Failed to generate plan:', error);
+      Alert.alert('Error', 'Failed to generate plan. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -52,6 +53,7 @@ export default function CreateNutritionPlan() {
       router.back();
     } catch (error) {
       console.error('Failed to create plan:', error);
+      Alert.alert('Error', 'Failed to create plan. Please try again.');
     }
   };
 

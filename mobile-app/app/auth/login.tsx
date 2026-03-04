@@ -21,24 +21,29 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
+    const errors: { email?: string; password?: string } = {};
+    if (!email.trim()) errors.email = 'Please enter your email';
+    if (!password.trim()) errors.password = 'Please enter your password';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
 
     try {
       await login({ email: email.trim(), password });
-      // Navigation will be handled by the root layout based on auth state
     } catch (err: any) {
       // Error is handled in context
     }
   };
 
-  const handleAppleSignIn = async () => {
-    // Apple Sign In will be implemented with expo-apple-authentication
-    Alert.alert('Coming Soon', 'Apple Sign In will be available soon');
+  const handleForgotPassword = () => {
+    Alert.alert('Reset Password', 'Please contact support at support@aria.coach');
   };
 
   return (
@@ -74,28 +79,45 @@ export default function LoginScreen() {
           )}
 
           <View style={styles.form}>
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'email' && styles.inputContainerFocused,
+                fieldErrors.email && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Email"
                 placeholderTextColor={colors.text.tertiary}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => { setEmail(text); setFieldErrors((prev) => ({ ...prev, email: undefined })); }}
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
               />
             </View>
+            {fieldErrors.email && <Text style={styles.fieldError}>{fieldErrors.email}</Text>}
 
-            <View style={styles.inputContainer}>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === 'password' && styles.inputContainerFocused,
+                fieldErrors.password && styles.inputContainerError,
+              ]}
+            >
               <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
                 placeholderTextColor={colors.text.tertiary}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => { setPassword(text); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -106,8 +128,9 @@ export default function LoginScreen() {
                 />
               </TouchableOpacity>
             </View>
+            {fieldErrors.password && <Text style={styles.fieldError}>{fieldErrors.password}</Text>}
 
-            <TouchableOpacity style={styles.forgotPassword}>
+            <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
@@ -130,10 +153,10 @@ export default function LoginScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <TouchableOpacity style={styles.appleButton} onPress={handleAppleSignIn}>
-            <Ionicons name="logo-apple" size={24} color={colors.text.primary} />
-            <Text style={styles.appleButtonText}>Continue with Apple</Text>
-          </TouchableOpacity>
+          <View style={styles.appleButtonDisabled}>
+            <Ionicons name="logo-apple" size={24} color={colors.text.tertiary} />
+            <Text style={styles.appleButtonTextDisabled}>Continue with Apple - Coming Soon</Text>
+          </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
@@ -222,6 +245,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputContainerFocused: {
+    borderColor: colors.primary,
+  },
+  inputContainerError: {
+    borderColor: '#FF3B30',
   },
   input: {
     flex: 1,
@@ -229,6 +260,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     paddingVertical: spacing.md,
     marginLeft: spacing.sm,
+  },
+  fieldError: {
+    ...typography.caption,
+    color: '#FF3B30',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    marginLeft: spacing.md,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
@@ -267,18 +305,19 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginHorizontal: spacing.md,
   },
-  appleButton: {
+  appleButtonDisabled: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.background.secondary,
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.xl,
+    opacity: 0.5,
   },
-  appleButtonText: {
+  appleButtonTextDisabled: {
     ...typography.body,
-    color: colors.background.primary,
+    color: colors.text.tertiary,
     fontWeight: '600',
     marginLeft: spacing.sm,
   },

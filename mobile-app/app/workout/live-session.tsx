@@ -7,8 +7,9 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../src/context/SessionContext';
@@ -36,6 +37,14 @@ export default function LiveSessionScreen() {
     skipRest,
     finishSession,
   } = useSession();
+  const insets = useSafeAreaInsets();
+
+  const handleFinish = () => {
+    Alert.alert('Finish Workout', 'Are you sure you want to finish this workout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Finish', style: 'destructive', onPress: finishSession },
+    ]);
+  };
 
   const summary = useMemo(() => {
     if (!activeSession) return null;
@@ -249,6 +258,9 @@ export default function LiveSessionScreen() {
       {/* Rest timer overlay */}
       {restTimeRemaining !== null && (
         <View style={styles.restOverlay}>
+          <TouchableOpacity style={styles.restCloseBtn} onPress={skipRest} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="close" size={24} color={colors.text.secondary} />
+          </TouchableOpacity>
           <View style={styles.restContent}>
             <Text style={styles.restLabel}>Rest</Text>
             <Text style={styles.restCountdown}>{restTimeRemaining}s</Text>
@@ -274,7 +286,7 @@ export default function LiveSessionScreen() {
       )}
 
       {/* Bottom navigation */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <TouchableOpacity
           style={[styles.navBtn, activeSession.currentExerciseIndex === 0 && styles.navBtnDisabled]}
           onPress={previousExercise}
@@ -286,7 +298,7 @@ export default function LiveSessionScreen() {
 
         <TouchableOpacity
           style={styles.finishBtn}
-          onPress={finishSession}
+          onPress={handleFinish}
         >
           <Ionicons name="flag" size={18} color="#fff" />
           <Text style={styles.finishBtnText}>Finish</Text>
@@ -464,6 +476,18 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   skipBtnText: { ...typography.bodyBold, color: colors.text.primary },
+  restCloseBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 11,
+  },
 
   // Bottom bar
   bottomBar: {
@@ -476,7 +500,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    paddingBottom: spacing.xl,
     backgroundColor: colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: colors.background.secondary,

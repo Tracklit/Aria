@@ -235,7 +235,7 @@ export default function ChatScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="sparkles" size={36} color="#00E5FF" style={styles.emptyIcon} />
               <Text style={styles.emptyTitle}>
-                {hasValidToken ? 'Chat with SprintGPT' : 'Sign In Required'}
+                {hasValidToken ? 'Chat with Aria' : 'Sign In Required'}
               </Text>
               <Text style={styles.emptyText}>
                 {hasValidToken
@@ -265,7 +265,7 @@ export default function ChatScreen() {
                 <View style={[styles.typingDot, { opacity: 0.6 }]} />
                 <View style={[styles.typingDot, { opacity: 0.8 }]} />
               </View>
-              <Text style={styles.typingText}>SprintGPT is thinking...</Text>
+              <Text style={styles.typingText}>Aria is thinking...</Text>
             </View>
           ) : null}
         </ScrollView>
@@ -315,7 +315,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   keyboard: {
     flex: 1,
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#111',
+    borderBottomColor: colors.background.secondary,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -346,14 +346,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 5,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: '#111',
+    borderTopColor: colors.background.secondary,
     paddingHorizontal: 14,
     paddingTop: 10,
   },
   drawerTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 10,
@@ -371,16 +371,16 @@ const styles = StyleSheet.create({
   },
   drawerRow: {
     borderBottomWidth: 1,
-    borderBottomColor: '#181818',
+    borderBottomColor: colors.background.secondary,
     paddingVertical: 10,
   },
   drawerRowActive: {
-    backgroundColor: '#101010',
+    backgroundColor: colors.background.secondary,
     borderRadius: 8,
     paddingHorizontal: 8,
   },
   drawerRowText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 14,
     marginBottom: 4,
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   drawerRowDate: {
-    color: '#8E8E93',
+    color: colors.text.secondary,
     fontSize: 11,
   },
   errorBanner: {
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorText: {
-    color: '#FFF',
+    color: colors.text.primary,
     flex: 1,
     fontSize: 12,
   },
@@ -422,13 +422,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 8,
   },
   emptyText: {
-    color: '#9A9A9A',
+    color: colors.text.secondary,
     fontSize: 16,
     lineHeight: 22,
     marginBottom: 20,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   suggestionsTitle: {
-    color: '#8E8E93',
+    color: colors.text.secondary,
     fontSize: 12,
     marginBottom: 8,
   },
@@ -445,16 +445,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   suggestionChip: {
-    backgroundColor: '#131316',
+    backgroundColor: colors.background.secondary,
     borderWidth: 1,
-    borderColor: 'rgba(0, 229, 255, 0.3)',
+    borderColor: 'rgba(48, 213, 200, 0.3)',
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 8,
   },
   suggestionText: {
-    color: '#F2F2F2',
+    color: colors.text.primary,
     fontSize: 14,
   },
   typingIndicator: {
@@ -475,12 +475,12 @@ const styles = StyleSheet.create({
     marginRight: 3,
   },
   typingText: {
-    color: '#8E8E93',
+    color: colors.text.secondary,
     fontSize: 12,
   },
   inputDock: {
     borderTopWidth: 1,
-    borderTopColor: '#111',
+    borderTopColor: colors.background.secondary,
     backgroundColor: '#000',
     paddingHorizontal: 12,
     paddingVertical: 10,

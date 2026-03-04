@@ -15,10 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
 import { colors } from '../../src/theme';
 
-type Sport = 'running' | 'track' | 'cycling' | 'swimming' | 'triathlon';
+type Sport = 'sprinting' | 'running' | 'track' | 'cycling' | 'swimming' | 'triathlon';
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'elite';
 
 const SPORT_OPTIONS: { label: string; value: Sport }[] = [
+  { label: 'Sprint / Short Distance', value: 'sprinting' },
   { label: 'Track & Field', value: 'track' },
   { label: 'Cycling', value: 'cycling' },
   { label: 'Swimming', value: 'swimming' },
@@ -37,7 +38,7 @@ export default function OnboardingStep1() {
   const { profile, user, updateProfile, completeOnboarding } = useAuth();
 
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
-  const [sport, setSport] = useState<Sport>((profile?.sport as Sport) || 'track');
+  const [sport, setSport] = useState<Sport>((profile?.sport as Sport) || 'sprinting');
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>(
     (profile?.experienceLevel as ExperienceLevel) || 'beginner'
   );
@@ -74,8 +75,7 @@ export default function OnboardingStep1() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.step}>Step 1 of 3</Text>
-          <Text style={styles.title}>Onboarding</Text>
+          <Text style={styles.title}>Set Up Your Training</Text>
         </View>
 
         <View style={styles.avatarPlaceholder}>
@@ -89,7 +89,7 @@ export default function OnboardingStep1() {
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Alex Johnson"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.text.tertiary}
             style={styles.input}
           />
         </View>
@@ -102,7 +102,7 @@ export default function OnboardingStep1() {
             editable={false}
             style={styles.input}
             placeholder="alex@email.com"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.text.tertiary}
           />
         </View>
 
@@ -173,7 +173,7 @@ export default function OnboardingStep1() {
             disabled={isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color={colors.text.primary} />
             ) : (
               <Text style={styles.continueButtonText}>Continue</Text>
             )}
@@ -188,7 +188,7 @@ export default function OnboardingStep1() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   content: {
     paddingBottom: 30,
@@ -197,13 +197,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
   },
-  step: {
-    color: colors.primary,
-    fontSize: 16,
-    marginBottom: 8,
-  },
   title: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 32,
     fontWeight: '700',
   },
@@ -223,15 +218,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#AAA',
+    color: colors.text.secondary,
     fontSize: 14,
     marginBottom: 8,
   },
   input: {
     width: '100%',
-    backgroundColor: '#0f0f11',
+    backgroundColor: colors.background.secondary,
     borderRadius: 8,
-    color: '#FFF',
+    color: colors.text.primary,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
@@ -242,20 +237,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   pill: {
-    backgroundColor: '#0f0f11',
+    backgroundColor: colors.background.secondary,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   pillSelected: {
-    backgroundColor: 'rgba(0,74,204,0.6)',
+    backgroundColor: colors.chip.selected,
   },
   pillText: {
-    color: '#D6D6D6',
+    color: colors.text.primary,
     fontSize: 14,
   },
   pillTextSelected: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontWeight: '600',
   },
   footer: {
@@ -270,7 +265,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   continueButtonText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -281,4 +276,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

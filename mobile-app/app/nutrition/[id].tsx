@@ -117,7 +117,7 @@ export default function NutritionPlanDetail() {
     ]);
   };
 
-  if (isLoading || !plan) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
@@ -126,7 +126,29 @@ export default function NutritionPlanDetail() {
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Failed to load plan</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => { setIsLoading(true); loadPlan(); }}
+          >
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -147,11 +169,11 @@ export default function NutritionPlanDetail() {
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={startEditing} style={{ marginRight: spacing.sm }}>
+            <TouchableOpacity onPress={startEditing} style={{ marginRight: spacing.sm }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Ionicons name="pencil-outline" size={22} color={colors.text.primary} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={isEditing ? () => setIsEditing(false) : handleDelete}>
+          <TouchableOpacity onPress={isEditing ? () => setIsEditing(false) : handleDelete} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Ionicons name={isEditing ? 'close' : 'trash-outline'} size={22} color={isEditing ? colors.text.secondary : colors.red} />
           </TouchableOpacity>
         </View>
@@ -388,4 +410,6 @@ const styles = StyleSheet.create({
   // Archive
   archiveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md },
   archiveText: { ...typography.body, color: colors.text.secondary },
+  retryButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: borderRadius.md, marginTop: spacing.md },
+  retryButtonText: { ...typography.body, color: '#fff', fontWeight: '600' },
 });

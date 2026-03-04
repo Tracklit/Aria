@@ -26,16 +26,6 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="chat"
-        options={{
-          title: 'Chat',
-          tabBarButtonTestID: 'tab.chat',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Home',
@@ -46,23 +36,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="nutrition"
+        name="chat"
         options={{
-          title: 'Nutrition',
-          tabBarButtonTestID: 'tab.nutrition',
+          title: 'Chat',
+          tabBarButtonTestID: 'tab.chat',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="restaurant-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progress',
-          tabBarButtonTestID: 'tab.progress',
-          href: null,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pulse-outline" size={size} color={color} />
+            <Ionicons name="chatbubble-outline" size={size} color={color} />
           ),
         }}
       />
@@ -77,12 +56,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="tools"
+        name="nutrition"
         options={{
-          title: 'Tools',
-          tabBarButtonTestID: 'tab.tools',
+          title: 'Nutrition',
+          tabBarButtonTestID: 'tab.nutrition',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="construct-outline" size={size} color={color} />
+            <Ionicons name="restaurant-outline" size={size} color={color} />
           ),
         }}
       />
@@ -92,8 +71,20 @@ export default function TabsLayout() {
           title: 'More',
           tabBarButtonTestID: 'tab.more',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+            <Ionicons name="ellipsis-horizontal-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="tools"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen

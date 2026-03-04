@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -37,6 +38,17 @@ export default function DashboardScreen() {
     refreshDashboard,
   } = useDashboard();
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshDashboard();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshDashboard]);
+
   useEffect(() => {
     loadDashboard();
     loadPatterns();
@@ -50,7 +62,7 @@ export default function DashboardScreen() {
 
   const workoutCard = cards.find((card) => card.type === 'workout_card');
   const workoutTitle = workoutCard?.title || 'Sprint Intervals';
-  const workoutSubtitle = workoutCard?.subtitle || '6 × 150m, 90% effort';
+  const workoutSubtitle = workoutCard?.subtitle || '6 x 150m, 90% effort';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -58,34 +70,35 @@ export default function DashboardScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
       >
-        <TouchableOpacity
-          style={styles.microphoneContainer}
-          onPress={() => router.push('/(tabs)/chat')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.microphoneBubble}>
-            <Ionicons name="mic-outline" size={20} color={colors.teal} />
+        <View style={styles.headerRow}>
+          <View style={styles.headerText}>
+            <Text style={styles.greeting}>Good Morning, {displayName}</Text>
+            <Text style={styles.subtitle}>{subtitle || "Let's get faster today"}</Text>
           </View>
-        </TouchableOpacity>
-
-        <Text style={styles.greeting}>Good Morning, {displayName}</Text>
-        <Text style={styles.subtitle}>{subtitle || "Let's get faster today 🚀"}</Text>
-
-        <View style={styles.avatarWrap}>
-          {profile?.photoUrl ? (
-            <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-            </View>
-          )}
+          <View style={styles.avatarWrap}>
+            {profile?.photoUrl ? (
+              <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {fatigueScore?.riskLevel === 'high' && (
           <View style={styles.warningCard}>
             <View style={styles.warningHeader}>
-              <Ionicons name="warning-outline" size={20} color="#FF3B30" />
+              <Ionicons name="warning-outline" size={20} color={colors.red} />
               <Text style={styles.warningTitle}>High Fatigue Detected</Text>
             </View>
             <Text style={styles.warningText}>
@@ -129,27 +142,6 @@ export default function DashboardScreen() {
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Race Day Insights</Text>
-          <LinearGradient
-            colors={['rgba(88,86,214,0.4)', 'rgba(0,229,255,0.2)']}
-            style={styles.raceCard}
-          >
-            <Text style={styles.raceEmoji}>🎉</Text>
-            <Text style={styles.raceTitle}>Congrats {displayName}!</Text>
-            <Text style={styles.raceMessage}>
-              You&apos;re officially ready for the Half Marathon. Here&apos;s your final race day strategy.
-            </Text>
-            <TouchableOpacity
-              testID="dashboard.view_strategy"
-              style={styles.raceButton}
-              onPress={() => router.push('/race-day')}
-            >
-              <Text style={styles.raceButtonText}>View Strategy</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
-
-        <View style={styles.section}>
           <Text style={styles.sectionTitle}>AI Insights</Text>
           {isLoading && insights.length === 0 ? (
             <View style={styles.loadingState}>
@@ -185,18 +177,13 @@ export default function DashboardScreen() {
                 </View>
                 <Text style={styles.insightText}>{insight.message}</Text>
                 {insight.suggestedAction ? (
-                  <Text style={styles.insightAction}>→ {insight.suggestedAction}</Text>
+                  <Text style={styles.insightAction}>{insight.suggestedAction}</Text>
                 ) : null}
               </TouchableOpacity>
               );
             })
           )}
         </View>
-
-        <TouchableOpacity testID="dashboard.refresh" style={styles.refresh} onPress={refreshDashboard}>
-          <Ionicons name="refresh" size={16} color={colors.primary} />
-          <Text style={styles.refreshText}>Refresh</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,7 +192,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   scroll: {
     flex: 1,
@@ -213,64 +200,57 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 130,
   },
-  microphoneContainer: {
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginTop: 16,
+    marginBottom: 24,
   },
-  microphoneBubble: {
+  headerText: {
+    flex: 1,
+    marginRight: 12,
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.teal,
+  },
+  avatarWrap: {},
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111111',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  greeting: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
-    paddingHorizontal: 16,
-  },
-  subtitle: {
-    marginTop: 6,
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#00E5FF',
-    textAlign: 'center',
-  },
-  avatarWrap: {
-    alignItems: 'center',
-    marginVertical: 26,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: '#00E5FF',
+    borderWidth: 2,
+    borderColor: colors.teal,
   },
   avatarFallback: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: '#00E5FF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.teal,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111111',
+    backgroundColor: colors.background.secondary,
   },
   avatarInitial: {
-    color: '#fff',
-    fontSize: 46,
+    color: colors.text.primary,
+    fontSize: 18,
     fontWeight: '700',
   },
   warningCard: {
     marginHorizontal: 24,
-    backgroundColor: 'rgba(255,59,48,0.12)',
+    backgroundColor: 'rgba(255,69,58,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,59,48,0.45)',
+    borderColor: 'rgba(255,69,58,0.45)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 18,
@@ -282,22 +262,22 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     marginLeft: 8,
-    color: '#FF3B30',
+    color: colors.red,
     fontWeight: '700',
     fontSize: 16,
   },
   warningText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 14,
     marginBottom: 4,
   },
   factorText: {
-    color: '#CCC',
+    color: colors.text.secondary,
     fontSize: 13,
     marginBottom: 2,
   },
   warningRecommendation: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 13,
     marginTop: 6,
     fontWeight: '600',
@@ -308,7 +288,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   workoutTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 4,
@@ -320,12 +300,12 @@ const styles = StyleSheet.create({
   },
   workoutButton: {
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: '#FFF',
     paddingVertical: 14,
     alignItems: 'center',
   },
   workoutButtonText: {
-    color: '#FFF',
+    color: '#0d47a1',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -334,43 +314,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   sectionTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 14,
-  },
-  raceCard: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(88,86,214,0.5)',
-  },
-  raceEmoji: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  raceTitle: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  raceMessage: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  raceButton: {
-    backgroundColor: '#111111',
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  raceButtonText: {
-    color: '#FFF',
-    fontWeight: '700',
-    fontSize: 15,
   },
   loadingState: {
     paddingVertical: 20,
@@ -399,7 +346,7 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     marginLeft: 8,
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -412,18 +359,6 @@ const styles = StyleSheet.create({
     color: '#00E676',
     fontWeight: '600',
     marginTop: 6,
-    fontSize: 13,
-  },
-  refresh: {
-    marginTop: 6,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  refreshText: {
-    color: colors.primary,
-    fontWeight: '600',
     fontSize: 13,
   },
 });

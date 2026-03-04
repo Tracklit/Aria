@@ -67,7 +67,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity testID="profile.back" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={26} color="#FFF" />
+          <Ionicons name="chevron-back" size={26} color={colors.text.primary} />
         </TouchableOpacity>
         <Text testID="profile.header" style={styles.headerTitle}>Profile</Text>
         <View style={{ width: 20 }} />
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
               value={name}
               onChangeText={setName}
               placeholder="Name"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.text.tertiary}
             />
           </View>
           <View style={styles.row}>
@@ -105,7 +105,7 @@ export default function ProfileScreen() {
               value={gender}
               onChangeText={setGender}
               placeholder="Gender"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.text.tertiary}
             />
           </View>
           <View style={styles.row}>
@@ -118,7 +118,7 @@ export default function ProfileScreen() {
               <Text style={[styles.dobText, !dateOfBirth && styles.dobPlaceholder]}>
                 {dateOfBirth ? formatDate(dateOfBirth) : 'MM/DD/YYYY'}
               </Text>
-              <Ionicons name="calendar-outline" size={18} color="#666" />
+              <Ionicons name="calendar-outline" size={18} color={colors.text.tertiary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   header: {
     paddingHorizontal: 16,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 32,
     fontWeight: '700',
     marginTop: 12,
@@ -226,24 +226,24 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontSize: 56,
     fontWeight: '700',
-    color: '#777',
+    color: colors.text.secondary,
   },
   form: {
     gap: 8,
   },
   row: {
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: colors.background.secondary,
     paddingBottom: 10,
     marginBottom: 14,
   },
   label: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     marginBottom: 6,
   },
   input: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 16,
     paddingVertical: 4,
   },
@@ -254,11 +254,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dobText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 16,
   },
   dobPlaceholder: {
-    color: '#666',
+    color: colors.text.tertiary,
   },
   modalOverlay: {
     flex: 1,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.background.cardSolid,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 34,
@@ -277,14 +277,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    borderBottomColor: colors.background.secondary,
   },
   modalCancel: {
-    color: '#8E8E93',
+    color: colors.text.secondary,
     fontSize: 16,
   },
   modalTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -295,14 +295,14 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 24,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     height: 54,
   },
   saveText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
   },

@@ -6,12 +6,17 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkout } from '../../src/context';
 import { ToastManager } from '../../src/components/Toast';
+import { colors } from '../../src/theme/colors';
+import { typography } from '../../src/theme/typography';
+import { spacing, borderRadius } from '../../src/theme/spacing';
 
 function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 110;
 
 export default function WorkoutTrackingScreen() {
   const router = useRouter();
@@ -33,11 +38,11 @@ export default function WorkoutTrackingScreen() {
   const live = activeSession.liveMetrics || {};
   const duration = live.duration || 0;
   const distanceMiles = (live.distance || 0) / 1609.34;
-  const pace = live.avgPace || '4:24';
-  const heartRate = live.avgHr || 158;
-  const spm = live.currentCadence || 180;
+  const pace = live.avgPace || null;
+  const heartRate = live.avgHr || null;
   const status = activeSession.status || 'active';
-  const progress = 0.75;
+
+  const progress = duration > 0 && live.distance ? Math.min(distanceMiles / 1, 1) : 0;
 
   const handleEnd = () => {
     Alert.alert('End Workout', 'Are you sure you want to end this workout?', [
@@ -62,7 +67,7 @@ export default function WorkoutTrackingScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity testID="track.back" onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text testID="track.title" style={styles.headerTitle}>Track</Text>
         <View style={{ width: 24 }} />
@@ -74,12 +79,12 @@ export default function WorkoutTrackingScreen() {
         <Svg width={250} height={250} viewBox="0 0 250 250">
           <Defs>
             <LinearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor="#007AFF" />
-              <Stop offset="50%" stopColor="#00E5FF" />
-              <Stop offset="100%" stopColor="#00E676" />
+              <Stop offset="0%" stopColor={colors.primary} />
+              <Stop offset="50%" stopColor={colors.teal} />
+              <Stop offset="100%" stopColor={colors.green} />
             </LinearGradient>
           </Defs>
-          <Circle cx={125} cy={125} r={110} stroke="#333" strokeWidth={12} fill="none" />
+          <Circle cx={125} cy={125} r={110} stroke={colors.text.tertiary} strokeWidth={12} fill="none" />
           <Circle
             cx={125}
             cy={125}
@@ -88,8 +93,8 @@ export default function WorkoutTrackingScreen() {
             strokeWidth={12}
             fill="none"
             strokeLinecap="round"
-            strokeDasharray={700}
-            strokeDashoffset={700 * (1 - progress)}
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={RING_CIRCUMFERENCE * (1 - progress)}
             rotation={-90}
             origin="125,125"
           />
@@ -106,11 +111,11 @@ export default function WorkoutTrackingScreen() {
           <Text style={styles.metricUnit}>mi</Text>
         </View>
         <View style={styles.metricItem}>
-          <Text style={styles.metricValue}>{pace}</Text>
+          <Text style={[styles.metricValue, !pace && styles.noData]}>{pace || '--'}</Text>
           <Text style={styles.metricUnit}>/mi</Text>
         </View>
         <View style={styles.metricItem}>
-          <Text style={styles.metricValue}>{heartRate}</Text>
+          <Text style={[styles.metricValue, !heartRate && styles.noData]}>{heartRate || '--'}</Text>
           <Text style={styles.metricUnit}>bpm</Text>
         </View>
       </View>
@@ -120,29 +125,9 @@ export default function WorkoutTrackingScreen() {
           <Text style={styles.endBtnText}>End</Text>
         </TouchableOpacity>
         <TouchableOpacity testID="track.resume" style={styles.resumeBtn} onPress={handleResume}>
-          <Text style={styles.resumeBtnText}>Resume &gt;&gt;</Text>
+          <Text style={styles.resumeBtnText}>Resume</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.teal} />
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomStats}>
-        <View style={styles.row}>
-          <Text style={styles.bigText}>{distanceMiles.toFixed(2)} mi</Text>
-          <Text style={styles.bigText}>{pace}/mi</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.bigText}>{heartRate} bpm</Text>
-          <Text style={styles.bigText}>{spm} spm</Text>
-        </View>
-      </View>
-
-      <View style={styles.watchPreview}>
-        <Text style={styles.watchTitle}>{todaysWorkout?.title || 'Sprint Intervals'}</Text>
-        <Text style={styles.watchTime}>{formatTime(duration)}</Text>
-        <Text style={styles.watchStatus}>{status}</Text>
-        <View style={styles.watchStats}>
-          <Text style={styles.watchStat}>{heartRate} BPM</Text>
-          <Text style={styles.watchStat}>{pace}/MI</Text>
-        </View>
       </View>
     </SafeAreaView>
   );
@@ -151,7 +136,7 @@ export default function WorkoutTrackingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   empty: {
     flex: 1,
@@ -159,38 +144,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    color: '#FFF',
-    marginBottom: 12,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
   emptyButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#111',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background.secondary,
   },
   emptyButtonText: {
-    color: '#FFF',
+    color: colors.text.primary,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   headerTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
+    ...typography.bodyBold,
     fontSize: 18,
-    fontWeight: '600',
   },
   workoutTitle: {
     textAlign: 'center',
-    color: '#00E5FF',
-    fontSize: 28,
-    marginTop: 20,
+    color: colors.teal,
+    ...typography.h2,
+    marginTop: spacing.lg - 4,
   },
   timerContainer: {
-    marginTop: 26,
+    marginTop: spacing.lg + 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -199,116 +184,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timerTime: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 48,
     fontWeight: '700',
   },
   timerLabel: {
-    color: '#00E676',
+    color: colors.green,
     fontSize: 20,
-    marginTop: 5,
+    marginTop: spacing.xs + 1,
     textTransform: 'capitalize',
   },
   metricsTop: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 12,
-    paddingHorizontal: 24,
+    marginTop: spacing.md - 4,
+    paddingHorizontal: spacing.lg,
   },
   metricItem: {
     alignItems: 'center',
   },
   metricValue: {
-    color: '#FFF',
-    fontSize: 28,
-    fontWeight: '700',
+    color: colors.text.primary,
+    ...typography.h2,
   },
   metricUnit: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
+    color: colors.text.secondary,
+    ...typography.caption,
+  },
+  noData: {
+    color: colors.text.tertiary,
   },
   controls: {
     flexDirection: 'row',
-    gap: 16,
-    paddingHorizontal: 24,
-    marginTop: 20,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg - 4,
   },
   endBtn: {
     flex: 1,
     height: 52,
-    borderRadius: 12,
-    backgroundColor: '#221a1a',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   endBtnText: {
-    color: '#FF3B30',
-    fontWeight: '600',
-    fontSize: 16,
+    color: colors.red,
+    ...typography.bodyBold,
   },
   resumeBtn: {
     flex: 2,
     height: 52,
-    borderRadius: 12,
-    backgroundColor: '#00574b',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.secondary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
   },
   resumeBtnText: {
-    color: '#00E5FF',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  bottomStats: {
-    marginTop: 18,
-    paddingHorizontal: 24,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  bigText: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  watchPreview: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 120,
-    height: 120,
-    borderRadius: 20,
-    borderWidth: 4,
-    borderColor: '#222',
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  watchTitle: {
-    color: '#00E5FF',
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  watchTime: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  watchStatus: {
-    color: '#00E676',
-    textTransform: 'capitalize',
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  watchStats: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  watchStat: {
-    color: '#FFF',
-    fontSize: 10,
+    color: colors.teal,
+    ...typography.bodyBold,
   },
 });
