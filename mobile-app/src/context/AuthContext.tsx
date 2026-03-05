@@ -27,6 +27,7 @@ import {
   getToken,
   setStoredUser,
   setToken,
+  setRefreshToken,
 } from '../lib/tokenStorage';
 
 // Demo mode storage key
@@ -281,6 +282,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Missing auth token');
       }
       await setToken(response.token);
+      if (response.refreshToken) {
+        await setRefreshToken(response.refreshToken);
+      }
       const ok = await fetchUser();
       if (!ok) {
         throw new Error('Login failed. Please try again.');
@@ -305,6 +309,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Missing auth token');
       }
       await setToken(response.token);
+      if (response.refreshToken) {
+        await setRefreshToken(response.refreshToken);
+      }
       const ok = await fetchUser();
       if (!ok) {
         throw new Error('Registration failed. Please try again.');
@@ -329,6 +336,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Missing auth token');
       }
       await setToken(response.token);
+      if (response.refreshToken) {
+        await setRefreshToken(response.refreshToken);
+      }
       const ok = await fetchUser();
       if (!ok) {
         throw new Error('Apple Sign In failed. Please try again.');

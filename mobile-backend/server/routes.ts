@@ -8,6 +8,7 @@ import {
   login,
   appleSignIn,
   logout,
+  refreshAccessToken,
   generateAccessToken,
   generateRefreshToken,
   getRefreshTokenExpiry,
@@ -333,11 +334,12 @@ export function registerRoutes(app: Express): void {
       if (!refreshToken) {
         return res.status(400).json({ error: 'Refresh token required' });
       }
-      // Note: Full implementation would look up user by refresh token
-      res.status(501).json({ error: 'Refresh token endpoint not fully implemented' });
+      const result = await refreshAccessToken(refreshToken);
+      const { accessToken, ...rest } = result;
+      res.json({ ...rest, token: accessToken });
     } catch (error: any) {
       console.error('Token refresh error:', error);
-      res.status(401).json({ error: 'Token refresh failed' });
+      res.status(401).json({ error: error.message || 'Token refresh failed' });
     }
   });
 
@@ -424,7 +426,7 @@ export function registerRoutes(app: Express): void {
 
       await storage.updateUserProfile(req.userId!, { photoUrl: blobUrl });
 
-      res.json({ photoUrl: blobUrl });
+      res.json({ profileImageUrl: blobUrl, photoUrl: blobUrl, success: true });
     } catch (error: any) {
       console.error('Photo upload error:', error);
       res.status(500).json({ error: 'Failed to upload profile image' });

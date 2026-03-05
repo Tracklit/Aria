@@ -1,5 +1,5 @@
 import { env } from '../config/env';
-import { getToken } from './tokenStorage';
+import { getToken, setToken, getRefreshToken, setRefreshToken, clearAuthStorage } from './tokenStorage';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -9,6 +9,7 @@ interface RequestOptions {
   headers?: Record<string, string>;
   rawResponse?: boolean;
   skipAuth?: boolean;
+  _isRetry?: boolean;
 }
 
 const defaultHeaders = {
@@ -17,11 +18,65 @@ const defaultHeaders = {
 
 const DEBUG_API = __DEV__;
 
+// Mutex to prevent concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) return false;
+
+      const baseUrl = env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL;
+      const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        await clearAuthStorage();
+        return false;
+      }
+
+      const data = await response.json();
+      if (data.token) {
+        await setToken(data.token);
+      }
+      if (data.refreshToken) {
+        await setRefreshToken(data.refreshToken);
+      }
+
+      if (DEBUG_API) {
+        console.log('[API] Token refreshed successfully');
+      }
+      return true;
+    } catch (error) {
+      if (DEBUG_API) {
+        console.log('[API] Token refresh failed:', error);
+      }
+      await clearAuthStorage();
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 export async function apiRequest<T = any>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { method = 'GET', data, headers, rawResponse, skipAuth } = options;
+  const { method = 'GET', data, headers, rawResponse, skipAuth, _isRetry } = options;
   const baseUrl = env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL;
   const url = path.startsWith('http') ? path : `${baseUrl}${path}`;
 
@@ -76,6 +131,14 @@ export async function apiRequest<T = any>(
     }
 
     if (!response.ok) {
+      // Auto-refresh on 401 (expired access token), but only once
+      if (response.status === 401 && !skipAuth && !_isRetry) {
+        const refreshed = await attemptTokenRefresh();
+        if (refreshed) {
+          return apiRequest<T>(path, { ...options, _isRetry: true });
+        }
+      }
+
       const errorMessage =
         payload?.error ||
         payload?.message ||
@@ -144,11 +207,13 @@ export interface LoginResponse {
   username?: string;
   email?: string;
   token: string;
+  refreshToken?: string;
 }
 
 export interface RegisterResponse {
   user: any;
   token: string;
+  refreshToken?: string;
   requiresOnboarding?: boolean;
 }
 

@@ -287,14 +287,30 @@ export async function login(input: LoginInput, clientIp: string): Promise<AuthRe
   };
 }
 
-export async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
-  // Find user with this refresh token
-  // Note: In production, you'd want to hash the refresh token too
-  const users = await storage.getUser(0); // This is a placeholder - we need to add a method to find by refresh token
+export async function refreshAccessToken(oldRefreshToken: string): Promise<AuthResult> {
+  const user = await storage.getUserByRefreshToken(oldRefreshToken);
+  if (!user) {
+    throw new Error('Invalid refresh token');
+  }
 
-  // For now, we'll need to iterate or add a new storage method
-  // This is a simplified implementation
-  throw new Error('Refresh token functionality requires additional storage method');
+  // Verify refresh token hasn't expired
+  if (!user.refreshTokenExpiresAt || new Date(user.refreshTokenExpiresAt) <= new Date()) {
+    throw new Error('Refresh token expired');
+  }
+
+  // Rotate refresh token for security
+  const newRefreshToken = generateRefreshToken();
+  const refreshTokenExpiry = getRefreshTokenExpiry();
+  await storage.updateUserRefreshToken(user.id, newRefreshToken, refreshTokenExpiry);
+
+  const accessToken = generateAccessToken(user);
+
+  return {
+    user,
+    accessToken,
+    refreshToken: newRefreshToken,
+    expiresIn: 20 * 60,
+  };
 }
 
 export async function appleSignIn(input: AppleSignInInput): Promise<AuthResult> {
