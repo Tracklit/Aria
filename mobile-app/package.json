@@ -11,7 +11,10 @@
     "test:types": "tsc --noEmit",
     "test:integration": "tsx __tests__/integration.e2e.ts",
     "test:e2e:maestro": "export PATH=\"$PATH:$HOME/.maestro/bin\" && maestro test .maestro/master.yaml",
-    "test:all": "npm run test && npm run test:types && npm run test:integration"
+    "test:all": "npm run test && npm run test:types && npm run test:integration",
+    "bump-build": "node scripts/bump-build.js",
+    "sync-build": "node scripts/sync-build-pbxproj.js",
+    "prebuild": "npm run bump-build && npx expo prebuild --clean && npm run sync-build"
   },
   "dependencies": {
     "@expo-google-fonts/space-grotesk": "^0.4.1",

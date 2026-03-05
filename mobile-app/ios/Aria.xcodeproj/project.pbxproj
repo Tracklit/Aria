@@ -7,29 +7,29 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		103D2D339422473245DD47C3 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 818E746AC08CEDCA23AC355A /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		9088E649C1262478C3D7C8A0 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4FF6C16662C1C8AB2171029B /* PrivacyInfo.xcprivacy */; };
-		A47CB7FFD2C3295466A6EB64 /* libPods-Aria.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 947C0AF982C2630EFBC95D0A /* libPods-Aria.a */; };
+		84A399ECA32CAC4FD0BFB82C /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB7BA61031FAAC261694630F /* ExpoModulesProvider.swift */; };
+		B0FECC12FC2DA1288036675F /* libPods-Aria.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 265889A8C17B932AFB81E04B /* libPods-Aria.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		BE4F32F7B9D171D0C475AEFC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 897E1E4DEC400BD66833153D /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0117597B4E764B0A4DF92E03 /* Pods-Aria.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aria.release.xcconfig"; path = "Target Support Files/Pods-Aria/Pods-Aria.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Aria.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aria.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Aria/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Aria/Info.plist; sourceTree = "<group>"; };
-		4FF6C16662C1C8AB2171029B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Aria/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		6606A4AC2FFB63CF117912E8 /* Pods-Aria.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aria.debug.xcconfig"; path = "Target Support Files/Pods-Aria/Pods-Aria.debug.xcconfig"; sourceTree = "<group>"; };
-		818E746AC08CEDCA23AC355A /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Aria/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		947C0AF982C2630EFBC95D0A /* libPods-Aria.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Aria.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		265889A8C17B932AFB81E04B /* libPods-Aria.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Aria.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		86B3FB33524ED189F580BCB6 /* Pods-Aria.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aria.debug.xcconfig"; path = "Target Support Files/Pods-Aria/Pods-Aria.debug.xcconfig"; sourceTree = "<group>"; };
+		897E1E4DEC400BD66833153D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Aria/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Aria/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B9797F297179678F40BCD438 /* Pods-Aria.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aria.release.xcconfig"; path = "Target Support Files/Pods-Aria/Pods-Aria.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Aria/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Aria-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Aria-Bridging-Header.h"; path = "Aria/Aria-Bridging-Header.h"; sourceTree = "<group>"; };
+		FB7BA61031FAAC261694630F /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Aria/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A47CB7FFD2C3295466A6EB64 /* libPods-Aria.a in Frameworks */,
+				B0FECC12FC2DA1288036675F /* libPods-Aria.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				4FF6C16662C1C8AB2171029B /* PrivacyInfo.xcprivacy */,
+				897E1E4DEC400BD66833153D /* PrivacyInfo.xcprivacy */,
 			);
 			name = Aria;
 			sourceTree = "<group>";
@@ -62,25 +62,9 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				947C0AF982C2630EFBC95D0A /* libPods-Aria.a */,
+				265889A8C17B932AFB81E04B /* libPods-Aria.a */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		6BF6BBA2A9F84D09ECE329E6 /* Aria */ = {
-			isa = PBXGroup;
-			children = (
-				818E746AC08CEDCA23AC355A /* ExpoModulesProvider.swift */,
-			);
-			name = Aria;
-			sourceTree = "<group>";
-		};
-		6D17BF1080B26A49168FA274 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				6BF6BBA2A9F84D09ECE329E6 /* Aria */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,8 +81,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				88E3BE18E870389E0B5626C1 /* Pods */,
-				6D17BF1080B26A49168FA274 /* ExpoModulesProviders */,
+				A8551713E0A89B98ED0EFC1C /* Pods */,
+				AC6EC5CB5B6E8915AD185DF1 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,13 +97,30 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		88E3BE18E870389E0B5626C1 /* Pods */ = {
+		95B511DF8BC765DFA752D4FC /* Aria */ = {
 			isa = PBXGroup;
 			children = (
-				6606A4AC2FFB63CF117912E8 /* Pods-Aria.debug.xcconfig */,
-				B9797F297179678F40BCD438 /* Pods-Aria.release.xcconfig */,
+				FB7BA61031FAAC261694630F /* ExpoModulesProvider.swift */,
 			);
+			name = Aria;
+			sourceTree = "<group>";
+		};
+		A8551713E0A89B98ED0EFC1C /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				86B3FB33524ED189F580BCB6 /* Pods-Aria.debug.xcconfig */,
+				0117597B4E764B0A4DF92E03 /* Pods-Aria.release.xcconfig */,
+			);
+			name = Pods;
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		AC6EC5CB5B6E8915AD185DF1 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				95B511DF8BC765DFA752D4FC /* Aria */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -139,14 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Aria" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				FFB454F6048C77D6D470ABF2 /* [Expo] Configure project */,
+				EFD0AB50D8F7C89E0F84E663 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* Auto Increment Build Number */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				D7CA45889BB08EA023B75983 /* [CP] Embed Pods Frameworks */,
+				8F1516C19251ACF4DEAAD3BC /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -166,9 +166,7 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						DevelopmentTeam = 2V636U3DWT;
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -198,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				9088E649C1262478C3D7C8A0 /* PrivacyInfo.xcprivacy in Resources */,
+				BE4F32F7B9D171D0C475AEFC /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,6 +249,7 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Aria/Pods-Aria-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
@@ -264,6 +263,7 @@
 			);
 			name = "[CP] Copy Pods Resources";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
@@ -280,21 +280,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aria/Pods-Aria-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* Auto Increment Build Number */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Auto Increment Build Number";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Release\" ]; then\n  cd \"$PROJECT_DIR\"\n  BUILD_NUM=$(agvtool what-version -terse 2>/dev/null || echo \"1\")\n  NEW_BUILD_NUM=$((BUILD_NUM + 1))\n  agvtool new-version -all \"$NEW_BUILD_NUM\" > /dev/null 2>&1\n  echo \"Build number: $BUILD_NUM -> $NEW_BUILD_NUM\"\nfi\n";
-		};
-		D7CA45889BB08EA023B75983 /* [CP] Embed Pods Frameworks */ = {
+		8F1516C19251ACF4DEAAD3BC /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -316,7 +302,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aria/Pods-Aria-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		FFB454F6048C77D6D470ABF2 /* [Expo] Configure project */ = {
+		EFD0AB50D8F7C89E0F84E663 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -348,7 +334,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				103D2D339422473245DD47C3 /* ExpoModulesProvider.swift in Sources */,
+				84A399ECA32CAC4FD0BFB82C /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -357,14 +343,12 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 6606A4AC2FFB63CF117912E8 /* Pods-Aria.debug.xcconfig */;
+			baseConfigurationReference = 86B3FB33524ED189F580BCB6 /* Pods-Aria.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Aria/Aria.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 2V636U3DWT;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -372,7 +356,6 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = Aria/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Aria;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -397,17 +380,14 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B9797F297179678F40BCD438 /* Pods-Aria.release.xcconfig */;
+			baseConfigurationReference = 0117597B4E764B0A4DF92E03 /* Pods-Aria.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Aria/Aria.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = 2V636U3DWT;
 				INFOPLIST_FILE = Aria/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Aria;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
