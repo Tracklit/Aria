@@ -32,12 +32,6 @@ export default function LoginScreen() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
-  const [googleRequest, _googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
-    iosClientId: env.GOOGLE_IOS_CLIENT_ID || undefined,
-    androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || undefined,
-    webClientId: env.GOOGLE_WEB_CLIENT_ID || undefined,
-    scopes: ['openid', 'profile', 'email'],
-  });
 
   const googleClientIdForPlatform =
     Platform.OS === 'ios'
@@ -45,7 +39,18 @@ export default function LoginScreen() {
       : Platform.OS === 'android'
         ? env.GOOGLE_ANDROID_CLIENT_ID
         : env.GOOGLE_WEB_CLIENT_ID;
-  const googleAuthAvailable = Boolean(googleClientIdForPlatform && googleRequest);
+  const hasGoogleClientId = Boolean(googleClientIdForPlatform);
+
+  // The hook requires a clientId or it throws. Pass a placeholder when unconfigured
+  // so the hook is always called (rules of hooks) but google auth stays disabled.
+  const [googleRequest, _googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
+    iosClientId: env.GOOGLE_IOS_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    webClientId: env.GOOGLE_WEB_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  const googleAuthAvailable = hasGoogleClientId && Boolean(googleRequest);
   const hasSocialSignIn = appleAuthAvailable || googleAuthAvailable;
 
   useEffect(() => {

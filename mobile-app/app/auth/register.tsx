@@ -35,20 +35,22 @@ type FieldErrors = {
 export default function RegisterScreen() {
   const { register, appleLogin, googleLogin, isLoading, error, clearError } = useAuth();
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
-  const [googleRequest, _googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
-    iosClientId: env.GOOGLE_IOS_CLIENT_ID || undefined,
-    androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || undefined,
-    webClientId: env.GOOGLE_WEB_CLIENT_ID || undefined,
-    scopes: ['openid', 'profile', 'email'],
-  });
-
   const googleClientIdForPlatform =
     Platform.OS === 'ios'
       ? env.GOOGLE_IOS_CLIENT_ID
       : Platform.OS === 'android'
         ? env.GOOGLE_ANDROID_CLIENT_ID
         : env.GOOGLE_WEB_CLIENT_ID;
-  const googleAuthAvailable = Boolean(googleClientIdForPlatform && googleRequest);
+  const hasGoogleClientId = Boolean(googleClientIdForPlatform);
+
+  const [googleRequest, _googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
+    iosClientId: env.GOOGLE_IOS_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    webClientId: env.GOOGLE_WEB_CLIENT_ID || 'placeholder.apps.googleusercontent.com',
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  const googleAuthAvailable = hasGoogleClientId && Boolean(googleRequest);
   const hasSocialSignIn = appleAuthAvailable || googleAuthAvailable;
 
   useEffect(() => {
