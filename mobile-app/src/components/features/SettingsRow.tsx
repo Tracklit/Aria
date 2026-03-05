@@ -8,17 +8,21 @@ interface SettingsRowProps {
   onPress: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
+  subtitle?: string;
   testID?: string;
 }
 
-export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress, icon, iconColor, testID }) => {
+export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress, icon, iconColor, subtitle, testID }) => {
   return (
     <TouchableOpacity testID={testID} style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.left}>
         {icon && (
           <Ionicons name={icon} size={20} color={iconColor || colors.text.secondary} style={styles.icon} />
         )}
-        <Text style={styles.title}>{title}</Text>
+        <View>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
     </TouchableOpacity>
@@ -44,5 +48,10 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body,
     color: colors.text.primary,
+  },
+  subtitle: {
+    ...typography.caption,
+    color: colors.text.secondary,
+    marginTop: 1,
   },
 });

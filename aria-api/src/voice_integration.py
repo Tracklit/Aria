@@ -3,14 +3,14 @@ Azure Speech and Translation Services Integration
 Provides voice-to-text, text-to-speech, and multi-language translation
 """
 import os
-import io
+import time
 import logging
 from typing import Optional, Dict, List, Tuple
-from datetime import datetime
 import azure.cognitiveservices.speech as speechsdk
 from azure.ai.translation.text import TextTranslationClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import AzureError
+from azure.identity import DefaultAzureCredential
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,16 @@ class VoiceIntegration:
         self.speech_region = os.getenv("AZURE_SPEECH_REGION", "westus")
         self.speech_language = os.getenv("SPEECH_LANGUAGE", "en-US")
         self.speech_voice = os.getenv("SPEECH_VOICE_NAME", "en-US-AriaNeural")
+        self.speech_auth_mode = os.getenv("AZURE_SPEECH_AUTH_MODE", "auto").lower()
+        self._speech_token: Optional[str] = None
+        self._speech_token_expires_at: float = 0.0
+        self._credential: Optional[DefaultAzureCredential] = None
+
+        if self.speech_auth_mode != "key":
+            try:
+                self._credential = DefaultAzureCredential(exclude_interactive_browser_credential=True)
+            except Exception as e:
+                logger.warning(f"Failed to initialize DefaultAzureCredential: {e}")
         
         # Translation Services configuration
         self.translator_key = os.getenv("AZURE_TRANSLATOR_KEY")
@@ -42,28 +52,76 @@ class VoiceIntegration:
     
     def _init_speech_config(self):
         """Initialize Speech Services configuration"""
-        if not self.speech_key:
-            logger.warning("AZURE_SPEECH_KEY not set - voice features will be disabled")
-            self.speech_config = None
-            return
-        
         try:
-            self.speech_config = speechsdk.SpeechConfig(
-                subscription=self.speech_key,
-                region=self.speech_region
+            self.speech_config = self._create_speech_config()
+            logger.info(
+                "Speech config initialized: region=%s language=%s auth_mode=%s",
+                self.speech_region,
+                self.speech_language,
+                self.speech_auth_mode,
             )
-            self.speech_config.speech_recognition_language = self.speech_language
-            self.speech_config.speech_synthesis_voice_name = self.speech_voice
-            
-            # Set audio format for high quality
-            self.speech_config.set_speech_synthesis_output_format(
-                speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
-            )
-            
-            logger.info(f"Speech config initialized: {self.speech_region}, {self.speech_language}")
         except Exception as e:
             logger.error(f"Failed to initialize speech config: {e}")
             self.speech_config = None
+
+    def _get_speech_auth_token(self) -> str:
+        """Get a cached Entra ID token for Speech services."""
+        if self._speech_token and time.time() < self._speech_token_expires_at:
+            return self._speech_token
+
+        if not self._credential:
+            raise ValueError("DefaultAzureCredential unavailable for speech token auth")
+
+        token = self._credential.get_token("https://cognitiveservices.azure.com/.default")
+        self._speech_token = token.token
+        # Refresh one minute early to avoid mid-request expiry.
+        self._speech_token_expires_at = max(float(token.expires_on) - 60, time.time() + 30)
+        return self._speech_token
+
+    def _new_key_speech_config(self) -> speechsdk.SpeechConfig:
+        if not self.speech_key:
+            raise ValueError("AZURE_SPEECH_KEY not set")
+        return speechsdk.SpeechConfig(subscription=self.speech_key, region=self.speech_region)
+
+    def _new_identity_speech_config(self) -> speechsdk.SpeechConfig:
+        auth_token = self._get_speech_auth_token()
+        return speechsdk.SpeechConfig(auth_token=auth_token, region=self.speech_region)
+
+    def _create_speech_config(self) -> speechsdk.SpeechConfig:
+        """
+        Build SpeechConfig using preferred auth mode.
+        - auto: managed identity first, then key
+        - managed_identity: managed identity only
+        - key: key only
+        """
+        attempts: List[str] = []
+        if self.speech_auth_mode in ("auto", "managed_identity"):
+            attempts.append("managed_identity")
+        if self.speech_auth_mode in ("auto", "key"):
+            attempts.append("key")
+
+        if not attempts:
+            attempts = ["managed_identity", "key"]
+
+        last_error: Optional[Exception] = None
+        for attempt in attempts:
+            try:
+                if attempt == "managed_identity":
+                    config = self._new_identity_speech_config()
+                else:
+                    config = self._new_key_speech_config()
+
+                config.speech_recognition_language = self.speech_language
+                config.speech_synthesis_voice_name = self.speech_voice
+                config.set_speech_synthesis_output_format(
+                    speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+                )
+                return config
+            except Exception as e:
+                last_error = e
+                logger.warning("Speech auth attempt failed (%s): %s", attempt, e)
+
+        raise ValueError(f"Unable to initialize SpeechConfig: {last_error}")
     
     def _init_translation_client(self):
         """Initialize Translation Services client"""
@@ -99,21 +157,18 @@ class VoiceIntegration:
             Tuple of (transcribed_text, confidence_score, metadata)
         """
         if not self.speech_config:
-            raise ValueError("Speech Services not configured. Set AZURE_SPEECH_KEY.")
+            raise ValueError("Speech Services not configured. Check speech auth settings.")
         
         try:
-            # Configure language if provided
+            recognition_config = self._create_speech_config()
             if language:
-                recognition_config = speechsdk.SpeechConfig(
-                    subscription=self.speech_key,
-                    region=self.speech_region
-                )
                 recognition_config.speech_recognition_language = language
-            else:
-                recognition_config = self.speech_config
             
-            # Create audio stream from bytes
-            audio_stream = speechsdk.audio.PushAudioInputStream()
+            # Allow mobile compressed formats (m4a/mp4/mp3/webm) in addition to wav/pcm.
+            stream_format = speechsdk.audio.AudioStreamFormat.get_compressed_format(
+                speechsdk.AudioStreamContainerFormat.ANY
+            )
+            audio_stream = speechsdk.audio.PushAudioInputStream(stream_format=stream_format)
             audio_stream.write(audio_data)
             audio_stream.close()
             
@@ -177,14 +232,10 @@ class VoiceIntegration:
             Tuple of (audio_bytes, metadata)
         """
         if not self.speech_config:
-            raise ValueError("Speech Services not configured. Set AZURE_SPEECH_KEY.")
+            raise ValueError("Speech Services not configured. Check speech auth settings.")
         
         try:
-            # Configure voice if provided
-            synthesis_config = speechsdk.SpeechConfig(
-                subscription=self.speech_key,
-                region=self.speech_region
-            )
+            synthesis_config = self._create_speech_config()
             
             if voice_name:
                 synthesis_config.speech_synthesis_voice_name = voice_name

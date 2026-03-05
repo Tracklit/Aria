@@ -16,9 +16,11 @@ import {
   completeOnboarding as apiCompleteOnboarding,
   uploadProfilePicture as apiUploadProfilePicture,
   appleSignIn as apiAppleSignIn,
+  googleSignIn as apiGoogleSignIn,
   LoginInput,
   RegisterInput,
   AppleSignInInput,
+  GoogleSignInInput,
 } from '../lib/api';
 import {
   clearAuthStorage,
@@ -103,6 +105,7 @@ interface AuthContextType extends AuthState {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   appleLogin: (input: AppleSignInInput) => Promise<void>;
+  googleLogin: (input: GoogleSignInInput) => Promise<void>;
   demoLogin: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -355,6 +358,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [fetchUser]);
 
+  const googleLogin = useCallback(async (input: GoogleSignInInput) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await apiGoogleSignIn(input);
+      if (!response.token) {
+        throw new Error('Missing auth token');
+      }
+      await setToken(response.token);
+      if (response.refreshToken) {
+        await setRefreshToken(response.refreshToken);
+      }
+      const ok = await fetchUser();
+      if (!ok) {
+        throw new Error('Google Sign In failed. Please try again.');
+      }
+      setState((prev) => ({ ...prev, error: null, isLoading: false }));
+    } catch (error: any) {
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error.message || 'Google Sign In failed',
+        hasValidToken: false,
+      }));
+      throw error;
+    }
+  }, [fetchUser]);
+
   // Demo login - works without server connection
   const demoLogin = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -533,6 +563,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         appleLogin,
+        googleLogin,
         demoLogin,
         logout,
         updateProfile,

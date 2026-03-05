@@ -27,12 +27,12 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.anonymous.Aria</string>
+				<string>aria</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>13</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>12.0</string>
 	<key>LSRequiresIPhoneOS</key>

@@ -36,9 +36,9 @@ const sprintTools = [
 
 const trainingItems = [
   {
-    title: 'Training Plans',
-    icon: 'calendar-outline' as const,
-    route: '/plan',
+    title: 'Training Log',
+    icon: 'journal-outline' as const,
+    route: '/training-log',
   },
   {
     title: 'Progress & Analytics',

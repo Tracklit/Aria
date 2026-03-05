@@ -62,6 +62,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByAppleId(appleId: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(data: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   updateUserRefreshToken(id: number, token: string | null, expiresAt: Date | null): Promise<void>;
@@ -122,6 +123,7 @@ export interface IStorage {
   // Workout Sessions
   getWorkoutSession(id: number): Promise<WorkoutSession | undefined>;
   getActiveWorkoutSession(userId: number): Promise<WorkoutSession | undefined>;
+  getCompletedWorkoutSessions(userId: number): Promise<WorkoutSession[]>;
   createWorkoutSession(data: InsertWorkoutSession): Promise<WorkoutSession>;
   updateWorkoutSession(id: number, data: Partial<InsertWorkoutSession>): Promise<WorkoutSession | undefined>;
 
@@ -202,6 +204,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByAppleId(appleId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.appleId, appleId));
+    return user;
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
     return user;
   }
 
@@ -487,6 +494,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ==================== WORKOUT SESSIONS ====================
+
+  async getCompletedWorkoutSessions(userId: number): Promise<WorkoutSession[]> {
+    return db.select().from(workoutSessions)
+      .where(and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.status, 'completed')
+      ))
+      .orderBy(desc(workoutSessions.completedAt));
+  }
 
   async getWorkoutSession(id: number): Promise<WorkoutSession | undefined> {
     const [session] = await db.select().from(workoutSessions).where(eq(workoutSessions.id, id));

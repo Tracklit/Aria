@@ -16,8 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../src/context';
+import { env } from '../../src/config/env';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
+
+WebBrowser.maybeCompleteAuthSession();
 
 type FieldErrors = {
   name?: string;
@@ -28,8 +33,23 @@ type FieldErrors = {
 };
 
 export default function RegisterScreen() {
-  const { register, appleLogin, isLoading, error, clearError } = useAuth();
+  const { register, appleLogin, googleLogin, isLoading, error, clearError } = useAuth();
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  const [googleRequest, _googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
+    iosClientId: env.GOOGLE_IOS_CLIENT_ID || undefined,
+    androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || undefined,
+    webClientId: env.GOOGLE_WEB_CLIENT_ID || undefined,
+    scopes: ['openid', 'profile', 'email'],
+  });
+
+  const googleClientIdForPlatform =
+    Platform.OS === 'ios'
+      ? env.GOOGLE_IOS_CLIENT_ID
+      : Platform.OS === 'android'
+        ? env.GOOGLE_ANDROID_CLIENT_ID
+        : env.GOOGLE_WEB_CLIENT_ID;
+  const googleAuthAvailable = Boolean(googleClientIdForPlatform && googleRequest);
+  const hasSocialSignIn = appleAuthAvailable || googleAuthAvailable;
 
   useEffect(() => {
     if (Platform.OS === 'ios') {
@@ -110,6 +130,31 @@ export default function RegisterScreen() {
         return;
       }
       Alert.alert('Apple Sign Up Failed', err.message || 'An unexpected error occurred.');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!googleRequest) {
+      Alert.alert('Google Sign Up Unavailable', 'Google auth is not configured for this build.');
+      return;
+    }
+
+    try {
+      const result = await googlePromptAsync();
+
+      if (result.type !== 'success') {
+        return;
+      }
+
+      const idToken = (result.params as Record<string, string | undefined>)?.id_token;
+      if (!idToken) {
+        Alert.alert('Sign Up Failed', 'No identity token received from Google.');
+        return;
+      }
+
+      await googleLogin({ idToken });
+    } catch (err: any) {
+      Alert.alert('Google Sign Up Failed', err.message || 'An unexpected error occurred.');
     }
   };
 
@@ -279,21 +324,36 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {hasSocialSignIn && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {appleAuthAvailable && (
-            <TouchableOpacity
-              style={styles.appleButton}
-              onPress={handleAppleSignIn}
-              disabled={isLoading}
-            >
-              <Ionicons name="logo-apple" size={24} color="#000" />
-              <Text style={styles.appleButtonText}>Continue with Apple</Text>
-            </TouchableOpacity>
+              {appleAuthAvailable && (
+                <TouchableOpacity
+                  style={[styles.appleButton, googleAuthAvailable ? styles.socialButtonStacked : styles.socialButtonLast]}
+                  onPress={handleAppleSignIn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="logo-apple" size={24} color="#000" />
+                  <Text style={styles.socialButtonText}>Continue with Apple</Text>
+                </TouchableOpacity>
+              )}
+
+              {googleAuthAvailable && (
+                <TouchableOpacity
+                  style={styles.googleButton}
+                  onPress={handleGoogleSignIn}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="logo-google" size={22} color="#000" />
+                  <Text style={styles.socialButtonText}>Continue with Google</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
 
           <View style={styles.footer}>
@@ -465,9 +525,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
     marginBottom: spacing.xl,
   },
-  appleButtonText: {
+  socialButtonStacked: {
+    marginBottom: spacing.md,
+  },
+  socialButtonLast: {
+    marginBottom: spacing.xl,
+  },
+  socialButtonText: {
     ...typography.body,
     color: '#000',
     fontWeight: '600',

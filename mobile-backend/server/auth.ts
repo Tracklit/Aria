@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
+import appleSigninAuth from 'apple-signin-auth';
+import { OAuth2Client } from 'google-auth-library';
 import { storage } from './storage';
 import { User, InsertUser } from '../shared/schema';
 
@@ -9,6 +11,43 @@ const JWT_SECRET = process.env.JWT_SECRET || 'aria-dev-secret-change-in-producti
 const ACCESS_TOKEN_EXPIRY = '20m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 30;
 const SALT_ROUNDS = 12;
+const DEFAULT_APPLE_AUDIENCE = 'com.aria.coaching';
+
+const googleOAuthClient = new OAuth2Client();
+
+function parseCsvEnv(value?: string): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function getAppleAudiences(): string[] {
+  const configured = parseCsvEnv(process.env.APPLE_SIGN_IN_AUDIENCES);
+  if (configured.length > 0) {
+    return configured;
+  }
+
+  const fallback = [
+    process.env.APPLE_APP_BUNDLE_ID,
+    process.env.APPLE_BUNDLE_ID,
+    DEFAULT_APPLE_AUDIENCE,
+  ].filter((value): value is string => Boolean(value && value.trim().length > 0));
+
+  return Array.from(new Set(fallback));
+}
+
+function getGoogleAudiences(): string[] {
+  const configured = parseCsvEnv(process.env.GOOGLE_OAUTH_CLIENT_IDS);
+  const fallback = [
+    process.env.GOOGLE_OAUTH_IOS_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_ANDROID_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+  ].filter((value): value is string => Boolean(value && value.trim().length > 0));
+
+  return Array.from(new Set([...configured, ...fallback]));
+}
 
 export interface JWTPayload {
   userId: number;
@@ -192,6 +231,10 @@ export interface AppleSignInInput {
   };
 }
 
+export interface GoogleSignInInput {
+  idToken: string;
+}
+
 export interface AuthResult {
   user: User;
   accessToken: string;
@@ -314,44 +357,42 @@ export async function refreshAccessToken(oldRefreshToken: string): Promise<AuthR
 }
 
 export async function appleSignIn(input: AppleSignInInput): Promise<AuthResult> {
-  // Verify the Apple identity token (in production, verify with Apple's servers)
-  // For now, we'll trust the token and extract the user info
+  const appleAudiences = getAppleAudiences();
 
-  // The identityToken is a JWT from Apple
-  // In production, verify signature using Apple's public keys
-
-  let appleUserId: string;
-  let email: string | undefined;
-
+  let verifiedClaims: { sub?: string; email?: string };
   try {
-    // Decode the JWT (without verification for dev - ADD VERIFICATION IN PRODUCTION)
-    const decoded = jwt.decode(input.identityToken) as any;
-    if (!decoded || !decoded.sub) {
-      throw new Error('Invalid Apple identity token');
-    }
-    appleUserId = decoded.sub;
-    email = decoded.email || input.user?.email;
-  } catch {
-    throw new Error('Failed to decode Apple identity token');
+    verifiedClaims = await appleSigninAuth.verifyIdToken(input.identityToken, {
+      audience: appleAudiences.length === 1 ? appleAudiences[0] : appleAudiences,
+      ignoreExpiration: false,
+    }) as { sub?: string; email?: string };
+  } catch (error) {
+    console.error('Apple identity token verification failed:', error);
+    throw new Error('Invalid Apple identity token');
   }
 
-  if (!email) {
-    throw new Error('Email is required for Apple Sign In');
+  const appleUserId = verifiedClaims.sub;
+  if (!appleUserId) {
+    throw new Error('Invalid Apple identity token');
   }
 
   // Check if user exists by Apple ID
   let user = await storage.getUserByAppleId(appleUserId);
 
   if (!user) {
+    const email = verifiedClaims.email || input.user?.email;
+    if (!email) {
+      throw new Error('Email is required the first time you sign in with Apple');
+    }
+
     // Check if email is already registered
     user = await storage.getUserByEmail(email);
 
     if (user) {
       // Link Apple ID to existing account
-      await storage.updateUser(user.id, {
+      user = await storage.updateUser(user.id, {
         appleId: appleUserId,
         authProvider: 'apple',
-      });
+      }) || user;
     } else {
       // Create new user
       const refreshToken = generateRefreshToken();
@@ -366,9 +407,117 @@ export async function appleSignIn(input: AppleSignInInput): Promise<AuthResult> 
       });
 
       // Create profile
-      const displayName = input.user?.name
+      const inputDisplayName = input.user?.name
         ? `${input.user.name.firstName || ''} ${input.user.name.lastName || ''}`.trim()
-        : email.split('@')[0];
+        : '';
+      const displayName = inputDisplayName || email.split('@')[0];
+
+      await storage.createUserProfile({
+        userId: user.id,
+        displayName,
+      });
+
+      // Create default preferences
+      await storage.createUserPreferences({
+        userId: user.id,
+      });
+    }
+  }
+
+  // Generate new tokens
+  const refreshToken = generateRefreshToken();
+  const refreshTokenExpiry = getRefreshTokenExpiry();
+
+  await storage.updateUserRefreshToken(user.id, refreshToken, refreshTokenExpiry);
+  await storage.updateUser(user.id, { lastLoginAt: new Date() });
+
+  const accessToken = generateAccessToken(user);
+
+  return {
+    user,
+    accessToken,
+    refreshToken,
+    expiresIn: 20 * 60,
+  };
+}
+
+export async function googleSignIn(input: GoogleSignInInput): Promise<AuthResult> {
+  const googleAudiences = getGoogleAudiences();
+  if (googleAudiences.length === 0) {
+    throw new Error('Google Sign In is not configured on server');
+  }
+
+  let payload: {
+    sub?: string;
+    email?: string;
+    email_verified?: boolean;
+    name?: string;
+    given_name?: string;
+    family_name?: string;
+  } | undefined;
+
+  try {
+    const ticket = await googleOAuthClient.verifyIdToken({
+      idToken: input.idToken,
+      audience: googleAudiences,
+    });
+    payload = ticket.getPayload() as {
+      sub?: string;
+      email?: string;
+      email_verified?: boolean;
+      name?: string;
+      given_name?: string;
+      family_name?: string;
+    } | undefined;
+  } catch (error) {
+    console.error('Google identity token verification failed:', error);
+    throw new Error('Invalid Google identity token');
+  }
+
+  const googleUserId = payload?.sub;
+  if (!googleUserId) {
+    throw new Error('Invalid Google identity token');
+  }
+
+  // Check if user exists by Google ID
+  let user = await storage.getUserByGoogleId(googleUserId);
+
+  if (!user) {
+    const email = payload?.email;
+    if (!email) {
+      throw new Error('Email is required for Google Sign In');
+    }
+    if (payload?.email_verified === false) {
+      throw new Error('Google account email is not verified');
+    }
+
+    // Check if email is already registered
+    user = await storage.getUserByEmail(email);
+
+    if (user) {
+      // Link Google ID to existing account
+      user = await storage.updateUser(user.id, {
+        googleId: googleUserId,
+        authProvider: 'google',
+      }) || user;
+    } else {
+      // Create new user
+      const refreshToken = generateRefreshToken();
+      const refreshTokenExpiry = getRefreshTokenExpiry();
+
+      user = await storage.createUser({
+        email,
+        googleId: googleUserId,
+        authProvider: 'google',
+        refreshToken,
+        refreshTokenExpiresAt: refreshTokenExpiry,
+      });
+
+      // Create profile
+      const displayName =
+        payload?.name ||
+        `${payload?.given_name || ''} ${payload?.family_name || ''}`.trim() ||
+        email.split('@')[0];
 
       await storage.createUserProfile({
         userId: user.id,

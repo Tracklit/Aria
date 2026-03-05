@@ -1,38 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../src/context';
+import { useTheme, ThemeMode } from '../../src/context';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
-const UNIT_OPTIONS = [
-  { value: 'metric', label: 'Metric', description: 'Kilometers, kilograms, centimeters' },
-  { value: 'imperial', label: 'Imperial', description: 'Miles, pounds, inches' },
-] as const;
+const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
+  { value: 'light', label: 'Light', description: 'Always use light appearance' },
+  { value: 'dark', label: 'Dark', description: 'Always use dark appearance' },
+  { value: 'system', label: 'System', description: 'Match your device settings' },
+];
 
-export default function UnitsScreen() {
-  const { profile, updateProfile } = useAuth();
-  const [selected, setSelected] = useState<'imperial' | 'metric'>((profile?.units as 'imperial' | 'metric') || 'imperial');
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (profile?.units === 'imperial' || profile?.units === 'metric') {
-      setSelected(profile.units);
-    }
-  }, [profile?.units]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await updateProfile({ units: selected });
-      router.back();
-    } catch (error) {
-      console.error('Failed to save units:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+export default function AppearanceScreen() {
+  const { themeMode, setThemeMode } = useTheme();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -40,25 +21,23 @@ export default function UnitsScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Units of Measure</Text>
-        <TouchableOpacity onPress={handleSave} disabled={isSaving}>
-          <Text style={[styles.saveText, isSaving && { opacity: 0.5 }]}>Save</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Appearance</Text>
+        <View style={{ width: 28 }} />
       </View>
 
       <View style={styles.content}>
-        {UNIT_OPTIONS.map((option) => (
+        {THEME_OPTIONS.map((option) => (
           <TouchableOpacity
             key={option.value}
-            style={[styles.optionCard, selected === option.value && styles.optionCardSelected]}
-            onPress={() => setSelected(option.value)}
+            style={[styles.optionCard, themeMode === option.value && styles.optionCardSelected]}
+            onPress={() => setThemeMode(option.value)}
           >
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>{option.label}</Text>
               <Text style={styles.optionDescription}>{option.description}</Text>
             </View>
-            <View style={[styles.radio, selected === option.value && styles.radioSelected]}>
-              {selected === option.value && <View style={styles.radioDot} />}
+            <View style={[styles.radio, themeMode === option.value && styles.radioSelected]}>
+              {themeMode === option.value && <View style={styles.radioDot} />}
             </View>
           </TouchableOpacity>
         ))}
@@ -71,7 +50,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
-  saveText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.sm },
   optionCard: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   optionCardSelected: { borderColor: colors.primary },

@@ -1,13 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
   Modal,
   Dimensions,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -35,9 +38,39 @@ export default function LiveSessionScreen() {
     nextExercise,
     previousExercise,
     skipRest,
+    updateExerciseValues,
     finishSession,
   } = useSession();
   const insets = useSafeAreaInsets();
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editSets, setEditSets] = useState('');
+  const [editReps, setEditReps] = useState('');
+  const [editRest, setEditRest] = useState('');
+
+  const openEditModal = () => {
+    if (!activeSession) return;
+    const ex = activeSession.exercises[activeSession.currentExerciseIndex];
+    setEditSets(String(ex.actualSets ?? ex.sets ?? ''));
+    setEditReps(String(ex.actualReps ?? ex.reps ?? ''));
+    setEditRest(String(ex.actualRest ?? ex.rest ?? ''));
+    setEditModalVisible(true);
+  };
+
+  const saveEditValues = () => {
+    if (!activeSession) return;
+    const values: { sets?: number; reps?: number | string; rest?: number } = {};
+    const setsNum = parseInt(editSets, 10);
+    if (!isNaN(setsNum) && setsNum > 0) values.sets = setsNum;
+    if (editReps.trim()) {
+      const repsNum = parseInt(editReps, 10);
+      values.reps = isNaN(repsNum) ? editReps.trim() : repsNum;
+    }
+    const restNum = parseInt(editRest, 10);
+    if (!isNaN(restNum) && restNum >= 0) values.rest = restNum;
+    updateExerciseValues(activeSession.currentExerciseIndex, values);
+    setEditModalVisible(false);
+  };
 
   const handleFinish = () => {
     Alert.alert('Finish Workout', 'Are you sure you want to finish this workout?', [
@@ -165,22 +198,23 @@ export default function LiveSessionScreen() {
         <View style={styles.exerciseCard}>
           <Text style={styles.exerciseName}>{currentExercise.name}</Text>
 
-          <View style={styles.targetRow}>
-            {currentExercise.sets && currentExercise.reps && (
+          <TouchableOpacity style={styles.targetRow} onPress={openEditModal} activeOpacity={0.7}>
+            {(currentExercise.actualSets ?? currentExercise.sets) && (currentExercise.actualReps ?? currentExercise.reps) ? (
               <View style={styles.targetBadge}>
                 <Ionicons name="fitness-outline" size={16} color={colors.teal} />
                 <Text style={styles.targetText}>
-                  {currentExercise.sets} x {currentExercise.reps}
+                  {currentExercise.actualSets ?? currentExercise.sets} x {currentExercise.actualReps ?? currentExercise.reps}
                 </Text>
               </View>
-            )}
-            {currentExercise.rest ? (
+            ) : null}
+            {(currentExercise.actualRest ?? currentExercise.rest) ? (
               <View style={styles.targetBadge}>
                 <Ionicons name="timer-outline" size={16} color={colors.orange} />
-                <Text style={styles.targetText}>{currentExercise.rest}s rest</Text>
+                <Text style={styles.targetText}>{currentExercise.actualRest ?? currentExercise.rest}s rest</Text>
               </View>
             ) : null}
-          </View>
+            <Ionicons name="pencil-outline" size={14} color={colors.text.tertiary} />
+          </TouchableOpacity>
 
           {/* Set circles */}
           <View style={styles.setsSection}>
@@ -244,9 +278,9 @@ export default function LiveSessionScreen() {
                     {ex.name}
                   </Text>
                 </View>
-                {ex.sets && ex.reps ? (
+                {(ex.actualSets ?? ex.sets) && (ex.actualReps ?? ex.reps) ? (
                   <Text style={styles.exerciseListDetail}>
-                    {ex.sets}x{ex.reps}
+                    {ex.actualSets ?? ex.sets}x{ex.actualReps ?? ex.reps}
                   </Text>
                 ) : null}
               </View>
@@ -254,6 +288,66 @@ export default function LiveSessionScreen() {
           })}
         </View>
       </ScrollView>
+
+      {/* Edit exercise values modal */}
+      <Modal visible={editModalVisible} transparent animationType="fade">
+        <KeyboardAvoidingView
+          style={styles.editModalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.editModalCard}>
+            <Text style={styles.editModalTitle}>Edit Exercise</Text>
+
+            <View style={styles.editFieldRow}>
+              <Text style={styles.editFieldLabel}>Sets</Text>
+              <TextInput
+                style={styles.editFieldInput}
+                value={editSets}
+                onChangeText={setEditSets}
+                keyboardType="number-pad"
+                placeholder="—"
+                placeholderTextColor={colors.text.tertiary}
+              />
+            </View>
+
+            <View style={styles.editFieldRow}>
+              <Text style={styles.editFieldLabel}>Reps</Text>
+              <TextInput
+                style={styles.editFieldInput}
+                value={editReps}
+                onChangeText={setEditReps}
+                keyboardType="default"
+                placeholder="—"
+                placeholderTextColor={colors.text.tertiary}
+              />
+            </View>
+
+            <View style={styles.editFieldRow}>
+              <Text style={styles.editFieldLabel}>Rest (sec)</Text>
+              <TextInput
+                style={styles.editFieldInput}
+                value={editRest}
+                onChangeText={setEditRest}
+                keyboardType="number-pad"
+                placeholder="—"
+                placeholderTextColor={colors.text.tertiary}
+              />
+            </View>
+
+            <View style={styles.editModalButtons}>
+              <TouchableOpacity
+                style={styles.editCancelBtn}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.editCancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editSaveBtn} onPress={saveEditValues}>
+                <Text style={styles.editSaveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Rest timer overlay */}
       {restTimeRemaining !== null && (
@@ -270,8 +364,8 @@ export default function LiveSessionScreen() {
                   styles.restProgressFill,
                   {
                     width: `${
-                      currentExercise.rest
-                        ? (restTimeRemaining / currentExercise.rest) * 100
+                      (currentExercise.actualRest ?? currentExercise.rest)
+                        ? (restTimeRemaining / (currentExercise.actualRest ?? currentExercise.rest!)) * 100
                         : 0
                     }%`,
                   },
@@ -523,6 +617,70 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   finishBtnText: { ...typography.bodyBold, color: '#fff' },
+
+  // Edit modal
+  editModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  editModalCard: {
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    width: '100%',
+    maxWidth: 340,
+    gap: spacing.md,
+  },
+  editModalTitle: {
+    ...typography.h3,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  editFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editFieldLabel: {
+    ...typography.body,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  editFieldInput: {
+    ...typography.bodyBold,
+    color: colors.text.primary,
+    backgroundColor: colors.background.secondary,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    width: 100,
+    textAlign: 'center',
+  },
+  editModalButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  editCancelBtn: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.text.tertiary,
+    alignItems: 'center',
+  },
+  editCancelBtnText: { ...typography.body, color: colors.text.secondary },
+  editSaveBtn: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.teal,
+    alignItems: 'center',
+  },
+  editSaveBtnText: { ...typography.bodyBold, color: '#fff' },
 
   // Summary modal
   modalOverlay: {

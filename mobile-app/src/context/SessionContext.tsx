@@ -19,6 +19,9 @@ interface Exercise {
 
 interface SessionExercise extends Exercise {
   completedSets: boolean[];
+  actualSets?: number;
+  actualReps?: number | string;
+  actualRest?: number;
 }
 
 interface LiveSession {
@@ -45,6 +48,7 @@ interface SessionContextType {
   previousExercise: () => void;
   startRestTimer: (seconds: number) => void;
   skipRest: () => void;
+  updateExerciseValues: (exerciseIndex: number, values: { sets?: number; reps?: number | string; rest?: number }) => void;
   finishSession: () => void;
 }
 
@@ -183,13 +187,38 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       setActiveSession(current => {
         if (!current) return null;
         const ex = current.exercises[exerciseIndex];
-        if (ex && ex.completedSets.every(Boolean) && ex.rest && ex.rest > 0) {
-          startRestTimer(ex.rest);
+        const restTime = ex?.actualRest ?? ex?.rest;
+        if (ex && ex.completedSets.every(Boolean) && restTime && restTime > 0) {
+          startRestTimer(restTime);
         }
         return current; // no state change
       });
     }, 50);
   }, [startRestTimer]);
+
+  const updateExerciseValues = useCallback((exerciseIndex: number, values: { sets?: number; reps?: number | string; rest?: number }) => {
+    setActiveSession(prev => {
+      if (!prev) return null;
+      const exercises = prev.exercises.map((ex, i) => {
+        if (i !== exerciseIndex) return ex;
+        const updated = { ...ex };
+        if (values.sets !== undefined) {
+          updated.actualSets = values.sets;
+          // Resize completedSets array if sets count changed
+          const currentLen = updated.completedSets.length;
+          if (values.sets > currentLen) {
+            updated.completedSets = [...updated.completedSets, ...Array(values.sets - currentLen).fill(false)];
+          } else if (values.sets < currentLen) {
+            updated.completedSets = updated.completedSets.slice(0, values.sets);
+          }
+        }
+        if (values.reps !== undefined) updated.actualReps = values.reps;
+        if (values.rest !== undefined) updated.actualRest = values.rest;
+        return updated;
+      });
+      return { ...prev, exercises };
+    });
+  }, []);
 
   const nextExercise = useCallback(() => {
     clearRestTimer();
@@ -241,8 +270,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
           completedSets,
           exercises: prev.exercises.map(ex => ({
             name: ex.name,
-            sets: ex.sets,
-            reps: ex.reps,
+            sets: ex.actualSets ?? ex.sets,
+            reps: ex.actualReps ?? ex.reps,
             completedSets: ex.completedSets,
           })),
         };
@@ -265,6 +294,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         pauseSession,
         resumeSession,
         completeSet,
+        updateExerciseValues,
         nextExercise,
         previousExercise,
         startRestTimer,

@@ -7,6 +7,7 @@ import {
   register,
   login,
   appleSignIn,
+  googleSignIn,
   logout,
   refreshAccessToken,
   generateAccessToken,
@@ -53,24 +54,28 @@ const appleSignInSchema = z.object({
   }).optional(),
 });
 
+const googleSignInSchema = z.object({
+  idToken: z.string(),
+});
+
 const updateProfileSchema = z.object({
-  displayName: z.string().optional(),
-  sport: z.string().optional(),
-  experienceLevel: z.string().optional(),
+  displayName: z.string().nullable().optional(),
+  sport: z.string().nullable().optional(),
+  experienceLevel: z.string().nullable().optional(),
   goalTags: z.array(z.string()).optional(),
   units: z.enum(['imperial', 'metric']).optional(),
-  dateOfBirth: z.string().datetime().optional(),
-  gender: z.string().optional(),
-  height: z.number().optional(),
-  weight: z.number().optional(),
-  weeklyGoalDistance: z.number().optional(),
-  weeklyGoalDuration: z.number().optional(),
-  country: z.string().optional(),
-  activityLevel: z.string().optional(),
-  bodyFatPercentage: z.number().optional(),
-  dietaryRestrictions: z.array(z.string()).optional(),
-  foodPreferences: z.record(z.any()).optional(),
-  injuryHistory: z.string().optional(),
+  dateOfBirth: z.coerce.date().nullable().optional(),
+  gender: z.string().nullable().optional(),
+  height: z.number().nullable().optional(),
+  weight: z.number().nullable().optional(),
+  weeklyGoalDistance: z.number().nullable().optional(),
+  weeklyGoalDuration: z.number().nullable().optional(),
+  country: z.string().nullable().optional(),
+  activityLevel: z.string().nullable().optional(),
+  bodyFatPercentage: z.number().nullable().optional(),
+  dietaryRestrictions: z.array(z.string()).nullable().optional(),
+  foodPreferences: z.record(z.any()).nullable().optional(),
+  injuryHistory: z.string().nullable().optional(),
 });
 
 const updatePreferencesSchema = z.object({
@@ -185,6 +190,7 @@ const generatePlanSchema = z.object({
   includeSpeedwork: z.boolean().optional(),
   includeStrength: z.boolean().optional(),
   notes: z.string().optional(),
+  preferredUnits: z.enum(['imperial', 'metric']).optional(),
 });
 
 const createRaceSchema = z.object({
@@ -215,10 +221,10 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+    if (['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.mimetype.toLowerCase())) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
+      cb(new Error('Only JPG, JPEG, PNG, and WebP images are allowed'));
     }
   },
 });
@@ -299,6 +305,7 @@ const generateNutritionSchema = z.object({
   locality: z.string().optional(),
   calorieTarget: z.number().optional(),
   notes: z.string().optional(),
+  preferredUnits: z.enum(['imperial', 'metric']).optional(),
 });
 
 const createProgramSchema2 = z.object({
@@ -318,6 +325,7 @@ const generateProgramSchema = z.object({
   durationWeeks: z.number().optional(),
   description: z.string().optional(),
   notes: z.string().optional(),
+  preferredUnits: z.enum(['imperial', 'metric']).optional(),
 });
 
 const importSheetSchema = z.object({
@@ -379,6 +387,23 @@ export function registerRoutes(app: Express): void {
         res.status(400).json({ error: 'Invalid input', details: error.errors });
       } else {
         res.status(401).json({ error: error.message || 'Apple Sign In failed' });
+      }
+    }
+  });
+
+  app.post('/api/auth/google', async (req: Request, res: Response) => {
+    try {
+      const data = googleSignInSchema.parse(req.body);
+      const result = await googleSignIn(data);
+      // Map accessToken to token for mobile app compatibility
+      const { accessToken, ...rest } = result;
+      res.json({ ...rest, token: accessToken });
+    } catch (error: any) {
+      console.error('Google Sign In error:', error);
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: 'Invalid input', details: error.errors });
+      } else {
+        res.status(401).json({ error: error.message || 'Google Sign In failed' });
       }
     }
   });
@@ -740,6 +765,16 @@ export function registerRoutes(app: Express): void {
   });
 
   // ==================== SESSION ROUTES ====================
+
+  app.get('/api/sessions', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const sessions = await storage.getCompletedWorkoutSessions(req.userId!);
+      res.json(sessions);
+    } catch (error: any) {
+      console.error('Get completed sessions error:', error);
+      res.status(500).json({ error: 'Failed to fetch completed sessions' });
+    }
+  });
 
   app.post('/api/sessions/start', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {

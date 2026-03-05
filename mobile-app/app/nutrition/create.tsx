@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition } from '../../src/context/NutritionContext';
+import { useAuth } from '../../src/context';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
@@ -13,6 +14,7 @@ const DIETARY_OPTIONS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'ke
 
 export default function CreateNutritionPlan() {
   const { generatePlan, createPlan } = useNutrition();
+  const { profile } = useAuth();
   const [activityLevel, setActivityLevel] = useState<string[]>(['moderate']);
   const [season, setSeason] = useState<string[]>(['in_season']);
   const [dietary, setDietary] = useState<string[]>([]);
@@ -31,6 +33,7 @@ export default function CreateNutritionPlan() {
         dietaryRestrictions: dietary,
         locality: locality || undefined,
         calorieTarget: calorieTarget ? parseInt(calorieTarget) : undefined,
+        preferredUnits: profile?.units === 'metric' ? 'metric' : 'imperial',
       });
       router.back();
     } catch (error) {

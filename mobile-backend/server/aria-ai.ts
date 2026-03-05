@@ -2,6 +2,34 @@ import { storage } from './storage';
 import { User, UserProfile, TrainingPlan, Workout } from '../shared/schema';
 
 const ARIA_API_URL = process.env.ARIA_API_URL || 'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
+const METERS_PER_MILE = 1609.34;
+const METERS_PER_KILOMETER = 1000;
+type UnitSystem = 'imperial' | 'metric';
+
+function resolveUnitSystem(preferredUnits?: string | null, profileUnits?: string | null): UnitSystem {
+  if (preferredUnits === 'imperial' || preferredUnits === 'metric') {
+    return preferredUnits;
+  }
+  if (profileUnits === 'metric') {
+    return 'metric';
+  }
+  return 'imperial';
+}
+
+function formatDistanceForUnits(distanceMeters: number | null | undefined, units: UnitSystem): string {
+  if (!distanceMeters || !Number.isFinite(distanceMeters)) return 'N/A';
+  if (units === 'metric') {
+    return `${(distanceMeters / METERS_PER_KILOMETER).toFixed(2)} km`;
+  }
+  return `${(distanceMeters / METERS_PER_MILE).toFixed(2)} mi`;
+}
+
+function getUnitInstruction(units: UnitSystem): string {
+  if (units === 'metric') {
+    return 'Use metric units only for all distances and pace references (meters, kilometers, min/km).';
+  }
+  return 'Use imperial units only for all distances and pace references (yards, miles, min/mi). Do not use meters or kilometers.';
+}
 
 // ==================== SYSTEM PROMPT ====================
 
@@ -100,6 +128,8 @@ export async function buildUserContext(userId: number): Promise<UserContext> {
 
 export function formatUserContextForAI(context: UserContext): string {
   const parts: string[] = [];
+  const units = resolveUnitSystem(undefined, context.profile?.units);
+  const paceUnit = units === 'metric' ? 'min/km' : 'min/mi';
 
   if (context.profile) {
     parts.push(`ATHLETE PROFILE:
@@ -107,7 +137,7 @@ export function formatUserContextForAI(context: UserContext): string {
 - Sport: ${context.profile.sport || 'Running'}
 - Experience: ${context.profile.experienceLevel || 'Not specified'}
 - Goals: ${context.profile.goalTags?.join(', ') || 'Not specified'}
-- Units: ${context.profile.units || 'imperial'}`);
+- Units: ${units}`);
   }
 
   if (context.activePlan) {
@@ -153,18 +183,18 @@ export function formatUserContextForAI(context: UserContext): string {
       parts.push(`\nRECENT WORKOUTS (last ${otherWorkouts.length}):`);
       otherWorkouts.forEach((workout: any) => {
         const date = new Date(workout.startTime).toLocaleDateString();
-        const distance = workout.distanceMeters ? `${(workout.distanceMeters / 1609.34).toFixed(2)} mi` : 'N/A';
+        const distance = formatDistanceForUnits(workout.distanceMeters, units);
         const duration = workout.durationSeconds ? `${Math.round(workout.durationSeconds / 60)} min` : 'N/A';
-        parts.push(`- ${date}: ${workout.type} - ${distance}, ${duration}, pace: ${workout.avgPace || 'N/A'}`);
+        parts.push(`- ${date}: ${workout.type} - ${distance}, ${duration}, pace: ${workout.avgPace || `N/A (${paceUnit})`}`);
       });
     }
   }
 
   parts.push(`\nWEEKLY STATS:
-- Distance: ${(context.weeklyStats.totalDistance / 1609.34).toFixed(2)} mi
+- Distance: ${formatDistanceForUnits(context.weeklyStats.totalDistance, units)}
 - Duration: ${Math.round(context.weeklyStats.totalDuration / 60)} min
 - Workouts: ${context.weeklyStats.workoutCount}
-- Avg Pace: ${context.weeklyStats.avgPace || 'N/A'}`);
+- Avg Pace: ${context.weeklyStats.avgPace || `N/A (${paceUnit})`}`);
 
   return parts.join('\n');
 }
@@ -292,17 +322,21 @@ export interface NutritionPlanInput {
   locality?: string;
   calorieTarget?: number;
   notes?: string;
+  preferredUnits?: UnitSystem;
 }
 
 export async function generateNutritionPlan(userId: number, input: NutritionPlanInput): Promise<string> {
   const userContext = await buildUserContext(userId);
   const contextString = formatUserContextForAI(userContext);
+  const units = resolveUnitSystem(input.preferredUnits, userContext.profile?.units);
+  const unitInstruction = getUnitInstruction(units);
 
   const nutritionRequest = `Create a personalized nutrition plan for me with these parameters:
 - Activity Level: ${input.activityLevel || 'moderate'}
 - Season: ${input.season || 'in_season'}
 - Dietary Restrictions: ${input.dietaryRestrictions?.join(', ') || 'None'}
 - Food Preferences/Locality: ${input.locality || 'No preference'}
+- Preferred Units: ${units}
 ${input.calorieTarget ? `- Target Calories: ${input.calorieTarget}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
@@ -324,6 +358,7 @@ ADDITIONAL INSTRUCTIONS FOR NUTRITION PLAN:
 - Include locally available foods when locality is specified
 - Provide 4-6 meals/snacks per day
 - Ensure macros support athletic performance and recovery
+- ${unitInstruction}
 - Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
 
   try {
@@ -350,16 +385,21 @@ export interface ProgramGenerationInput {
   durationWeeks?: number;
   description?: string;
   notes?: string;
+  preferredUnits?: UnitSystem;
 }
 
 export async function generateProgram(userId: number, input: ProgramGenerationInput): Promise<string> {
   const userContext = await buildUserContext(userId);
   const contextString = formatUserContextForAI(userContext);
+  const units = resolveUnitSystem(input.preferredUnits, userContext.profile?.units);
+  const unitInstruction = getUnitInstruction(units);
+  const sprintDistanceExample = units === 'metric' ? '40m Sprints' : '40yd Sprints';
 
   const programRequest = `Create a training program with these parameters:
 - Category: ${input.category || 'sprint'}
 - Level: ${input.level || 'intermediate'}
 - Duration: ${input.durationWeeks || 4} weeks
+- Preferred Units: ${units}
 ${input.description ? `- Description: ${input.description}` : ''}
 ${input.notes ? `- Notes: ${input.notes}` : ''}
 
@@ -368,12 +408,13 @@ The "recommendation" field MUST contain a JSON string (escaped) with the trainin
 The "analysis" field should be a brief summary of the program.
 
 Example response format:
-{"analysis": "Created a 4-week sprint power program", "recommendation": "{\\"title\\": \\"Sprint Power Program\\", \\"description\\": \\"A periodized sprint training program\\", \\"category\\": \\"sprint\\", \\"level\\": \\"intermediate\\", \\"duration\\": 4, \\"sessions\\": [{\\"dayNumber\\": 1, \\"title\\": \\"Speed Work\\", \\"description\\": \\"Short sprint repeats\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"40m Sprints\\", \\"sets\\": 6, \\"reps\\": \\"6\\", \\"rest\\": 180, \\"notes\\": \\"Full effort\\"}]}, {\\"dayNumber\\": 2, \\"title\\": \\"Recovery\\", \\"description\\": \\"Light jog and stretching\\", \\"isRestDay\\": true, \\"exercises\\": []}]}"}
+{"analysis": "Created a 4-week sprint power program", "recommendation": "{\\"title\\": \\"Sprint Power Program\\", \\"description\\": \\"A periodized sprint training program\\", \\"category\\": \\"sprint\\", \\"level\\": \\"intermediate\\", \\"duration\\": 4, \\"sessions\\": [{\\"dayNumber\\": 1, \\"title\\": \\"Speed Work\\", \\"description\\": \\"Short sprint repeats\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"${sprintDistanceExample}\\", \\"sets\\": 6, \\"reps\\": \\"6\\", \\"rest\\": 180, \\"notes\\": \\"Full effort\\"}]}, {\\"dayNumber\\": 2, \\"title\\": \\"Recovery\\", \\"description\\": \\"Light jog and stretching\\", \\"isRestDay\\": true, \\"exercises\\": []}]}"}
 
 IMPORTANT rules for the JSON inside "recommendation":
 - "reps" must be a string (e.g. "6", "8-10", "1"). "sets" and "rest" must be numbers.
 - Every session MUST have "dayNumber", "title", "isRestDay", and "exercises" fields.
-- Include at least 3-4 sessions per week.`;
+- Include at least 3-4 sessions per week.
+- ${unitInstruction}`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
 
@@ -382,6 +423,7 @@ ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
 - Include warm-up and cool-down recommendations
 - Balance training load across the week
 - Include rest days
+- ${unitInstruction}
 - Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
 
   try {
@@ -503,11 +545,14 @@ export interface PlanGenerationInput {
   includeSpeedwork?: boolean;
   includeStrength?: boolean;
   notes?: string;
+  preferredUnits?: UnitSystem;
 }
 
 export async function generateTrainingPlan(userId: number, input: PlanGenerationInput): Promise<string> {
   const userContext = await buildUserContext(userId);
   const contextString = formatUserContextForAI(userContext);
+  const units = resolveUnitSystem(input.preferredUnits, userContext.profile?.units);
+  const unitInstruction = getUnitInstruction(units);
 
   const planRequest = `Please create a training plan for me with the following parameters:
 - Target Event: ${input.targetEvent || 'General fitness improvement'}
@@ -517,6 +562,7 @@ export async function generateTrainingPlan(userId: number, input: PlanGeneration
 - Preferred Long Run Day: ${input.longRunDay || 'Saturday'}
 - Include Speedwork: ${input.includeSpeedwork ? 'Yes' : 'No'}
 - Include Strength Training: ${input.includeStrength ? 'Yes' : 'No'}
+- Preferred Units: ${units}
 ${input.notes ? `- Additional Notes: ${input.notes}` : ''}
 
 Please provide a structured weekly training plan with specific workouts for each day.`;
@@ -529,6 +575,7 @@ ADDITIONAL INSTRUCTIONS FOR PLAN GENERATION:
 - Consider the athlete's current fitness level and goals
 - Build in appropriate rest and recovery
 - Progress difficulty gradually
+- ${unitInstruction}
 - Include variety to prevent boredom and overuse injuries`;
 
   try {

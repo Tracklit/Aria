@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -9,26 +9,60 @@ import { colors, typography, spacing, borderRadius } from '../src/theme';
 
 const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
 const DIETARY_OPTIONS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'keto', 'paleo', 'halal', 'kosher', 'none'];
+const CM_PER_INCH = 2.54;
+const KG_PER_LB = 0.45359237;
+
+function formatForInput(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return rounded.toString();
+}
 
 export default function AthleteInfoScreen() {
   const { profile, updateProfile } = useAuth();
+  const units: 'imperial' | 'metric' = profile?.units === 'metric' ? 'metric' : 'imperial';
+  const isImperial = units === 'imperial';
 
-  const [height, setHeight] = useState(profile?.height?.toString() || '');
-  const [weight, setWeight] = useState(profile?.weight?.toString() || '');
-  const [bodyFat, setBodyFat] = useState(profile?.bodyFatPercentage?.toString() || '');
-  const [activityLevel, setActivityLevel] = useState<string[]>(profile?.activityLevel ? [profile.activityLevel] : []);
-  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>(profile?.dietaryRestrictions || []);
-  const [country, setCountry] = useState(profile?.country || '');
-  const [injuryHistory, setInjuryHistory] = useState(profile?.injuryHistory || '');
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [bodyFat, setBodyFat] = useState('');
+  const [activityLevel, setActivityLevel] = useState<string[]>([]);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
+  const [country, setCountry] = useState('');
+  const [injuryHistory, setInjuryHistory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const heightValue = typeof profile?.height === 'number'
+      ? (isImperial ? profile.height / CM_PER_INCH : profile.height)
+      : null;
+    const weightValue = typeof profile?.weight === 'number'
+      ? (isImperial ? profile.weight / KG_PER_LB : profile.weight)
+      : null;
+
+    setHeight(heightValue !== null ? formatForInput(heightValue) : '');
+    setWeight(weightValue !== null ? formatForInput(weightValue) : '');
+    setBodyFat(typeof profile?.bodyFatPercentage === 'number' ? formatForInput(profile.bodyFatPercentage) : '');
+    setActivityLevel(profile?.activityLevel ? [profile.activityLevel] : []);
+    setDietaryRestrictions(profile?.dietaryRestrictions || []);
+    setCountry(profile?.country || '');
+    setInjuryHistory(profile?.injuryHistory || '');
+  }, [profile, isImperial]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const parsedHeight = height ? parseFloat(height) : null;
+      const parsedWeight = weight ? parseFloat(weight) : null;
+      const parsedBodyFat = bodyFat ? parseFloat(bodyFat) : null;
+
       await updateProfile({
-        height: height ? parseFloat(height) : null,
-        weight: weight ? parseFloat(weight) : null,
-        bodyFatPercentage: bodyFat ? parseFloat(bodyFat) : null,
+        height: parsedHeight !== null && Number.isFinite(parsedHeight)
+          ? (isImperial ? parsedHeight * CM_PER_INCH : parsedHeight)
+          : null,
+        weight: parsedWeight !== null && Number.isFinite(parsedWeight)
+          ? (isImperial ? parsedWeight * KG_PER_LB : parsedWeight)
+          : null,
+        bodyFatPercentage: parsedBodyFat !== null && Number.isFinite(parsedBodyFat) ? parsedBodyFat : null,
         activityLevel: activityLevel[0] || null,
         dietaryRestrictions,
         country: country || null,
@@ -53,6 +87,11 @@ export default function AthleteInfoScreen() {
     }
   };
 
+  const heightUnitLabel = isImperial ? 'in' : 'cm';
+  const weightUnitLabel = isImperial ? 'lb' : 'kg';
+  const heightPlaceholder = isImperial ? 'e.g. 70' : 'e.g. 180';
+  const weightPlaceholder = isImperial ? 'e.g. 165' : 'e.g. 75';
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -76,11 +115,11 @@ export default function AthleteInfoScreen() {
                 style={styles.input}
                 value={height}
                 onChangeText={setHeight}
-                placeholder="e.g. 180"
+                placeholder={heightPlaceholder}
                 placeholderTextColor={colors.text.tertiary}
                 keyboardType="numeric"
               />
-              <Text style={styles.unitLabel}>cm</Text>
+              <Text style={styles.unitLabel}>{heightUnitLabel}</Text>
             </View>
           </View>
           <View style={styles.divider} />
@@ -91,11 +130,11 @@ export default function AthleteInfoScreen() {
                 style={styles.input}
                 value={weight}
                 onChangeText={setWeight}
-                placeholder="e.g. 75"
+                placeholder={weightPlaceholder}
                 placeholderTextColor={colors.text.tertiary}
                 keyboardType="numeric"
               />
-              <Text style={styles.unitLabel}>kg</Text>
+              <Text style={styles.unitLabel}>{weightUnitLabel}</Text>
             </View>
           </View>
           <View style={styles.divider} />

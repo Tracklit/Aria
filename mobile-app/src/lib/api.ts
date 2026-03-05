@@ -249,8 +249,20 @@ export interface AppleSignInInput {
   };
 }
 
+export interface GoogleSignInInput {
+  idToken: string;
+}
+
 export async function appleSignIn(input: AppleSignInInput): Promise<LoginResponse> {
   return apiRequest<LoginResponse>('/api/auth/apple', {
+    method: 'POST',
+    data: input,
+    skipAuth: true,
+  });
+}
+
+export async function googleSignIn(input: GoogleSignInInput): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/api/auth/google', {
     method: 'POST',
     data: input,
     skipAuth: true,
@@ -326,6 +338,10 @@ export async function skipWorkout(plannedWorkoutId: number, reason: string) {
 }
 
 // Sessions
+export async function getCompletedSessions() {
+  return apiRequest('/api/sessions');
+}
+
 export async function startSession(plannedWorkoutId?: number) {
   return apiRequest('/api/sessions/start', {
     method: 'POST',
@@ -685,7 +701,14 @@ export async function uploadProfilePicture(imageUri: string): Promise<ProfilePic
   // Extract filename from URI
   const filename = imageUri.split('/').pop() || 'profile.jpg';
   const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const extension = match?.[1]?.toLowerCase();
+  const mimeTypeMap: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
+  const type = extension ? (mimeTypeMap[extension] || `image/${extension}`) : 'image/jpeg';
 
   // @ts-ignore - React Native FormData supports blob-like objects
   formData.append('profileImage', {
@@ -720,4 +743,123 @@ export async function uploadProfilePicture(imageUri: string): Promise<ProfilePic
 
   const data = await response.json();
   return data as ProfilePictureResponse;
+}
+
+export interface VoiceTranscriptionResponse {
+  text: string;
+  confidence?: number;
+  metadata?: Record<string, any>;
+  success?: boolean;
+}
+
+const audioMimeTypeMap: Record<string, string> = {
+  m4a: 'audio/mp4',
+  mp4: 'audio/mp4',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  caf: 'audio/x-caf',
+  aac: 'audio/aac',
+  ogg: 'audio/ogg',
+  webm: 'audio/webm',
+};
+
+const inferAudioMimeType = (uri: string): string => {
+  const filename = uri.split('/').pop() || 'recording.m4a';
+  const match = /\.(\w+)$/.exec(filename);
+  const extension = match?.[1]?.toLowerCase();
+  if (!extension) return 'audio/mp4';
+  return audioMimeTypeMap[extension] || `audio/${extension}`;
+};
+
+export async function transcribeVoiceAudio(
+  audioUri: string,
+  language = 'en-US'
+): Promise<VoiceTranscriptionResponse> {
+  const token = await getToken();
+  const safeLanguage = encodeURIComponent(language);
+  const baseUrl = env.AI_API_BASE_URL;
+
+  const endpointCandidates = [
+    `${baseUrl}/voice/transcribe?language=${safeLanguage}`,
+    `${baseUrl}/api/v1/voice/transcribe?language=${safeLanguage}`,
+  ];
+
+  let lastError = 'Failed to transcribe audio';
+
+  const buildFormData = () => {
+    const filename = audioUri.split('/').pop() || 'recording.m4a';
+    const formData = new FormData();
+    // @ts-ignore - React Native FormData supports blob-like objects
+    formData.append('audio', {
+      uri: audioUri,
+      name: filename,
+      type: inferAudioMimeType(audioUri),
+    });
+    return formData;
+  };
+
+  for (const url of endpointCandidates) {
+    if (DEBUG_API) {
+      console.log(`[API] POST ${url}`);
+    }
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: buildFormData(),
+      });
+
+      const text = await response.text();
+      let payload: any = null;
+      try {
+        payload = text ? JSON.parse(text) : null;
+      } catch {
+        payload = null;
+      }
+
+      if (!response.ok) {
+        const message = payload?.detail || payload?.error || text || `HTTP ${response.status}`;
+        lastError = typeof message === 'string' ? message : JSON.stringify(message);
+        if (DEBUG_API) {
+          console.log(`[API] Transcription failed ${response.status}:`, lastError);
+        }
+        // try next candidate only if route is missing
+        if (response.status === 404) {
+          continue;
+        }
+        throw new Error(lastError);
+      }
+
+      const transcriptText =
+        typeof payload?.text === 'string'
+          ? payload.text
+          : typeof payload?.transcript === 'string'
+            ? payload.transcript
+            : '';
+
+      if (!transcriptText.trim()) {
+        throw new Error('No speech detected in recording');
+      }
+
+      return {
+        text: transcriptText,
+        confidence: payload?.confidence,
+        metadata: payload?.metadata,
+        success: payload?.success ?? true,
+      };
+    } catch (error: any) {
+      lastError = error?.message || lastError;
+      if (url === endpointCandidates[endpointCandidates.length - 1]) {
+        throw new Error(lastError);
+      }
+    }
+  }
+
+  throw new Error(lastError);
 }

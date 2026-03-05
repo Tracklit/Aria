@@ -690,12 +690,12 @@ async def transcribe_voice(
     audio_data = await audio.read()
     
     try:
-        result = voice_integration.transcribe_audio(audio_data, language)
+        text, confidence, metadata = voice_integration.transcribe_audio(audio_data, language)
         return {
-            "text": result["text"],
-            "confidence": result["confidence"],
-            "language": result["language"],
-            "duration_ms": result["duration_ms"]
+            "text": text,
+            "confidence": confidence,
+            "metadata": metadata,
+            "success": True
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
@@ -717,12 +717,11 @@ async def synthesize_voice(
         raise HTTPException(status_code=503, detail="Voice integration not available")
     
     try:
-        result = voice_integration.synthesize_speech(text, voice_name, language)
+        audio_data, metadata = voice_integration.synthesize_speech(text, voice_name, language)
         return {
-            "audio_base64": base64.b64encode(result["audio"]).decode("utf-8"),
-            "voice_name": result["voice_name"],
-            "language": result["language"],
-            "size_bytes": result["size_bytes"]
+            "audio_base64": base64.b64encode(audio_data).decode("utf-8"),
+            "metadata": metadata,
+            "success": True
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Speech synthesis failed: {str(e)}")
@@ -751,9 +750,8 @@ async def voice_ask(
     try:
         result = voice_integration.process_voice_conversation(
             audio_data,
-            user_id,
-            language,
-            response_language
+            user_language=language,
+            response_language=response_language
         )
         return result
     except Exception as e:
@@ -776,4 +774,3 @@ __all__ = [
     "equipment_router",
     "gamification_router"
 ]
-

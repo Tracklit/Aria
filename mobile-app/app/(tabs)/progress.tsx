@@ -31,12 +31,108 @@ export default function ProgressScreen() {
     const totalDistanceMeters = weekly.reduce((acc, w) => acc + (w.distanceMeters || 0), 0);
     const totalDurationSeconds = weekly.reduce((acc, w) => acc + (w.durationSeconds || 0), 0);
 
+    // Per-day duration data for the weekly chart (Sun=0 through Sat=6)
+    const dailyDurations: number[] = [0, 0, 0, 0, 0, 0, 0];
+    weekly.forEach((w) => {
+      const day = new Date(w.startTime).getDay();
+      dailyDurations[day] += (w.durationSeconds || 0);
+    });
+
+    // Average pace from the most recent workout that has pace data
+    const pacedWorkouts = weekly.filter((w) => w.avgPace);
+    const avgPaceDisplay = pacedWorkouts.length > 0
+      ? pacedWorkouts[pacedWorkouts.length - 1].avgPace!
+      : '--';
+
+    // Average heart rate from workouts that report it
+    const hrWorkouts = weekly.filter((w) => w.avgHeartRate && w.avgHeartRate > 0);
+    const avgHr = hrWorkouts.length > 0
+      ? Math.round(hrWorkouts.reduce((acc, w) => acc + w.avgHeartRate!, 0) / hrWorkouts.length)
+      : null;
+
     return {
       miles: totalDistanceMeters / 1609.34,
       duration: formatDuration(totalDurationSeconds),
-      avgPace: weekly.find((w) => w.avgPace)?.avgPace || "9'16\"",
+      avgPace: avgPaceDisplay,
       count: weekly.length,
+      dailyDurations,
+      avgHr,
+      totalDurationSeconds,
     };
+  }, [workoutHistory]);
+
+  // Build a data-driven SVG path from daily durations
+  const weeklyChartPath = useMemo(() => {
+    const vals = weeklyStats.dailyDurations;
+    const maxVal = Math.max(...vals, 1);
+    const points = vals.map((v, i) => ({
+      x: (i / 6) * 300,
+      y: 100 - (v / maxVal) * 80 - 10,
+    }));
+    if (maxVal <= 1) {
+      return { line: 'M0,90 L300,90', area: 'M0,90 L300,90 L300,100 L0,100 Z' };
+    }
+    const lineSegments = points.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+    const areaPath = `${lineSegments} L300,100 L0,100 Z`;
+    return { line: lineSegments, area: areaPath };
+  }, [weeklyStats.dailyDurations]);
+
+  // Training load: ratio of this week's total duration to a target of 5 hours/week
+  const trainingLoadPercent = useMemo(
+    () => Math.min(weeklyStats.totalDurationSeconds / (5 * 3600), 1) * 100,
+    [weeklyStats.totalDurationSeconds],
+  );
+
+  // Training load sparkline: per-day duration normalized as mini chart
+  const trainingLoadPath = useMemo(() => {
+    const vals = weeklyStats.dailyDurations;
+    const maxVal = Math.max(...vals, 1);
+    const points = vals.map((v, i) => ({
+      x: (i / 6) * 100,
+      y: 28 - (v / maxVal) * 24 - 2,
+    }));
+    if (maxVal <= 1) return 'M0,28 L100,28';
+    return points.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+  }, [weeklyStats.dailyDurations]);
+
+  // Heart rate sparkline from recent workouts that have HR data
+  const hrSparklinePath = useMemo(() => {
+    const hrWorkouts = workoutHistory
+      .filter((w) => w.avgHeartRate && w.avgHeartRate > 0)
+      .slice(0, 7)
+      .reverse();
+    if (hrWorkouts.length < 2) return 'M0,15 L100,15';
+    const hrs = hrWorkouts.map((w) => w.avgHeartRate!);
+    const minHr = Math.min(...hrs);
+    const maxHr = Math.max(...hrs, minHr + 1);
+    return hrWorkouts.map((w, i) => {
+      const x = (i / (hrWorkouts.length - 1)) * 100;
+      const y = 28 - ((w.avgHeartRate! - minHr) / (maxHr - minHr)) * 24 - 2;
+      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    }).join(' ');
+  }, [workoutHistory]);
+
+  // Workout frequency sparkline: per-day workout count over last 7 days
+  const frequencyPath = useMemo(() => {
+    const now = new Date();
+    const counts: number[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(now);
+      dayStart.setDate(now.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayStart.getDate() + 1);
+      counts.push(workoutHistory.filter((w) => {
+        const t = new Date(w.startTime);
+        return t >= dayStart && t < dayEnd;
+      }).length);
+    }
+    const maxC = Math.max(...counts, 1);
+    return counts.map((c, i) => {
+      const x = (i / 6) * 100;
+      const y = 28 - (c / maxC) * 24 - 2;
+      return i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    }).join(' ');
   }, [workoutHistory]);
 
   return (
@@ -60,7 +156,7 @@ export default function ProgressScreen() {
               </Defs>
               <Path
                 fill="url(#chartGradient)"
-                d="M0,80 C40,70 60,30 100,50 C140,70 160,20 200,40 C240,60 260,10 300,30 L300,100 L0,100 Z"
+                d={weeklyChartPath.area}
               />
               <Path
                 fill="none"
@@ -68,7 +164,7 @@ export default function ProgressScreen() {
                 strokeWidth={3}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M0,80 C40,70 60,30 100,50 C140,70 160,20 200,40 C240,60 260,10 300,30"
+                d={weeklyChartPath.line}
               />
             </Svg>
           </View>
@@ -105,35 +201,86 @@ export default function ProgressScreen() {
           <View style={styles.advRow}>
             <View style={styles.advCol}>
               <Text style={styles.advLabel}>Training Load</Text>
-              <View style={styles.bar} />
+              <Svg height={30} width="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <Path fill="none" stroke="#007AFF" strokeWidth={2} d={trainingLoadPath} />
+              </Svg>
             </View>
             <View style={styles.advColRight}>
-              <Text style={styles.advLabelRight}>Optimal</Text>
-              <View style={[styles.bar, { width: '75%' }]} />
-            </View>
-          </View>
-
-          <View style={styles.advRow}>
-            <View style={styles.advCol}>
-              <Text style={styles.advLabel}>VO2 Max</Text>
-              <View style={[styles.bar, { width: '65%' }]} />
-            </View>
-            <View style={styles.advColRight}>
-              <Text style={[styles.advLabelRight, styles.advLabelRightWhite]}>146 bpm</Text>
-              <View style={[styles.bar, { width: '90%' }]} />
+              <Text style={styles.advLabelRight}>
+                {trainingLoadPercent >= 80 ? 'Optimal' : trainingLoadPercent >= 40 ? 'Moderate' : 'Low'}
+              </Text>
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: `${Math.round(trainingLoadPercent)}%` }]} />
+              </View>
             </View>
           </View>
 
           <View style={styles.advRow}>
             <View style={styles.advCol}>
               <Text style={styles.advLabel}>Heart Rate</Text>
-              <View style={[styles.bar, { width: '55%' }]} />
+              <Svg height={30} width="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <Path fill="none" stroke="#007AFF" strokeWidth={2} d={hrSparklinePath} />
+              </Svg>
             </View>
             <View style={styles.advColRight}>
-              <Text style={styles.advLabelRight}>{weeklyStats.count} workouts</Text>
-              <View style={[styles.bar, { width: '52%' }]} />
+              <Text style={[styles.advLabelRight, styles.advLabelRightWhite]}>
+                {weeklyStats.avgHr ? `${weeklyStats.avgHr} bpm` : 'No HR data'}
+              </Text>
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: weeklyStats.avgHr ? `${Math.min((weeklyStats.avgHr / 200) * 100, 100)}%` : '0%' }]} />
+              </View>
             </View>
           </View>
+
+          <View style={styles.advRow}>
+            <View style={styles.advCol}>
+              <Text style={styles.advLabel}>Workout Frequency</Text>
+              <Svg height={30} width="100%" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <Path fill="none" stroke="#007AFF" strokeWidth={2} d={frequencyPath} />
+              </Svg>
+            </View>
+            <View style={styles.advColRight}>
+              <Text style={[styles.advLabelRight, styles.advLabelRightWhite]}>
+                {weeklyStats.count} this week
+              </Text>
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: `${Math.min(weeklyStats.count / 7, 1) * 100}%` }]} />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.recentSection}>
+          <Text style={styles.advancedTitle}>Recent Workouts</Text>
+          {workoutHistory.slice(0, 5).length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No workouts yet</Text>
+            </View>
+          ) : (
+            workoutHistory.slice(0, 5).map((workout, index) => {
+              const date = new Date(workout.startTime);
+              const dateStr = date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              });
+              const dur = formatDuration(workout.durationSeconds || 0);
+              return (
+                <View key={workout.id || index} style={styles.workoutRow}>
+                  <View style={styles.workoutDate}>
+                    <Text style={styles.workoutDateText}>{dateStr}</Text>
+                  </View>
+                  <View style={styles.workoutInfo}>
+                    <Text style={styles.workoutTitle} numberOfLines={1}>
+                      {workout.title || workout.type || 'Workout'}
+                    </Text>
+                  </View>
+                  <Text style={styles.workoutDuration}>
+                    {dur.hours > 0 ? `${dur.hours}h ` : ''}{dur.mins}m
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -254,10 +401,61 @@ const styles = StyleSheet.create({
   advLabelRightWhite: {
     color: '#FFF',
   },
-  bar: {
+  progressBarTrack: {
     height: 8,
     borderRadius: 4,
     width: '80%',
+    backgroundColor: '#2C2C2E',
+    alignSelf: 'flex-end',
+  },
+  progressBarFill: {
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#007AFF',
+  },
+  recentSection: {
+    paddingHorizontal: 24,
+    marginTop: 32,
+  },
+  workoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  workoutDate: {
+    width: 56,
+  },
+  workoutDateText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  workoutInfo: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  workoutTitle: {
+    fontSize: 15,
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  workoutDuration: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  emptyState: {
+    backgroundColor: '#111',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#8E8E93',
   },
 });

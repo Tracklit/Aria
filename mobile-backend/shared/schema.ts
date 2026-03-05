@@ -21,6 +21,7 @@ export const users = pgTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }),
   authProvider: varchar('auth_provider', { length: 50 }).default('email'), // email, apple, google
   appleId: varchar('apple_id', { length: 255 }).unique(),
+  googleId: varchar('google_id', { length: 255 }).unique(),
   refreshToken: varchar('refresh_token', { length: 512 }),
   refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

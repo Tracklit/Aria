@@ -54,8 +54,12 @@ npm install
 Copy `.env.example` to `.env` and configure:
 
 ```env
-EXPO_PUBLIC_API_URL=https://app-tracklit-prod-tnrusd.azurewebsites.net
-EXPO_PUBLIC_LOCAL_API_URL=http://localhost:3000
+EXPO_PUBLIC_MOBILE_BACKEND_BASE_URL=http://localhost:3000
+EXPO_PUBLIC_AI_API_BASE_URL=http://localhost:8000
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-client-id.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=your-android-client-id.apps.googleusercontent.com
+# Optional for web auth/session flows:
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com
 ```
 
 ### Run the App

@@ -5,6 +5,8 @@ export { DashboardProvider, useDashboard } from './DashboardContext';
 export { NutritionProvider, useNutrition } from './NutritionContext';
 export { ProgramsProvider, usePrograms } from './ProgramsContext';
 export { SessionProvider, useSession } from './SessionContext';
+export { ThemeProvider, useTheme } from './ThemeContext';
+export type { ThemeMode } from './ThemeContext';
 export { AppProviders } from './AppContext';
 
 // Re-export types

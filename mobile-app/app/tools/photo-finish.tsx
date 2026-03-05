@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
@@ -65,20 +66,62 @@ export default function PhotoFinishScreen() {
     };
   }, [player, isSeeking]);
 
-  const pickVideo = useCallback(async () => {
+  const applySelectedVideo = useCallback((uri: string) => {
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+    setSpeed(1);
+    setVideoUri(uri);
+  }, []);
+
+  const pickVideoFromFiles = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: 'video/*' });
-      if (!result.canceled && result.assets?.[0]) {
-        setCurrentTime(0);
-        setDuration(0);
-        setIsPlaying(false);
-        setSpeed(1);
-        setVideoUri(result.assets[0].uri);
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        applySelectedVideo(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Failed to pick video:', error);
     }
-  }, []);
+  }, [applySelectedVideo]);
+
+  const pickVideoFromGallery = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow access to your photo library to choose a video.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['videos'],
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        applySelectedVideo(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Failed to pick video from gallery:', error);
+    }
+  }, [applySelectedVideo]);
+
+  const pickVideo = useCallback(() => {
+    Alert.alert(
+      'Select Video Source',
+      'Choose where to pick your race video from.',
+      [
+        { text: 'Photo Gallery', onPress: () => { void pickVideoFromGallery(); } },
+        { text: 'Files', onPress: () => { void pickVideoFromFiles(); } },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  }, [pickVideoFromFiles, pickVideoFromGallery]);
 
   const togglePlayPause = useCallback(() => {
     if (!player) return;

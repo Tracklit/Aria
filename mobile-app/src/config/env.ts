@@ -58,10 +58,17 @@ const AI_API_BASE_URL = resolveApiBaseUrl(
   ALLOWED_AI_API_HOSTS,
 );
 
+const GOOGLE_IOS_CLIENT_ID = processEnv.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+const GOOGLE_ANDROID_CLIENT_ID = processEnv.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
+const GOOGLE_WEB_CLIENT_ID = processEnv.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+
 export const env = {
   // `API_BASE_URL` remains for backwards compatibility; it always points
   // to the mobile backend service, never directly to the AI app service.
   API_BASE_URL: MOBILE_BACKEND_BASE_URL.replace(/\/$/, ''),
   MOBILE_BACKEND_BASE_URL: MOBILE_BACKEND_BASE_URL.replace(/\/$/, ''),
   AI_API_BASE_URL: AI_API_BASE_URL.replace(/\/$/, ''),
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
 };

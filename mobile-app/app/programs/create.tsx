@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePrograms } from '../../src/context/ProgramsContext';
+import { useAuth } from '../../src/context';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 
@@ -13,6 +14,7 @@ const LEVELS = ['beginner', 'intermediate', 'advanced', 'elite'];
 export default function CreateProgramScreen() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const { createProgram, generateProgram } = usePrograms();
+  const { profile } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<string[]>(['sprint']);
@@ -32,6 +34,7 @@ export default function CreateProgramScreen() {
           level: level[0],
           durationWeeks: parseInt(duration) || 4,
           description: description || undefined,
+          preferredUnits: profile?.units === 'metric' ? 'metric' : 'imperial',
         });
       } else {
         await createProgram({

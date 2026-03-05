@@ -19,6 +19,7 @@ import { Audio } from 'expo-av';
 import { useLocalSearchParams } from 'expo-router';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
+import { transcribeVoiceAudio } from '../../src/lib/api';
 import { colors } from '../../src/theme';
 
 const SUGGESTIONS = [
@@ -47,6 +48,7 @@ export default function ChatScreen() {
   const [showDrawer, setShowDrawer] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -66,49 +68,138 @@ export default function ChatScreen() {
     pulseAnim.setValue(1);
   }, [pulseAnim]);
 
+  const resetAudioMode = useCallback(async () => {
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+    } catch {
+      // Best effort reset
+    }
+  }, []);
+
+  const formatVoiceError = useCallback((error: unknown, fallback: string) => {
+    const message = String((error as any)?.message || '').toLowerCase();
+    if (message.includes('permission')) {
+      return 'Microphone permission is required for voice input.';
+    }
+    if (message.includes('simulator')) {
+      return 'Microphone recording is not available in iOS Simulator. Please use a physical device.';
+    }
+    if (message.includes('no speech')) {
+      return 'No speech was detected. Please try again and speak clearly.';
+    }
+    if (message.includes('authentication')) {
+      return 'Speech service authentication failed. Please try again in a moment.';
+    }
+    return fallback;
+  }, []);
+
   const handleVoiceInput = useCallback(async () => {
+    if (!hasValidToken) {
+      Alert.alert('Sign In Required', 'Please sign in to use voice input.');
+      return;
+    }
+
+    if (isTranscribing) {
+      return;
+    }
+
     if (isRecording) {
-      // Stop recording
       try {
         setIsRecording(false);
         stopPulse();
-        if (recordingRef.current) {
-          await recordingRef.current.stopAndUnloadAsync();
-          await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-          // Recording captured — transcription requires a cloud STT service or dev build with @react-native-voice/voice
-          Alert.alert(
-            'Voice Recorded',
-            'Voice-to-text transcription requires a development build. Audio was captured but cannot be transcribed in Expo Go.',
-          );
-          recordingRef.current = null;
-        }
-      } catch (err) {
-        console.error('Failed to stop recording:', err);
-      }
-    } else {
-      // Start recording
-      try {
-        const { status } = await Audio.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Microphone access is needed for voice input.');
+
+        const recording = recordingRef.current;
+        recordingRef.current = null;
+        if (!recording) {
+          await resetAudioMode();
           return;
         }
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
+
+        await recording.stopAndUnloadAsync();
+        await resetAudioMode();
+
+        const recordingUri = recording.getURI();
+        if (!recordingUri) {
+          Alert.alert('Recording Failed', 'Could not access the recorded audio file.');
+          return;
+        }
+
+        setIsTranscribing(true);
+        const transcription = await transcribeVoiceAudio(recordingUri, 'en-US');
+        const transcriptText = transcription.text.trim();
+
+        if (!transcriptText) {
+          Alert.alert('No Speech Detected', 'Please try again and speak clearly.');
+          return;
+        }
+
+        setInputText((prev) => {
+          const existing = prev.trim();
+          return existing.length > 0 ? `${existing} ${transcriptText}` : transcriptText;
         });
-        const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        await recording.startAsync();
-        recordingRef.current = recording;
-        setIsRecording(true);
-        startPulse();
       } catch (err) {
-        console.error('Failed to start recording:', err);
-        Alert.alert('Error', 'Could not start voice recording.');
+        console.error('Voice transcription failed:', err);
+        Alert.alert('Transcription Error', formatVoiceError(err, 'Could not transcribe your recording.'));
+      } finally {
+        setIsTranscribing(false);
       }
+      return;
     }
-  }, [isRecording, startPulse, stopPulse]);
+
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Microphone access is needed for voice input.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+      recordingRef.current = recording;
+      setIsRecording(true);
+      startPulse();
+    } catch (err) {
+      console.error('Failed to start recording:', err);
+      await resetAudioMode();
+      Alert.alert('Microphone Error', formatVoiceError(err, 'Could not start microphone recording.'));
+    }
+  }, [
+    formatVoiceError,
+    hasValidToken,
+    isRecording,
+    isTranscribing,
+    resetAudioMode,
+    startPulse,
+    stopPulse,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      const cleanup = async () => {
+        try {
+          if (recordingRef.current) {
+            await recordingRef.current.stopAndUnloadAsync();
+          }
+        } catch {
+          // ignore cleanup errors
+        } finally {
+          recordingRef.current = null;
+          await resetAudioMode();
+        }
+      };
+
+      cleanup();
+    };
+  }, [resetAudioMode]);
 
   useEffect(() => {
     if (prefill && hasValidToken) {
@@ -127,7 +218,7 @@ export default function ChatScreen() {
     return () => clearTimeout(timeout);
   }, [messages, streamingMessage, isSending]);
 
-  const canSend = inputText.trim().length > 0 && !isSending && hasValidToken;
+  const canSend = inputText.trim().length > 0 && !isSending && !isTranscribing && !isRecording && hasValidToken;
 
   const renderedMessages = useMemo(() => {
     if (messages.length === 0 && !streamingMessage) return null;
@@ -285,17 +376,33 @@ export default function ChatScreen() {
           <TextInput
             testID="chat.input"
             style={styles.input}
-            placeholder="Type a message"
+            placeholder={isTranscribing ? 'Transcribing voice...' : 'Type a message'}
             placeholderTextColor={colors.text.secondary}
             value={inputText}
             onChangeText={setInputText}
-            editable={!isSending && hasValidToken}
+            editable={!isSending && !isTranscribing && hasValidToken}
             multiline
           />
-          <TouchableOpacity style={[styles.voiceBtn, isRecording && styles.voiceBtnRecording]} onPress={handleVoiceInput}>
-            <Animated.View style={{ transform: [{ scale: isRecording ? pulseAnim : 1 }] }}>
-              <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={20} color={isRecording ? colors.red : colors.text.primary} />
-            </Animated.View>
+          <TouchableOpacity
+            style={[
+              styles.voiceBtn,
+              isRecording && styles.voiceBtnRecording,
+              (isTranscribing || isSending || !hasValidToken) && styles.voiceBtnDisabled,
+            ]}
+            onPress={handleVoiceInput}
+            disabled={isTranscribing || isSending || !hasValidToken}
+          >
+            {isTranscribing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Animated.View style={{ transform: [{ scale: isRecording ? pulseAnim : 1 }] }}>
+                <Ionicons
+                  name={isRecording ? 'mic' : 'mic-outline'}
+                  size={20}
+                  color={isRecording ? colors.red : colors.text.primary}
+                />
+              </Animated.View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             testID="chat.send"
@@ -529,6 +636,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 59, 48, 0.2)',
     borderWidth: 1,
     borderColor: colors.red,
+  },
+  voiceBtnDisabled: {
+    opacity: 0.55,
   },
   sendBtn: {
     width: 40,

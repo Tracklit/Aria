@@ -280,6 +280,20 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aria/Pods-Aria-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* Auto Increment Build Number */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Auto Increment Build Number";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" = \"Release\" ]; then\n  cd \"$PROJECT_DIR\"\n  BUILD_NUM=$(agvtool what-version -terse 2>/dev/null || echo \"1\")\n  NEW_BUILD_NUM=$((BUILD_NUM + 1))\n  agvtool new-version -all \"$NEW_BUILD_NUM\" > /dev/null 2>&1\n  echo \"Build number: $BUILD_NUM -> $NEW_BUILD_NUM\"\nfi\n";
+		};
 		D7CA45889BB08EA023B75983 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -326,20 +340,6 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Aria/expo-configure-project.sh\"\n";
 		};
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* Auto Increment Build Number */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Auto Increment Build Number";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Release\" ]; then\n  cd \"$PROJECT_DIR\"\n  BUILD_NUM=$(agvtool what-version -terse 2>/dev/null || echo \"1\")\n  NEW_BUILD_NUM=$((BUILD_NUM + 1))\n  agvtool new-version -all \"$NEW_BUILD_NUM\" > /dev/null 2>&1\n  echo \"Build number: $BUILD_NUM -> $NEW_BUILD_NUM\"\nfi\n";
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -364,7 +364,7 @@
 				CODE_SIGN_ENTITLEMENTS = Aria/Aria.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 2V636U3DWT;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -404,7 +404,7 @@
 				CODE_SIGN_ENTITLEMENTS = Aria/Aria.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = 2V636U3DWT;
 				INFOPLIST_FILE = Aria/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Aria;

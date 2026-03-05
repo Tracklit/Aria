@@ -6,13 +6,16 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { SettingsRow } from '../../src/components/features';
 import { Avatar } from '../../src/components/ui';
-import { useAuth } from '../../src/context';
+import { useAuth, useTheme } from '../../src/context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../../src/theme';
 import { ToastManager } from '../../src/components/Toast';
 
+const THEME_LABELS: Record<string, string> = { dark: 'Dark', light: 'Light', system: 'System' };
+
 export default function MoreScreen() {
   const { profile, logout, uploadProfilePicture } = useAuth();
+  const { themeMode } = useTheme();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const handlePress = (item: string) => {
@@ -127,6 +130,20 @@ export default function MoreScreen() {
             </TouchableOpacity>
           </LinearGradient>
         )}
+
+        {/* Appearance Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>APPEARANCE</Text>
+          <View style={styles.group}>
+            <SettingsRow
+              title="Appearance"
+              icon="color-palette-outline"
+              subtitle={THEME_LABELS[themeMode] || 'System'}
+              onPress={() => router.push('/settings/appearance')}
+              testID="settings.appearance"
+            />
+          </View>
+        </View>
 
         {/* Account Section */}
         <View style={styles.section}>

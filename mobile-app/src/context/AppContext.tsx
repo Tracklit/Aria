@@ -7,6 +7,7 @@ import { DashboardProvider } from './DashboardContext';
 import { NutritionProvider } from './NutritionContext';
 import { ProgramsProvider } from './ProgramsContext';
 import { SessionProvider } from './SessionContext';
+import { ThemeProvider } from './ThemeContext';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 
 export const AppProviders: React.FC<{ children: ReactNode }> = ({ children }) => {
   return (
+    <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <WorkoutProvider>
@@ -38,5 +40,6 @@ export const AppProviders: React.FC<{ children: ReactNode }> = ({ children }) =>
         </WorkoutProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </ThemeProvider>
   );
 };
