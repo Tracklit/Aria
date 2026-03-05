@@ -223,6 +223,61 @@ const upload = multer({
   },
 });
 
+/**
+ * Parse AI JSON responses. The AI may return:
+ *   1. Raw JSON: { "title": "...", ... }
+ *   2. Code-fenced JSON: ```json\n{...}\n```
+ *   3. Envelope: { "analysis": "...", "recommendation": "{escaped JSON}" }
+ *   4. Any combination of the above with preamble text
+ */
+function parseAIJsonResponse(aiResponse: string, label: string): any {
+  console.log(`[parseAI:${label}] raw response length: ${aiResponse.length}, first 200: ${aiResponse.substring(0, 200)}`);
+
+  // Strategy 1: Try parsing the whole thing as JSON directly
+  try {
+    const direct = JSON.parse(aiResponse.trim());
+    console.log(`[parseAI:${label}] Strategy 1 (direct parse) succeeded, keys: ${Object.keys(direct)}`);
+    return unwrapEnvelope(direct);
+  } catch { /* not raw JSON */ }
+
+  // Strategy 2: Strip code fences
+  const fenceMatch = aiResponse.match(/```(?:json)?\s*\n?([\s\S]+?)\n?\s*```/);
+  if (fenceMatch) {
+    try {
+      const parsed = JSON.parse(fenceMatch[1].trim());
+      console.log(`[parseAI:${label}] Strategy 2 (code fence) succeeded, keys: ${Object.keys(parsed)}`);
+      return unwrapEnvelope(parsed);
+    } catch { /* fence content not valid JSON */ }
+  }
+
+  // Strategy 3: Find first { ... last } in the string
+  const firstBrace = aiResponse.indexOf('{');
+  const lastBrace = aiResponse.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      const parsed = JSON.parse(aiResponse.substring(firstBrace, lastBrace + 1));
+      console.log(`[parseAI:${label}] Strategy 3 (brace extraction) succeeded, keys: ${Object.keys(parsed)}`);
+      return unwrapEnvelope(parsed);
+    } catch { /* extracted content not valid JSON */ }
+  }
+
+  console.error(`[parseAI:${label}] All strategies failed. Raw (500 chars): ${aiResponse.substring(0, 500)}`);
+  return { description: aiResponse };
+}
+
+function unwrapEnvelope(parsed: any): any {
+  // If it has a recommendation string, try to parse it as nested JSON
+  if (parsed.recommendation && typeof parsed.recommendation === 'string') {
+    try {
+      const inner = JSON.parse(parsed.recommendation);
+      if (typeof inner === 'object' && inner !== null) {
+        return { ...parsed, ...inner };
+      }
+    } catch { /* not nested JSON */ }
+  }
+  return parsed;
+}
+
 const createNutritionPlanSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
@@ -1387,44 +1442,7 @@ export function registerRoutes(app: Express): void {
       const input = generateNutritionSchema.parse(req.body);
       const aiResponse = await generateNutritionPlan(req.userId!, input);
 
-      let parsedPlan;
-      try {
-        // Extract JSON from AI response — handle markdown fences, preamble text, etc.
-        let cleanJson = aiResponse;
-
-        // Try to extract JSON from markdown code fences first
-        const fenceMatch = cleanJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
-        if (fenceMatch) {
-          cleanJson = fenceMatch[1];
-        }
-
-        // If no fence match, try to find raw JSON object in the response
-        cleanJson = cleanJson.trim();
-        if (!cleanJson.startsWith('{')) {
-          const jsonStart = cleanJson.indexOf('{');
-          const jsonEnd = cleanJson.lastIndexOf('}');
-          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-            cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
-          }
-        }
-
-        parsedPlan = JSON.parse(cleanJson);
-
-        // The AI prompt asks for { analysis, recommendation: "<escaped JSON>" }
-        // Unwrap the nested recommendation string if present
-        if (parsedPlan.recommendation && typeof parsedPlan.recommendation === 'string') {
-          try {
-            const inner = JSON.parse(parsedPlan.recommendation);
-            parsedPlan = { ...parsedPlan, ...inner };
-          } catch {
-            // recommendation wasn't valid JSON — keep outer object as-is
-          }
-        }
-      } catch (parseError) {
-        console.error('Failed to parse AI nutrition response as JSON:', parseError);
-        console.error('Raw AI response:', aiResponse.substring(0, 500));
-        parsedPlan = { title: 'AI Generated Plan', description: aiResponse };
-      }
+      const parsedPlan = parseAIJsonResponse(aiResponse, 'nutrition');
 
       const plan = await storage.createNutritionPlan({
         userId: req.userId!,
@@ -1577,45 +1595,11 @@ export function registerRoutes(app: Express): void {
       const input = generateProgramSchema.parse(req.body);
       const aiResponse = await generateProgram(req.userId!, input);
 
-      let parsedProgram;
-      try {
-        let cleanJson = aiResponse;
-
-        const fenceMatch = cleanJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/i);
-        if (fenceMatch) {
-          cleanJson = fenceMatch[1];
-        }
-
-        cleanJson = cleanJson.trim();
-        if (!cleanJson.startsWith('{')) {
-          const jsonStart = cleanJson.indexOf('{');
-          const jsonEnd = cleanJson.lastIndexOf('}');
-          if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
-            cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
-          }
-        }
-
-        parsedProgram = JSON.parse(cleanJson);
-
-        // The AI prompt asks for { analysis, recommendation: "<escaped JSON>" }
-        // Unwrap the nested recommendation string if present
-        if (parsedProgram.recommendation && typeof parsedProgram.recommendation === 'string') {
-          try {
-            const inner = JSON.parse(parsedProgram.recommendation);
-            parsedProgram = { ...parsedProgram, ...inner };
-          } catch {
-            // recommendation wasn't valid JSON — keep outer object as-is
-          }
-        }
-      } catch (parseError) {
-        console.error('Failed to parse AI program response as JSON:', parseError);
-        console.error('Raw AI response:', aiResponse.substring(0, 500));
-        parsedProgram = { title: input.title || 'AI Generated Program', description: aiResponse };
-      }
+      const parsedProgram = parseAIJsonResponse(aiResponse, 'program');
 
       const program = await storage.createProgram({
         userId: req.userId!,
-        title: parsedProgram.title || 'AI Generated Program',
+        title: parsedProgram.title || input.title || 'AI Generated Program',
         description: parsedProgram.description || parsedProgram.analysis,
         category: parsedProgram.category || input.category,
         level: parsedProgram.level || input.level,
