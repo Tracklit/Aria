@@ -1409,6 +1409,17 @@ export function registerRoutes(app: Express): void {
         }
 
         parsedPlan = JSON.parse(cleanJson);
+
+        // The AI prompt asks for { analysis, recommendation: "<escaped JSON>" }
+        // Unwrap the nested recommendation string if present
+        if (parsedPlan.recommendation && typeof parsedPlan.recommendation === 'string') {
+          try {
+            const inner = JSON.parse(parsedPlan.recommendation);
+            parsedPlan = { ...parsedPlan, ...inner };
+          } catch {
+            // recommendation wasn't valid JSON — keep outer object as-is
+          }
+        }
       } catch (parseError) {
         console.error('Failed to parse AI nutrition response as JSON:', parseError);
         console.error('Raw AI response:', aiResponse.substring(0, 500));
@@ -1418,7 +1429,7 @@ export function registerRoutes(app: Express): void {
       const plan = await storage.createNutritionPlan({
         userId: req.userId!,
         title: parsedPlan.title || 'AI Generated Nutrition Plan',
-        description: parsedPlan.description,
+        description: parsedPlan.description || parsedPlan.analysis,
         activityLevel: input.activityLevel,
         season: input.season,
         calorieTarget: parsedPlan.calorieTarget,
@@ -1585,6 +1596,17 @@ export function registerRoutes(app: Express): void {
         }
 
         parsedProgram = JSON.parse(cleanJson);
+
+        // The AI prompt asks for { analysis, recommendation: "<escaped JSON>" }
+        // Unwrap the nested recommendation string if present
+        if (parsedProgram.recommendation && typeof parsedProgram.recommendation === 'string') {
+          try {
+            const inner = JSON.parse(parsedProgram.recommendation);
+            parsedProgram = { ...parsedProgram, ...inner };
+          } catch {
+            // recommendation wasn't valid JSON — keep outer object as-is
+          }
+        }
       } catch (parseError) {
         console.error('Failed to parse AI program response as JSON:', parseError);
         console.error('Raw AI response:', aiResponse.substring(0, 500));
@@ -1594,7 +1616,7 @@ export function registerRoutes(app: Express): void {
       const program = await storage.createProgram({
         userId: req.userId!,
         title: parsedProgram.title || 'AI Generated Program',
-        description: parsedProgram.description,
+        description: parsedProgram.description || parsedProgram.analysis,
         category: parsedProgram.category || input.category,
         level: parsedProgram.level || input.level,
         duration: parsedProgram.duration || input.durationWeeks,

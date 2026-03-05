@@ -30,6 +30,18 @@ function parseAIContent(content: string | null | undefined): ParsedSession[] {
   }
 }
 
+/** Return a clean description string, or null if it's just raw JSON / code fences */
+function cleanDescription(desc: string | null | undefined): string | null {
+  if (!desc) return null;
+  // Strip markdown code fences
+  let cleaned = desc.replace(/```(?:json)?\s*[\s\S]*?```/g, '').trim();
+  // If what's left looks like a JSON object/array, skip it
+  if (/^\s*[\[{]/.test(cleaned) && /[\]}]\s*$/.test(cleaned)) return null;
+  // If nothing meaningful left, return null
+  if (!cleaned || cleaned.length < 5) return null;
+  return cleaned;
+}
+
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { deleteProgram } = usePrograms();
@@ -155,7 +167,7 @@ export default function ProgramDetailScreen() {
             {program.category && <View style={styles.badge}><Text style={styles.badgeText}>{program.category}</Text></View>}
             {program.level && <View style={styles.badge}><Text style={styles.badgeText}>{program.level}</Text></View>}
           </View>
-          {program.description && <Text style={styles.description}>{program.description}</Text>}
+          {cleanDescription(program.description) && <Text style={styles.description}>{cleanDescription(program.description)}</Text>}
           <View style={styles.statsRow}>
             {program.duration && <Text style={styles.stat}>{program.duration} weeks</Text>}
             {program.totalSessions && <Text style={styles.stat}>{program.totalSessions} sessions</Text>}
