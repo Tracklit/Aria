@@ -178,7 +178,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [state.currentConversationId, loadConversations]);
 
-  const sendMessage = useCallback(async (text: string, useStreaming = true) => {
+  const sendMessage = useCallback(async (text: string, useStreaming = false) => {
     const token = await getToken();
     if (!token) {
       setState((prev) => ({
