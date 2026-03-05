@@ -646,6 +646,25 @@ export async function getProgramTemplateCSV() {
   return apiRequest('/api/programs/templates', { rawResponse: true });
 }
 
+// Sprint Workout Logging
+export async function logSprintWorkout(data: {
+  title: string;
+  startTime: string;
+  endTime: string;
+  durationSeconds: number;
+  notes?: string;
+  splits: Array<{
+    exerciseName: string;
+    repTimes: number[];
+    notes?: string;
+  }>;
+}) {
+  return apiRequest('/api/workouts', {
+    method: 'POST',
+    data: { ...data, type: 'sprint_log', providerSource: 'manual' },
+  });
+}
+
 // Health check
 export async function healthCheck() {
   return apiRequest('/api/health', { skipAuth: true });

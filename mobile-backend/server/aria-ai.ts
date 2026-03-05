@@ -127,13 +127,37 @@ export function formatUserContextForAI(context: UserContext): string {
   }
 
   if (context.recentWorkouts.length > 0) {
-    parts.push(`\nRECENT WORKOUTS (last 5):`);
-    context.recentWorkouts.forEach((workout) => {
-      const date = new Date(workout.startTime).toLocaleDateString();
-      const distance = workout.distanceMeters ? `${(workout.distanceMeters / 1609.34).toFixed(2)} mi` : 'N/A';
-      const duration = workout.durationSeconds ? `${Math.round(workout.durationSeconds / 60)} min` : 'N/A';
-      parts.push(`- ${date}: ${workout.type} - ${distance}, ${duration}, pace: ${workout.avgPace || 'N/A'}`);
-    });
+    const sprintLogs = context.recentWorkouts.filter((w: any) => w.type === 'sprint_log');
+    const otherWorkouts = context.recentWorkouts.filter((w: any) => w.type !== 'sprint_log');
+
+    if (sprintLogs.length > 0) {
+      parts.push(`\nRECENT SPRINT TRAINING LOGS:`);
+      sprintLogs.forEach((workout: any) => {
+        const date = new Date(workout.startTime).toLocaleDateString();
+        parts.push(`\n${date}: ${workout.title || 'Sprint Session'}`);
+        if (workout.notes) parts.push(`  Notes: ${workout.notes}`);
+        if (workout.splits?.length > 0) {
+          workout.splits.forEach((split: any) => {
+            if (split.exerciseName && split.repTimes?.length) {
+              const times = split.repTimes.map((t: number) => `${t.toFixed(2)}s`).join(', ');
+              const best = Math.min(...split.repTimes).toFixed(2);
+              const avg = (split.repTimes.reduce((a: number, b: number) => a + b, 0) / split.repTimes.length).toFixed(2);
+              parts.push(`  ${split.exerciseName}: ${times} (best: ${best}s, avg: ${avg}s)`);
+            }
+          });
+        }
+      });
+    }
+
+    if (otherWorkouts.length > 0) {
+      parts.push(`\nRECENT WORKOUTS (last ${otherWorkouts.length}):`);
+      otherWorkouts.forEach((workout: any) => {
+        const date = new Date(workout.startTime).toLocaleDateString();
+        const distance = workout.distanceMeters ? `${(workout.distanceMeters / 1609.34).toFixed(2)} mi` : 'N/A';
+        const duration = workout.durationSeconds ? `${Math.round(workout.durationSeconds / 60)} min` : 'N/A';
+        parts.push(`- ${date}: ${workout.type} - ${distance}, ${duration}, pace: ${workout.avgPace || 'N/A'}`);
+      });
+    }
   }
 
   parts.push(`\nWEEKLY STATS:

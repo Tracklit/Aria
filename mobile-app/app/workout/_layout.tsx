@@ -12,6 +12,7 @@ export default function WorkoutLayout() {
     >
       <Stack.Screen name="tracking" />
       <Stack.Screen name="live-session" />
+      <Stack.Screen name="log-workout" />
     </Stack>
   );
 }

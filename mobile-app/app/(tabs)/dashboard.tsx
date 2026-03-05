@@ -194,19 +194,19 @@ export default function DashboardScreen() {
           <Text style={styles.workoutTitle}>{workoutTitle}</Text>
           <Text style={styles.workoutSubtitle}>{workoutSubtitle}</Text>
           <TouchableOpacity
-            testID="dashboard.start_session"
+            testID="dashboard.log_workout"
             style={styles.workoutButton}
-            onPress={async () => {
-              try {
-                await startWorkoutSession(todaysWorkout?.id);
-              } catch (error) {
-                // Keep navigation responsive; workout screen can handle fallback states.
-              } finally {
-                router.push('/workout/tracking');
-              }
+            onPress={() => {
+              router.push({
+                pathname: '/workout/log-workout',
+                params: {
+                  plannedWorkoutId: todaysWorkout?.id?.toString() ?? '',
+                  workoutTitle: workoutTitle ?? 'Sprint Session',
+                },
+              });
             }}
           >
-            <Text style={styles.workoutButtonText}>Start Session</Text>
+            <Text style={styles.workoutButtonText}>Log Workout</Text>
           </TouchableOpacity>
         </LinearGradient>
         </Animated.View>
