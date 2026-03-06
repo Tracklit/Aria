@@ -1,35 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../src/theme';
 import { ThemeColors } from '../src/theme/colors';
-import { getCompletedSessions } from '../src/lib/api';
+import { getWorkouts } from '../src/lib/api';
 
-interface WorkoutSession {
+interface WorkoutEntry {
   id: number;
-  status: string;
-  currentPhase: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  totalPausedDuration: number | null;
-  liveMetrics: {
+  type: string;
+  title: string | null;
+  startTime: string;
+  endTime: string | null;
+  durationSeconds: number | null;
+  distanceMeters: number | null;
+  avgHeartRate: number | null;
+  calories: number | null;
+  notes: string | null;
+  splits: Array<{
+    exerciseName?: string;
+    repTimes?: number[];
     distance?: number;
     duration?: number;
-    currentPace?: string;
-    avgPace?: string;
-    currentHr?: number;
-    avgHr?: number;
-    calories?: number;
-    currentCadence?: number;
-  } | null;
-  checkpoints: Array<{
-    timestamp: string;
-    distance: number;
-    duration: number;
-    heartRate?: number;
     pace?: string;
+    notes?: string;
   }> | null;
 }
 
@@ -53,41 +49,40 @@ function formatTime(dateString: string | null): string {
   });
 }
 
-function formatDuration(startedAt: string | null, completedAt: string | null, pausedDuration: number | null): string {
-  if (!startedAt || !completedAt) return '--';
-  const start = new Date(startedAt).getTime();
-  const end = new Date(completedAt).getTime();
-  const totalSeconds = Math.round((end - start) / 1000) - (pausedDuration || 0);
-  if (totalSeconds < 0) return '--';
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m ${seconds}s`;
+function formatDuration(seconds: number | null): string {
+  if (!seconds || seconds <= 0) return '--';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m ${secs}s`;
 }
 
 export default function TrainingLogScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
-  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [workouts, setWorkouts] = useState<WorkoutEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchSessions() {
-      try {
-        const data = await getCompletedSessions();
-        setSessions(data || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load sessions');
-      } finally {
-        setLoading(false);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      async function fetchWorkouts() {
+        try {
+          setLoading(true);
+          const data = await getWorkouts();
+          if (!cancelled) setWorkouts(data || []);
+        } catch (err: any) {
+          if (!cancelled) setError(err.message || 'Failed to load workouts');
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
       }
-    }
-    fetchSessions();
-  }, []);
+      fetchWorkouts();
+      return () => { cancelled = true; };
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -109,29 +104,29 @@ export default function TrainingLogScreen() {
           <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
           <Text style={styles.emptyText}>{error}</Text>
         </View>
-      ) : sessions.length === 0 ? (
+      ) : workouts.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="journal-outline" size={48} color={colors.text.tertiary} />
-          <Text style={styles.emptyTitle}>No completed sessions yet</Text>
+          <Text style={styles.emptyTitle}>No workouts logged yet</Text>
           <Text style={styles.emptyText}>
-            Your completed training sessions will appear here.
+            Your logged workouts will appear here.
           </Text>
         </View>
       ) : (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {sessions.map((session) => (
-            <View key={session.id} style={styles.sessionCard}>
+          {workouts.map((workout) => (
+            <View key={workout.id} style={styles.sessionCard}>
               <View style={styles.sessionHeader}>
                 <View style={styles.sessionIcon}>
                   <Ionicons name="checkmark-circle" size={20} color={colors.green} />
                 </View>
                 <View style={styles.sessionInfo}>
                   <Text style={styles.sessionTitle}>
-                    {session.currentPhase || 'Training Session'}
+                    {workout.title || 'Training Session'}
                   </Text>
                   <Text style={styles.sessionDate}>
-                    {formatDate(session.completedAt || session.startedAt)}
-                    {session.startedAt ? ` at ${formatTime(session.startedAt)}` : ''}
+                    {formatDate(workout.startTime)}
+                    {` at ${formatTime(workout.startTime)}`}
                   </Text>
                 </View>
               </View>
@@ -140,34 +135,54 @@ export default function TrainingLogScreen() {
                 <View style={styles.metric}>
                   <Ionicons name="time-outline" size={14} color={colors.text.secondary} />
                   <Text style={styles.metricValue}>
-                    {formatDuration(session.startedAt, session.completedAt, session.totalPausedDuration)}
+                    {formatDuration(workout.durationSeconds)}
                   </Text>
                 </View>
-                {session.liveMetrics?.distance != null && session.liveMetrics.distance > 0 && (
+                {workout.distanceMeters != null && workout.distanceMeters > 0 && (
                   <View style={styles.metric}>
                     <Ionicons name="navigate-outline" size={14} color={colors.text.secondary} />
                     <Text style={styles.metricValue}>
-                      {(session.liveMetrics.distance / 1000).toFixed(2)} km
+                      {(workout.distanceMeters / 1000).toFixed(2)} km
                     </Text>
                   </View>
                 )}
-                {session.liveMetrics?.avgHr != null && session.liveMetrics.avgHr > 0 && (
+                {workout.avgHeartRate != null && workout.avgHeartRate > 0 && (
                   <View style={styles.metric}>
                     <Ionicons name="heart-outline" size={14} color={colors.text.secondary} />
                     <Text style={styles.metricValue}>
-                      {session.liveMetrics.avgHr} bpm
+                      {workout.avgHeartRate} bpm
                     </Text>
                   </View>
                 )}
-                {session.checkpoints && session.checkpoints.length > 0 && (
+                {workout.splits && workout.splits.length > 0 && (
                   <View style={styles.metric}>
-                    <Ionicons name="flag-outline" size={14} color={colors.text.secondary} />
+                    <Ionicons name="flash-outline" size={14} color={colors.text.secondary} />
                     <Text style={styles.metricValue}>
-                      {session.checkpoints.length} checkpoint{session.checkpoints.length !== 1 ? 's' : ''}
+                      {workout.splits.length} exercise{workout.splits.length !== 1 ? 's' : ''}
                     </Text>
                   </View>
                 )}
               </View>
+
+              {/* Show sprint splits if present */}
+              {workout.type === 'sprint_log' && workout.splits && workout.splits.length > 0 && (
+                <View style={styles.splitsContainer}>
+                  {workout.splits.map((split, i) => (
+                    <View key={i} style={styles.splitRow}>
+                      <Text style={styles.splitName}>{split.exerciseName || `Set ${i + 1}`}</Text>
+                      {split.repTimes && (
+                        <Text style={styles.splitTimes}>
+                          {split.repTimes.map(t => `${t}s`).join(', ')}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {workout.notes && (
+                <Text style={styles.workoutNotes} numberOfLines={2}>{workout.notes}</Text>
+              )}
             </View>
           ))}
         </ScrollView>
@@ -262,5 +277,32 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   metricValue: {
     ...typography.caption,
     color: colors.text.secondary,
+  },
+  splitsContainer: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.background.secondary,
+  },
+  splitRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  splitName: {
+    ...typography.caption,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  splitTimes: {
+    ...typography.caption,
+    color: colors.text.secondary,
+  },
+  workoutNotes: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
 });
