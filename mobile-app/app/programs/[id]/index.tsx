@@ -9,6 +9,7 @@ import { getProgram } from '../../../src/lib/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../../src/theme';
 import { ThemeColors } from '../../../src/theme/colors';
+import { getDayLabel, safeParseExercises } from '../../../src/utils/formatting';
 
 interface ParsedSession {
   dayNumber: number;
@@ -103,7 +104,7 @@ export default function ProgramDetailScreen() {
       return;
     }
 
-    const nonRestSessions = sessions.filter(s => !s.isRestDay && s.exercises && s.exercises.length > 0);
+    const nonRestSessions = sessions.filter(s => !s.isRestDay && safeParseExercises(s.exercises).length > 0);
     if (nonRestSessions.length === 0) {
       Alert.alert('No Sessions', 'No training sessions found in this program.');
       return;
@@ -111,7 +112,7 @@ export default function ProgramDetailScreen() {
 
     if (nonRestSessions.length === 1) {
       const s = nonRestSessions[0];
-      startSession(program.id, program.title, s.title || `Day ${s.dayNumber}`, s.exercises);
+      startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), safeParseExercises(s.exercises));
       return;
     }
 
@@ -120,8 +121,8 @@ export default function ProgramDetailScreen() {
       'Which session do you want to start?',
       [
         ...nonRestSessions.map(s => ({
-          text: s.title || `Day ${s.dayNumber}`,
-          onPress: () => startSession(program.id, program.title, s.title || `Day ${s.dayNumber}`, s.exercises),
+          text: s.title || getDayLabel(s.dayNumber),
+          onPress: () => startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), safeParseExercises(s.exercises)),
         })),
         { text: 'Cancel', style: 'cancel' as const },
       ]
@@ -199,7 +200,7 @@ export default function ProgramDetailScreen() {
                     <TouchableOpacity style={styles.sessionHeader} onPress={() => toggleDay(dayNum)}>
                       <View style={styles.sessionLeft}>
                         <View style={[styles.dayBadge, session.isRestDay ? styles.dayBadgeRest : styles.dayBadgeTraining]}>
-                          <Text style={[styles.dayBadgeText, session.isRestDay ? styles.dayBadgeTextRest : styles.dayBadgeTextTraining]}>Day {dayNum}</Text>
+                          <Text style={[styles.dayBadgeText, session.isRestDay ? styles.dayBadgeTextRest : styles.dayBadgeTextTraining]}>{getDayLabel(dayNum)}</Text>
                         </View>
                         <Text style={styles.sessionTitle}>{session.title || (session.isRestDay ? 'Rest Day' : 'Training')}</Text>
                       </View>
@@ -208,7 +209,7 @@ export default function ProgramDetailScreen() {
                     {expandedDays.has(dayNum) && (
                       <View style={styles.sessionBody}>
                         {session.description && <Text style={styles.sessionDesc}>{session.description}</Text>}
-                        {session.exercises && session.exercises.map((ex, i) => (
+                        {safeParseExercises(session.exercises).map((ex, i) => (
                           <View key={i} style={styles.exerciseRow}>
                             <Text style={styles.exerciseName}>{ex.name}</Text>
                             <Text style={styles.exerciseDetail}>

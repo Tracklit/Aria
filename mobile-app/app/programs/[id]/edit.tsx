@@ -13,6 +13,7 @@ import { getProgram } from '../../../src/lib/api';
 import { impactLight, selectionChanged, notificationSuccess } from '../../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../../src/theme';
 import { ThemeColors } from '../../../src/theme/colors';
+import { getDayLabel, safeParseExercises } from '../../../src/utils/formatting';
 
 interface ExerciseDraft {
   name: string;
@@ -106,7 +107,7 @@ export default function ProgramEditorScreen() {
         dayNumber: s.dayNumber,
         title: s.title || '',
         description: s.description || '',
-        exercises: s.exercises || [],
+        exercises: safeParseExercises(s.exercises),
         isRestDay: s.isRestDay || false,
       }));
       const maxDay = existingSessions.reduce((max: number, s: any) => Math.max(max, s.dayNumber), 0);
@@ -138,7 +139,7 @@ export default function ProgramEditorScreen() {
         .map(s => ({
           ...(s.id ? { id: s.id } : {}),
           dayNumber: s.dayNumber,
-          title: s.title || (s.isRestDay ? 'Rest Day' : `Day ${s.dayNumber}`),
+          title: s.title || (s.isRestDay ? 'Rest Day' : getDayLabel(s.dayNumber)),
           description: s.description,
           exercises: s.isRestDay ? [] : s.exercises.filter(ex => ex.name.trim()),
           isRestDay: s.isRestDay,
@@ -243,7 +244,7 @@ export default function ProgramEditorScreen() {
           <View style={styles.dayLeft}>
             <View style={[styles.dayBadge, session.isRestDay ? styles.dayBadgeRest : styles.dayBadgeTraining]}>
               <Text style={[styles.dayBadgeText, session.isRestDay ? styles.dayBadgeTextRest : styles.dayBadgeTextTraining]}>
-                Day {session.dayNumber}
+                {getDayLabel(session.dayNumber)}
               </Text>
             </View>
             <Text style={styles.summary}>{session.title || summary}</Text>
@@ -386,10 +387,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   weekPillText: { ...typography.caption, color: colors.text.secondary },
   weekPillTextActive: { color: '#fff', fontWeight: '600' },
   weekControls: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
-  weekControlBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: borderRadius.sm, backgroundColor: colors.background.cardSolid },
+  weekControlBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: borderRadius.sm, backgroundColor: colors.background.cardSolid, borderWidth: 1, borderColor: colors.text.tertiary + '20' },
   weekControlText: { ...typography.caption, color: colors.text.secondary },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: 100, gap: spacing.sm },
-  dayCard: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, overflow: 'hidden' },
+  dayCard: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.text.tertiary + '20' },
   dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.md },
   dayLeft: { flex: 1 },
   dayBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.sm, marginBottom: 2, alignSelf: 'flex-start' },
@@ -398,17 +399,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dayBadgeText: { ...typography.caption, fontWeight: '600' },
   dayBadgeTextTraining: { color: colors.teal },
   dayBadgeTextRest: { color: colors.text.secondary },
-  sessionTitleInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.sm },
+  sessionTitleInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.text.tertiary + '25' },
   dayBody: { padding: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.background.secondary },
   restDayRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   restDayLabel: { ...typography.body, color: colors.text.secondary },
-  exerciseCard: { backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.sm },
+  exerciseCard: { backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.text.tertiary + '15' },
   exerciseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   exerciseNameInput: { ...typography.body, color: colors.text.primary, flex: 1 },
   exerciseFields: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
   exerciseFieldWrap: { flex: 1 },
   exerciseFieldLabel: { ...typography.caption, color: colors.text.tertiary, fontSize: 10, marginBottom: 2 },
-  exerciseFieldInput: { ...typography.caption, color: colors.text.primary, backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, padding: spacing.xs, textAlign: 'center' },
+  exerciseFieldInput: { ...typography.caption, color: colors.text.primary, backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, padding: spacing.xs, textAlign: 'center', borderWidth: 1, borderColor: colors.text.tertiary + '25' },
   addExerciseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.sm, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.teal, borderStyle: 'dashed', gap: spacing.xs },
   addExerciseText: { ...typography.caption, color: colors.teal },
   summary: { ...typography.caption, color: colors.text.tertiary, marginTop: 2 },

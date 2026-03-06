@@ -19,8 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth, useDashboard, useWorkout, useSession } from '../../src/context';
+import { useAuth, useDashboard, useWorkout, useSession, useTheme } from '../../src/context';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
+import { getDayLabel, safeParseExercises } from '../../src/utils/formatting';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 
@@ -28,15 +29,26 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 48;
 const CARD_GAP = 16;
 
-const GRADIENT_PALETTE: [string, string, string][] = [
-  ['#0A1628', '#0D2137', '#0A1A2E'], // Deep blue
-  ['#1A0A28', '#2D0D37', '#1A0A2E'], // Purple
-  ['#0A2816', '#0D3721', '#0A2E1A'], // Green
-  ['#281A0A', '#37210D', '#2E1A0A'], // Amber
-  ['#280A0A', '#370D0D', '#2E0A0A'], // Red
+// Dark mode gradients — vivid and distinguishable
+const DARK_GRADIENT_PALETTE: [string, string, string][] = [
+  ['#1565C0', '#1976D2', '#0D47A1'], // Vibrant blue
+  ['#7B1FA2', '#9C27B0', '#6A1B9A'], // Vivid purple
+  ['#2E7D32', '#388E3C', '#1B5E20'], // Rich green
+  ['#E65100', '#F57C00', '#BF360C'], // Warm amber/orange
+  ['#C62828', '#D32F2F', '#B71C1C'], // Bold red
 ];
 
-const REST_GRADIENT: [string, string, string] = ['#1A1A1A', '#222222', '#1A1A1A'];
+// Light mode gradients — vibrant and saturated (white text must be readable)
+const LIGHT_GRADIENT_PALETTE: [string, string, string][] = [
+  ['#1976D2', '#2196F3', '#1565C0'], // Vibrant blue
+  ['#8E24AA', '#AB47BC', '#7B1FA2'], // Vivid purple
+  ['#2E7D32', '#43A047', '#1B5E20'], // Rich green
+  ['#EF6C00', '#FB8C00', '#E65100'], // Warm orange
+  ['#D32F2F', '#E53935', '#C62828'], // Bold red
+];
+
+const DARK_REST_GRADIENT: [string, string, string] = ['#2C2C2E', '#3A3A3C', '#2C2C2E'];
+const LIGHT_REST_GRADIENT: [string, string, string] = ['#546E7A', '#607D8B', '#455A64'];
 
 interface WorkoutCardItem {
   id: string;
@@ -61,6 +73,7 @@ function getDisplayName(profileName?: string | null, greeting?: string) {
 
 export default function DashboardScreen() {
   const reducedMotion = useReducedMotion();
+  const { effectiveTheme } = useTheme();
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const { profile } = useAuth();
@@ -123,6 +136,8 @@ export default function DashboardScreen() {
   const [activeCardIndex, setActiveCardIndex] = useState(0);
 
   const workoutCards: WorkoutCardItem[] = useMemo(() => {
+    const GRADIENT_PALETTE = effectiveTheme === 'dark' ? DARK_GRADIENT_PALETTE : LIGHT_GRADIENT_PALETTE;
+    const REST_GRADIENT = effectiveTheme === 'dark' ? DARK_REST_GRADIENT : LIGHT_REST_GRADIENT;
     const items: WorkoutCardItem[] = [];
     let gradientIdx = 0;
 
@@ -145,11 +160,11 @@ export default function DashboardScreen() {
         kind: 'program',
         badge: 'PROGRAM',
         title: s.title || s.programTitle || 'Program Session',
-        description: s.description || `Day ${s.dayNumber}`,
+        description: s.description || getDayLabel(s.dayNumber),
         gradient: GRADIENT_PALETTE[gradientIdx % GRADIENT_PALETTE.length],
         programId: s.programId,
         programTitle: s.programTitle,
-        sessionTitle: s.title || `Day ${s.dayNumber}`,
+        sessionTitle: s.title || getDayLabel(s.dayNumber),
         exercises: s.exercises,
       });
       gradientIdx++;
@@ -167,7 +182,7 @@ export default function DashboardScreen() {
     }
 
     return items;
-  }, [todaysWorkouts, todaysProgramSessions]);
+  }, [todaysWorkouts, todaysProgramSessions, effectiveTheme]);
 
   const onCarouselScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offset = e.nativeEvent.contentOffset.x;
@@ -307,7 +322,7 @@ export default function DashboardScreen() {
                           item.programId,
                           item.programTitle || 'Program',
                           item.sessionTitle || 'Session',
-                          Array.isArray(item.exercises) ? item.exercises : (typeof item.exercises === 'string' ? JSON.parse(item.exercises) : []),
+                          safeParseExercises(item.exercises),
                         );
                       } else {
                         router.push({
@@ -567,7 +582,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 8,
   },
   badgeText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
@@ -594,13 +609,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.4,
   },
   workoutTitle: {
-    color: colors.text.primary,
+    color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '600',
     marginBottom: 4,
   },
   workoutSubtitle: {
-    color: colors.text.secondary,
+    color: 'rgba(255,255,255,0.75)',
     fontSize: 16,
     marginBottom: 18,
   },
@@ -611,7 +626,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
   },
   workoutButtonText: {
-    color: '#0d47a1',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '700',
   },
