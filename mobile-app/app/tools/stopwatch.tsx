@@ -1,11 +1,18 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { impactLight, impactMedium, impactHeavy } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useToolSettings } from '../../src/hooks/useToolSettings';
+import { StopwatchSettings, DEFAULT_STOPWATCH } from '../../src/types/toolSettings';
+import { ToolSettingsModal } from '../../src/components/tools/ToolSettingsModal';
+import { SettingsToggleRow } from '../../src/components/tools/SettingsToggleRow';
+import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
 
 interface Lap {
   number: number;
@@ -23,16 +30,55 @@ export default function StopwatchScreen() {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
   const elapsedRef = useRef(0);
+  const lapSoundRef = useRef<Audio.Sound | null>(null);
 
-  const formatTime = (ms: number) => {
+  const { settings, update, reset: resetSettings } = useToolSettings<StopwatchSettings>(
+    'aria_stopwatch_settings',
+    DEFAULT_STOPWATCH,
+  );
+
+  useEffect(() => {
+    if (settings.keepScreenAwake) {
+      void activateKeepAwakeAsync('stopwatch');
+    } else {
+      void deactivateKeepAwake('stopwatch');
+    }
+    return () => { void deactivateKeepAwake('stopwatch'); };
+  }, [settings.keepScreenAwake]);
+
+  useEffect(() => {
+    return () => { void lapSoundRef.current?.unloadAsync(); };
+  }, []);
+
+  const playLapSound = useCallback(async () => {
+    try {
+      if (lapSoundRef.current) {
+        await lapSoundRef.current.replayAsync();
+      } else {
+        const { sound } = await Audio.Sound.createAsync(
+          require('../../assets/audio/bang.mp3'),
+          { volume: 0.3 },
+        );
+        lapSoundRef.current = sound;
+        await sound.playAsync();
+      }
+    } catch {}
+  }, []);
+
+  const formatTime = useCallback((ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
+    if (settings.timerPrecision === 'milliseconds') {
+      const millis = ms % 1000;
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${millis.toString().padStart(3, '0')}`;
+    }
     const centiseconds = Math.floor((ms % 1000) / 10);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
-  };
+  }, [settings.timerPrecision]);
 
   const start = useCallback(() => {
     startTimeRef.current = Date.now() - elapsedRef.current;
@@ -52,7 +98,7 @@ export default function StopwatchScreen() {
     impactMedium();
   }, []);
 
-  const reset = useCallback(() => {
+  const resetTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setTime(0);
     setIsRunning(false);
@@ -64,10 +110,10 @@ export default function StopwatchScreen() {
     const lastLapTime = laps.length > 0 ? laps[0].time : 0;
     const split = time - lastLapTime;
     setLaps(prev => [{ number: prev.length + 1, time, split }, ...prev]);
-    impactHeavy();
-  }, [time, laps]);
+    if (settings.hapticOnLap) impactHeavy();
+    if (settings.soundOnLap) playLapSound();
+  }, [time, laps, settings.hapticOnLap, settings.soundOnLap, playLapSound]);
 
-  // Find best and worst split indices (only when 2+ laps)
   const { bestSplit, worstSplit } = useMemo(() => {
     if (laps.length < 2) return { bestSplit: -1, worstSplit: -1 };
     let best = Infinity;
@@ -81,14 +127,19 @@ export default function StopwatchScreen() {
     return { bestSplit: bestIdx, worstSplit: worstIdx };
   }, [laps]);
 
+  const showSplit = settings.lapDisplayFormat === 'split' || settings.lapDisplayFormat === 'both';
+  const showCumulative = settings.lapDisplayFormat === 'cumulative' || settings.lapDisplayFormat === 'both';
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { reset(); router.back(); }}>
+        <TouchableOpacity onPress={() => { resetTimer(); router.back(); }}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Stopwatch</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => setShowSettings(true)}>
+          <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.timerSection}>
@@ -109,7 +160,7 @@ export default function StopwatchScreen() {
           </>
         ) : (
           <>
-            <TouchableOpacity style={[styles.button, styles.resetBtn]} onPress={reset}>
+            <TouchableOpacity style={[styles.button, styles.resetBtn]} onPress={resetTimer}>
               <Text style={styles.buttonText}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, styles.startBtn]} onPress={start}>
@@ -135,15 +186,64 @@ export default function StopwatchScreen() {
           return (
             <View style={[styles.lapRow, { backgroundColor: rowBg }]}>
               <Text style={styles.lapNumber}>Lap {item.number}</Text>
-              <Text style={[styles.lapSplit, isBest && styles.bestSplit, isWorst && styles.worstSplit]}>
-                {formatTime(item.split)}
-              </Text>
-              <Text style={styles.lapTime}>{formatTime(item.time)}</Text>
+              {showSplit && (
+                <Text style={[styles.lapSplit, isBest && styles.bestSplit, isWorst && styles.worstSplit]}>
+                  {formatTime(item.split)}
+                </Text>
+              )}
+              {showCumulative && (
+                <Text style={styles.lapTime}>{formatTime(item.time)}</Text>
+              )}
             </View>
           );
         }}
         contentContainerStyle={styles.lapList}
       />
+
+      <ToolSettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Stopwatch Settings"
+        onReset={resetSettings}
+      >
+        <SettingsChipRow
+          label="Lap Display"
+          options={[
+            { label: 'Split', value: 'split' as const },
+            { label: 'Cumulative', value: 'cumulative' as const },
+            { label: 'Both', value: 'both' as const },
+          ]}
+          selected={settings.lapDisplayFormat}
+          onSelect={(val) => update({ lapDisplayFormat: val })}
+        />
+        <SettingsChipRow
+          label="Timer Precision"
+          options={[
+            { label: 'Centiseconds', value: 'centiseconds' as const },
+            { label: 'Milliseconds', value: 'milliseconds' as const },
+          ]}
+          selected={settings.timerPrecision}
+          onSelect={(val) => update({ timerPrecision: val })}
+        />
+        <SettingsToggleRow
+          label="Haptic on Lap"
+          description="Vibrate when recording a lap"
+          value={settings.hapticOnLap}
+          onValueChange={(val) => update({ hapticOnLap: val })}
+        />
+        <SettingsToggleRow
+          label="Keep Screen Awake"
+          description="Prevent screen from sleeping"
+          value={settings.keepScreenAwake}
+          onValueChange={(val) => update({ keepScreenAwake: val })}
+        />
+        <SettingsToggleRow
+          label="Sound on Lap"
+          description="Play a short sound when recording a lap"
+          value={settings.soundOnLap}
+          onValueChange={(val) => update({ soundOnLap: val })}
+        />
+      </ToolSettingsModal>
     </SafeAreaView>
   );
 }

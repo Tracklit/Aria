@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -6,6 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useToolSettings } from '../../src/hooks/useToolSettings';
+import { SprintPredictorSettings, DEFAULT_SPRINT_PREDICTOR } from '../../src/types/toolSettings';
+import { ToolSettingsModal } from '../../src/components/tools/ToolSettingsModal';
+import { SettingsToggleRow } from '../../src/components/tools/SettingsToggleRow';
+import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
+
+const METERS_TO_YARDS = 1.09361;
 
 // Dick (1987) conversion factors relative to 100m
 const CONVERSION_FACTORS: Record<number, number> = {
@@ -16,12 +23,30 @@ const CONVERSION_FACTORS: Record<number, number> = {
 
 const DISTANCES = Object.keys(CONVERSION_FACTORS).map(Number);
 
+function formatDistanceLabel(meters: number, unit: 'meters' | 'yards'): string {
+  if (unit === 'yards') {
+    return `${Math.round(meters * METERS_TO_YARDS)}yd`;
+  }
+  return `${meters}m`;
+}
+
 export default function SprintPredictorScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { settings, loaded, update, reset } = useToolSettings<SprintPredictorSettings>(
+    'aria_sprintpredictor_settings',
+    DEFAULT_SPRINT_PREDICTOR,
+  );
   const [selectedDistance, setSelectedDistance] = useState(100);
   const [inputTime, setInputTime] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => {
+    if (loaded) {
+      setSelectedDistance(settings.defaultDistance);
+    }
+  }, [loaded]);
 
   const inputTimeNum = parseFloat(inputTime);
 
@@ -51,7 +76,9 @@ export default function SprintPredictorScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sprint Predictor</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => { impactLight(); setShowSettings(true); }}>
+          <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -59,7 +86,7 @@ export default function SprintPredictorScreen() {
 
         <View style={styles.inputSection}>
           <TouchableOpacity style={styles.distancePicker} onPress={() => { impactLight(); setShowPicker(true); }}>
-            <Text style={styles.distanceText}>{selectedDistance}m</Text>
+            <Text style={styles.distanceText}>{formatDistanceLabel(selectedDistance, settings.distanceUnit)}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </TouchableOpacity>
 
@@ -79,10 +106,12 @@ export default function SprintPredictorScreen() {
             {predictions.map((p) => (
               <View key={p.distance} style={[styles.resultCard, { borderLeftColor: getDistanceColor(p.distance) }]}>
                 <View>
-                  <Text style={styles.resultDistance}>{p.distance}m</Text>
-                  <Text style={styles.resultDelta}>
-                    {p.delta >= 0 ? '+' : ''}{p.delta.toFixed(2)}s
-                  </Text>
+                  <Text style={styles.resultDistance}>{formatDistanceLabel(p.distance, settings.distanceUnit)}</Text>
+                  {settings.showDelta && (
+                    <Text style={styles.resultDelta}>
+                      {p.delta >= 0 ? '+' : ''}{p.delta.toFixed(2)}s
+                    </Text>
+                  )}
                 </View>
                 <Text style={styles.resultTime}>{p.time}s</Text>
               </View>
@@ -113,13 +142,48 @@ export default function SprintPredictorScreen() {
                   style={[styles.modalOption, item === selectedDistance && styles.modalOptionSelected]}
                   onPress={() => { selectionChanged(); setSelectedDistance(item); setShowPicker(false); }}
                 >
-                  <Text style={[styles.modalOptionText, item === selectedDistance && styles.modalOptionTextSelected]}>{item}m</Text>
+                  <Text style={[styles.modalOptionText, item === selectedDistance && styles.modalOptionTextSelected]}>
+                    {formatDistanceLabel(item, settings.distanceUnit)}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
           </View>
         </View>
       </Modal>
+
+      <ToolSettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Sprint Predictor Settings"
+        onReset={reset}
+      >
+        <SettingsChipRow
+          label="Default Distance"
+          options={[
+            { label: '60m', value: 60 },
+            { label: '100m', value: 100 },
+            { label: '200m', value: 200 },
+          ]}
+          selected={settings.defaultDistance}
+          onSelect={(val) => update({ defaultDistance: val })}
+        />
+        <SettingsToggleRow
+          label="Show Delta"
+          description="Show time difference from input"
+          value={settings.showDelta}
+          onValueChange={(val) => update({ showDelta: val })}
+        />
+        <SettingsChipRow
+          label="Distance Unit"
+          options={[
+            { label: 'Meters', value: 'meters' as const },
+            { label: 'Yards', value: 'yards' as const },
+          ]}
+          selected={settings.distanceUnit}
+          onSelect={(val) => update({ distanceUnit: val })}
+        />
+      </ToolSettingsModal>
     </SafeAreaView>
   );
 }

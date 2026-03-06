@@ -11,13 +11,20 @@ import Slider from '@react-native-community/slider';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useToolSettings } from '../../src/hooks/useToolSettings';
+import { PhotoFinishSettings, DEFAULT_PHOTO_FINISH } from '../../src/types/toolSettings';
+import { ToolSettingsModal } from '../../src/components/tools/ToolSettingsModal';
+import { SettingsToggleRow } from '../../src/components/tools/SettingsToggleRow';
+import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
 
-const FRAME_STEP = 1 / 30; // ~33ms for 30fps
 const SPEED_OPTIONS = [0.25, 0.5, 1] as const;
 
-function formatTimestamp(seconds: number): string {
+function formatTimestamp(seconds: number, showMs: boolean): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
+  if (!showMs) {
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
   const ms = Math.floor((seconds % 1) * 1000);
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
 }
@@ -25,6 +32,11 @@ function formatTimestamp(seconds: number): string {
 export default function PhotoFinishScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { settings, loaded, update, reset } = useToolSettings<PhotoFinishSettings>(
+    'aria_photofinish_settings',
+    DEFAULT_PHOTO_FINISH,
+  );
+  const [showSettings, setShowSettings] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -32,6 +44,12 @@ export default function PhotoFinishScreen() {
   const [speed, setSpeed] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
+
+  useEffect(() => {
+    if (loaded) {
+      setSpeed(settings.defaultSpeed);
+    }
+  }, [loaded]);
 
   const player = useVideoPlayer(videoUri || '', (p) => {
     p.loop = false;
@@ -142,8 +160,8 @@ export default function PhotoFinishScreen() {
     if (!player) return;
     selectionChanged();
     player.pause();
-    player.seekBy(direction * FRAME_STEP);
-  }, [player]);
+    player.seekBy(direction * settings.frameStep);
+  }, [player, settings.frameStep]);
 
   const changeSpeed = useCallback((newSpeed: number) => {
     if (!player) return;
@@ -158,7 +176,10 @@ export default function PhotoFinishScreen() {
 
   const onSlidingStart = useCallback(() => {
     setIsSeeking(true);
-  }, []);
+    if (settings.autoPauseOnScrub && player) {
+      player.pause();
+    }
+  }, [settings.autoPauseOnScrub, player]);
 
   const onSlidingComplete = useCallback((value: number) => {
     if (!player) return;
@@ -180,7 +201,9 @@ export default function PhotoFinishScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Photo Finish</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => setShowSettings(true)}>
+          <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
@@ -198,9 +221,9 @@ export default function PhotoFinishScreen() {
 
             {/* Timestamp */}
             <View style={styles.timestampContainer}>
-              <Text style={styles.timestamp}>{formatTimestamp(currentTime)}</Text>
+              <Text style={styles.timestamp}>{formatTimestamp(currentTime, settings.showMilliseconds)}</Text>
               <Text style={styles.timestampSeparator}>/</Text>
-              <Text style={styles.timestampTotal}>{formatTimestamp(duration)}</Text>
+              <Text style={styles.timestampTotal}>{formatTimestamp(duration, settings.showMilliseconds)}</Text>
             </View>
 
             {/* Timeline Scrubber */}
@@ -313,6 +336,45 @@ export default function PhotoFinishScreen() {
           </View>
         )}
       </View>
+      <ToolSettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Photo Finish Settings"
+        onReset={reset}
+      >
+        <SettingsChipRow
+          label="Default Playback Speed"
+          options={[
+            { label: '0.25x', value: 0.25 },
+            { label: '0.5x', value: 0.5 },
+            { label: '1x', value: 1 },
+          ]}
+          selected={settings.defaultSpeed}
+          onSelect={(val) => update({ defaultSpeed: val as PhotoFinishSettings['defaultSpeed'] })}
+        />
+        <SettingsChipRow
+          label="Frame Step Precision"
+          options={[
+            { label: '1/30', value: 1 / 30 },
+            { label: '1/60', value: 1 / 60 },
+            { label: '1/120', value: 1 / 120 },
+          ]}
+          selected={settings.frameStep}
+          onSelect={(val) => update({ frameStep: val })}
+        />
+        <SettingsToggleRow
+          label="Auto-pause on Scrub"
+          description="Pause playback when you start scrubbing"
+          value={settings.autoPauseOnScrub}
+          onValueChange={(val) => update({ autoPauseOnScrub: val })}
+        />
+        <SettingsToggleRow
+          label="Show Milliseconds"
+          description="Display milliseconds in the timestamp"
+          value={settings.showMilliseconds}
+          onValueChange={(val) => update({ showMilliseconds: val })}
+        />
+      </ToolSettingsModal>
     </SafeAreaView>
   );
 }

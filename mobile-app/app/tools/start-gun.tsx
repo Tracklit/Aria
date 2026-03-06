@@ -1,18 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { impactLight, impactMedium, impactHeavy, selectionChanged, notificationWarning } from '../../src/utils/haptics';
+import { impactLight, impactMedium, impactHeavy, notificationWarning } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useToolSettings } from '../../src/hooks/useToolSettings';
+import { StartGunSettings, DEFAULT_START_GUN, GunSoundOption } from '../../src/types/toolSettings';
+import { ToolSettingsModal } from '../../src/components/tools/ToolSettingsModal';
+import { SettingsToggleRow } from '../../src/components/tools/SettingsToggleRow';
+import { SettingsSliderRow } from '../../src/components/tools/SettingsSliderRow';
+import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
 
 type Phase = 'idle' | 'marks' | 'set' | 'bang' | 'done';
+
+const VOICE_FILES = {
+  default: { marks: require('../../assets/audio/on-your-marks.mp3'), set: require('../../assets/audio/set.mp3') },
+  custom: { marks: require('../../assets/audio/custom-on-your-marks.mp3'), set: require('../../assets/audio/custom-set.mp3') },
+};
+
+const GUN_SOUND_FILES: Record<GunSoundOption, any> = {
+  'bang': require('../../assets/audio/bang.mp3'),
+  'gun-shot': require('../../assets/audio/gun-shot.mp3'),
+  'gun-shot-reverb': require('../../assets/audio/gun-shot-reverb.mp3'),
+  'gun-shot-new': require('../../assets/audio/gun-shot-new.mp3'),
+  'starting-pistol': require('../../assets/audio/starting-pistol.mp3'),
+  'custom-bang': require('../../assets/audio/custom-bang.mp3'),
+};
 
 export default function StartGunScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { settings, update, reset: resetSettings } = useToolSettings<StartGunSettings>('aria_startgun_settings', DEFAULT_START_GUN);
+  const [showSettings, setShowSettings] = useState(false);
 
   const PHASE_COLORS: Record<Phase, string> = {
     idle: colors.text.primary,
@@ -29,7 +51,6 @@ export default function StartGunScreen() {
   ];
 
   const [phase, setPhase] = useState<Phase>('idle');
-  const [randomize, setRandomize] = useState(true);
   const [flash, setFlash] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,7 +65,6 @@ export default function StartGunScreen() {
     };
   }, []);
 
-  // Pulsing ring animation for idle/done states
   useEffect(() => {
     if (phase === 'idle' || phase === 'done') {
       const loop = Animated.loop(
@@ -71,7 +91,7 @@ export default function StartGunScreen() {
 
   const playSound = async (file: any): Promise<void> => {
     if (soundRef.current) await soundRef.current.unloadAsync();
-    const { sound } = await Audio.Sound.createAsync(file);
+    const { sound } = await Audio.Sound.createAsync(file, { volume: settings.volume / 10 });
     soundRef.current = sound;
     await sound.playAsync();
   };
@@ -80,26 +100,31 @@ export default function StartGunScreen() {
     impactMedium();
     setPhase('marks');
     impactLight();
-    await playSound(require('../../assets/audio/on-your-marks.mp3'));
+    await playSound(VOICE_FILES[settings.voice].marks);
+
+    const marksToSetDelay = settings.marksToSetEnabled ? settings.marksToSetDelay * 1000 : 3000;
 
     timeoutRef.current = setTimeout(async () => {
       setPhase('set');
       impactMedium();
-      await playSound(require('../../assets/audio/set.mp3'));
+      await playSound(VOICE_FILES[settings.voice].set);
 
-      const delay = randomize ? 1000 + Math.random() * 2000 : 2000;
+      const baseDelay = settings.setToGunEnabled ? settings.setToGunDelay * 1000 : 2000;
+      const randomExtra = settings.randomRangeEnabled ? Math.random() * settings.randomRange * 1000 : 0;
+      const delay = baseDelay + randomExtra;
+
       timeoutRef.current = setTimeout(async () => {
         setPhase('bang');
         impactHeavy();
-        setFlash(true);
-        await playSound(require('../../assets/audio/bang.mp3'));
-        setTimeout(() => setFlash(false), 150);
+        if (settings.gunFlash) setFlash(true);
+        await playSound(GUN_SOUND_FILES[settings.gunSound]);
+        if (settings.gunFlash) setTimeout(() => setFlash(false), 150);
         setTimeout(() => setPhase('done'), 1000);
       }, delay);
-    }, 3000);
+    }, marksToSetDelay);
   };
 
-  const reset = () => {
+  const resetSequence = () => {
     notificationWarning();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (soundRef.current) soundRef.current.unloadAsync();
@@ -118,21 +143,21 @@ export default function StartGunScreen() {
   };
 
   const showStartButton = phase === 'idle' || phase === 'done';
-
   const phaseIndex = PHASE_STEPS.findIndex(s => s.key === phase);
 
   return (
     <SafeAreaView style={[styles.container, flash && styles.flashBg]} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { reset(); router.back(); }}>
+        <TouchableOpacity onPress={() => { resetSequence(); router.back(); }}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Start Gun</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={() => setShowSettings(true)}>
+          <Ionicons name="settings-outline" size={24} color={colors.text.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
-        {/* Step Indicator */}
         <View style={styles.stepContainer}>
           {PHASE_STEPS.map((step, i) => {
             const isActive = phaseIndex >= i;
@@ -151,11 +176,6 @@ export default function StartGunScreen() {
 
         <Text style={[styles.phaseText, { color: PHASE_COLORS[phase] }]}>{getPhaseText()}</Text>
 
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>Randomize set-to-gun delay</Text>
-          <Switch value={randomize} onValueChange={(val) => { selectionChanged(); setRandomize(val); }} trackColor={{ true: colors.primary }} disabled={phase !== 'idle'} />
-        </View>
-
         {showStartButton ? (
           <View style={styles.buttonWrapper}>
             <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }], opacity: pulseOpacity }]} />
@@ -165,12 +185,96 @@ export default function StartGunScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.resetButton} onPress={reset}>
+          <TouchableOpacity style={styles.resetButton} onPress={resetSequence}>
             <Ionicons name="stop" size={32} color={colors.text.primary} />
             <Text style={styles.resetText}>RESET</Text>
           </TouchableOpacity>
         )}
       </View>
+
+      <ToolSettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Start Gun Settings"
+        onReset={resetSettings}
+      >
+        <SettingsToggleRow
+          label="Enable"
+          description="Master toggle for start gun"
+          value={settings.enabled}
+          onValueChange={(v) => update({ enabled: v })}
+        />
+        <SettingsChipRow
+          label="Voice"
+          options={[
+            { label: 'Default', value: 'default' as const },
+            { label: 'Custom', value: 'custom' as const },
+          ]}
+          selected={settings.voice}
+          onSelect={(v) => update({ voice: v })}
+        />
+        <SettingsChipRow
+          label="Gun Sound"
+          options={[
+            { label: 'Bang', value: 'bang' as const },
+            { label: 'Gun Shot', value: 'gun-shot' as const },
+            { label: 'Reverb', value: 'gun-shot-reverb' as const },
+            { label: 'Pistol', value: 'starting-pistol' as const },
+            { label: 'HQ Shot', value: 'gun-shot-new' as const },
+            { label: 'Custom Bang', value: 'custom-bang' as const },
+          ]}
+          selected={settings.gunSound}
+          onSelect={(v) => update({ gunSound: v })}
+        />
+        <SettingsToggleRow
+          label="Gun Flash"
+          description="Flash the screen on fire"
+          value={settings.gunFlash}
+          onValueChange={(v) => update({ gunFlash: v })}
+        />
+        <SettingsSliderRow
+          label="Volume"
+          value={settings.volume}
+          min={0}
+          max={10}
+          step={0.5}
+          formatValue={(v) => v.toFixed(1)}
+          onValueChange={(v) => update({ volume: v })}
+        />
+        <SettingsSliderRow
+          label="Marks to Set Delay"
+          value={settings.marksToSetDelay}
+          min={1}
+          max={20}
+          step={0.5}
+          formatValue={(v) => `${v.toFixed(1)}s`}
+          onValueChange={(v) => update({ marksToSetDelay: v })}
+          enabled={settings.marksToSetEnabled}
+          onEnabledChange={(v) => update({ marksToSetEnabled: v })}
+        />
+        <SettingsSliderRow
+          label="Set to Gun Delay"
+          value={settings.setToGunDelay}
+          min={0.5}
+          max={10}
+          step={0.5}
+          formatValue={(v) => `${v.toFixed(1)}s`}
+          onValueChange={(v) => update({ setToGunDelay: v })}
+          enabled={settings.setToGunEnabled}
+          onEnabledChange={(v) => update({ setToGunEnabled: v })}
+        />
+        <SettingsSliderRow
+          label="Random Range"
+          value={settings.randomRange}
+          min={0}
+          max={5}
+          step={0.1}
+          formatValue={(v) => `${v.toFixed(1)}s`}
+          onValueChange={(v) => update({ randomRange: v })}
+          enabled={settings.randomRangeEnabled}
+          onEnabledChange={(v) => update({ randomRangeEnabled: v })}
+        />
+      </ToolSettingsModal>
     </SafeAreaView>
   );
 }
@@ -182,15 +286,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerTitle: { ...typography.h2, color: colors.text.primary },
   content: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   phaseText: { fontSize: 42, fontWeight: '700', marginBottom: spacing.xl * 2, textAlign: 'center' },
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, marginBottom: spacing.xl },
-  settingLabel: { ...typography.body, color: colors.text.primary },
   buttonWrapper: { alignItems: 'center', justifyContent: 'center' },
   pulseRing: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 2, borderColor: colors.green },
   startButton: { backgroundColor: colors.green, width: 140, height: 140, borderRadius: 70, alignItems: 'center', justifyContent: 'center' },
   startText: { ...typography.body, color: colors.text.primary, fontWeight: '700', marginTop: spacing.xs },
   resetButton: { backgroundColor: colors.red, width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center' },
   resetText: { ...typography.body, color: colors.text.primary, fontWeight: '700', marginTop: spacing.xs },
-  // Step indicator
   stepContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl * 2, gap: 0 },
   step: { alignItems: 'center', flexDirection: 'row' },
   dot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
