@@ -16,13 +16,11 @@ export default function WelcomeScreen() {
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/AriaIconAppDark.png')}
-              style={styles.logoImage}
+              source={require('../../assets/full_logo_dark.png')}
+              style={styles.fullLogo}
+              resizeMode="contain"
             />
           </View>
-
-          <Text style={styles.title}>Aria</Text>
-          <Text style={styles.tagline}>Your AI Running Coach</Text>
 
           <View style={styles.featuresContainer}>
             <View style={styles.featureItem}>
@@ -106,21 +104,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   logoContainer: {
     marginBottom: spacing.lg,
   },
-  logoImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 28,
-  },
-  title: {
-    ...typography.h1,
-    fontSize: 42,
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
-  },
-  tagline: {
-    ...typography.h3,
-    color: colors.primary,
-    marginBottom: spacing.xl * 2,
+  fullLogo: {
+    width: 280,
+    height: 140,
   },
   featuresContainer: {
     width: '100%',
