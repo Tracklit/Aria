@@ -25,7 +25,7 @@ import {
   NutritionPlanInput,
   ProgramGenerationInput,
 } from './aria-ai';
-import { uploadFileToBlob, deleteBlob } from './azure-storage';
+import { uploadFileToBlob, deleteBlob, generateBlobSasUrl } from './azure-storage';
 import { parseDocument } from './document-parser';
 import multer from 'multer';
 
@@ -441,6 +441,10 @@ export function registerRoutes(app: Express): void {
         storage.getUserProfile(req.userId!),
         storage.getUserPreferences(req.userId!),
       ]);
+      // Generate SAS URL for profile photo if stored as a blob URL
+      if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
+        profile.photoUrl = await generateBlobSasUrl(profile.photoUrl);
+      }
       res.json({
         user: req.user,
         profile,
@@ -506,7 +510,8 @@ export function registerRoutes(app: Express): void {
 
       await storage.updateUserProfile(req.userId!, { photoUrl: blobUrl });
 
-      res.json({ profileImageUrl: blobUrl, photoUrl: blobUrl, success: true });
+      const sasUrl = await generateBlobSasUrl(blobUrl);
+      res.json({ profileImageUrl: sasUrl, photoUrl: sasUrl, success: true });
     } catch (error: any) {
       console.error('Photo upload error:', error);
       res.status(500).json({ error: 'Failed to upload profile image' });
