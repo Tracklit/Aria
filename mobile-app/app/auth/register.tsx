@@ -23,6 +23,7 @@ import { useAuth } from '../../src/context';
 import { env } from '../../src/config/env';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { impactLight, notificationSuccess, notificationError } from '../../src/utils/haptics';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -89,6 +90,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!validateForm()) return;
+    impactLight();
 
     try {
       await register({
@@ -97,8 +99,9 @@ export default function RegisterScreen() {
         username: username.trim(),
         password,
       });
+      notificationSuccess();
     } catch (err: any) {
-      // Error is handled in context
+      notificationError();
     }
   };
 

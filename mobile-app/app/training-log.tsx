@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../src/theme';
+import { ThemeColors } from '../src/theme/colors';
 import { getCompletedSessions } from '../src/lib/api';
 
 interface WorkoutSession {
@@ -68,6 +69,8 @@ function formatDuration(startedAt: string | null, completedAt: string | null, pa
 }
 
 export default function TrainingLogScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +176,7 @@ export default function TrainingLogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

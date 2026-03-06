@@ -20,6 +20,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
 import { transcribeVoiceAudio } from '../../src/lib/api';
+import { impactLight, impactMedium, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 
@@ -111,6 +112,7 @@ export default function ChatScreen() {
 
     if (isRecording) {
       try {
+        impactMedium();
         setIsRecording(false);
         stopPulse();
 
@@ -168,6 +170,7 @@ export default function ChatScreen() {
       await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
       recordingRef.current = recording;
+      impactMedium();
       setIsRecording(true);
       startPulse();
     } catch (err) {
@@ -229,10 +232,10 @@ export default function ChatScreen() {
     return (
       <>
         {messages.map((message) => (
-          <MessageBubble key={message.id} text={message.text} sender={message.sender} />
+          <MessageBubble key={message.id} text={message.text} sender={message.sender} animate={message.animate} />
         ))}
         {isStreaming && streamingMessage ? (
-          <MessageBubble text={`${streamingMessage}▊`} sender="ai" />
+          <MessageBubble text={`${streamingMessage}▊`} sender="ai" streaming />
         ) : null}
       </>
     );
@@ -257,6 +260,7 @@ export default function ChatScreen() {
             testID="chat.new_conversation"
             style={styles.headerIconBtn}
             onPress={() => {
+              impactLight();
               startNewConversation();
               setShowDrawer(false);
             }}
@@ -351,7 +355,7 @@ export default function ChatScreen() {
                     key={suggestion}
                     testID={`chat.suggestion.${suggestion.replace(/[^a-zA-Z0-9]+/g, '_')}`}
                     style={styles.suggestionChip}
-                    onPress={() => setInputText(suggestion)}
+                    onPress={() => { selectionChanged(); setInputText(suggestion); }}
                   >
                     <Text style={styles.suggestionText}>{suggestion}</Text>
                   </TouchableOpacity>
@@ -414,6 +418,7 @@ export default function ChatScreen() {
             onPress={async () => {
               const value = inputText.trim();
               if (!value) return;
+              impactLight();
               setInputText('');
               await sendMessage(value, true);
             }}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 import { DayWorkout } from '../../types';
 
 interface TrainingTableProps {
@@ -8,6 +9,8 @@ interface TrainingTableProps {
 }
 
 export const TrainingTable: React.FC<TrainingTableProps> = ({ workouts }) => {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.container}>
       {workouts.map((workout, index) => (
@@ -26,7 +29,7 @@ export const TrainingTable: React.FC<TrainingTableProps> = ({ workouts }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.lg,

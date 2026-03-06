@@ -4,47 +4,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactLight, impactMedium, impactHeavy, selectionChanged, notificationWarning } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 type Phase = 'idle' | 'marks' | 'set' | 'bang' | 'done';
 
-const PHASE_COLORS: Record<Phase, string> = {
-  idle: colors.text.primary,
-  marks: colors.yellow,
-  set: colors.orange,
-  bang: colors.green,
-  done: colors.text.primary,
-};
-
-const PHASE_STEPS: { key: Phase; label: string }[] = [
-  { key: 'marks', label: 'Marks' },
-  { key: 'set', label: 'Set' },
-  { key: 'bang', label: 'GO' },
-];
-
-function StepIndicator({ phase }: { phase: Phase }) {
-  const phaseIndex = PHASE_STEPS.findIndex(s => s.key === phase);
-
-  return (
-    <View style={stepStyles.container}>
-      {PHASE_STEPS.map((step, i) => {
-        const isActive = phaseIndex >= i;
-        const dotColor = isActive ? PHASE_COLORS[step.key] : colors.background.cardSolid;
-        return (
-          <View key={step.key} style={stepStyles.step}>
-            <View style={[stepStyles.dot, { backgroundColor: dotColor, borderColor: isActive ? dotColor : colors.text.tertiary }]} />
-            <Text style={[stepStyles.label, isActive && { color: PHASE_COLORS[step.key] }]}>{step.label}</Text>
-            {i < PHASE_STEPS.length - 1 && (
-              <View style={[stepStyles.line, isActive && phaseIndex > i && { backgroundColor: PHASE_COLORS[PHASE_STEPS[i + 1].key] }]} />
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 export default function StartGunScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
+
+  const PHASE_COLORS: Record<Phase, string> = {
+    idle: colors.text.primary,
+    marks: colors.yellow,
+    set: colors.orange,
+    bang: colors.green,
+    done: colors.text.primary,
+  };
+
+  const PHASE_STEPS: { key: Phase; label: string }[] = [
+    { key: 'marks', label: 'Marks' },
+    { key: 'set', label: 'Set' },
+    { key: 'bang', label: 'GO' },
+  ];
+
   const [phase, setPhase] = useState<Phase>('idle');
   const [randomize, setRandomize] = useState(true);
   const [flash, setFlash] = useState(false);
@@ -94,16 +77,20 @@ export default function StartGunScreen() {
   };
 
   const startSequence = async () => {
+    impactMedium();
     setPhase('marks');
+    impactLight();
     await playSound(require('../../assets/audio/on-your-marks.mp3'));
 
     timeoutRef.current = setTimeout(async () => {
       setPhase('set');
+      impactMedium();
       await playSound(require('../../assets/audio/set.mp3'));
 
       const delay = randomize ? 1000 + Math.random() * 2000 : 2000;
       timeoutRef.current = setTimeout(async () => {
         setPhase('bang');
+        impactHeavy();
         setFlash(true);
         await playSound(require('../../assets/audio/bang.mp3'));
         setTimeout(() => setFlash(false), 150);
@@ -113,6 +100,7 @@ export default function StartGunScreen() {
   };
 
   const reset = () => {
+    notificationWarning();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (soundRef.current) soundRef.current.unloadAsync();
     setPhase('idle');
@@ -131,6 +119,8 @@ export default function StartGunScreen() {
 
   const showStartButton = phase === 'idle' || phase === 'done';
 
+  const phaseIndex = PHASE_STEPS.findIndex(s => s.key === phase);
+
   return (
     <SafeAreaView style={[styles.container, flash && styles.flashBg]} edges={['top']}>
       <View style={styles.header}>
@@ -142,13 +132,28 @@ export default function StartGunScreen() {
       </View>
 
       <View style={styles.content}>
-        <StepIndicator phase={phase} />
+        {/* Step Indicator */}
+        <View style={styles.stepContainer}>
+          {PHASE_STEPS.map((step, i) => {
+            const isActive = phaseIndex >= i;
+            const dotColor = isActive ? PHASE_COLORS[step.key] : colors.background.cardSolid;
+            return (
+              <View key={step.key} style={styles.step}>
+                <View style={[styles.dot, { backgroundColor: dotColor, borderColor: isActive ? dotColor : colors.text.tertiary }]} />
+                <Text style={[styles.stepLabel, isActive && { color: PHASE_COLORS[step.key] }]}>{step.label}</Text>
+                {i < PHASE_STEPS.length - 1 && (
+                  <View style={[styles.line, isActive && phaseIndex > i && { backgroundColor: PHASE_COLORS[PHASE_STEPS[i + 1].key] }]} />
+                )}
+              </View>
+            );
+          })}
+        </View>
 
         <Text style={[styles.phaseText, { color: PHASE_COLORS[phase] }]}>{getPhaseText()}</Text>
 
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>Randomize set-to-gun delay</Text>
-          <Switch value={randomize} onValueChange={setRandomize} trackColor={{ true: colors.primary }} disabled={phase !== 'idle'} />
+          <Switch value={randomize} onValueChange={(val) => { selectionChanged(); setRandomize(val); }} trackColor={{ true: colors.primary }} disabled={phase !== 'idle'} />
         </View>
 
         {showStartButton ? (
@@ -170,15 +175,7 @@ export default function StartGunScreen() {
   );
 }
 
-const stepStyles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl * 2, gap: 0 },
-  step: { alignItems: 'center', flexDirection: 'row' },
-  dot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  label: { ...typography.caption, color: colors.text.tertiary, position: 'absolute', top: 34, width: 50, textAlign: 'center' },
-  line: { width: 40, height: 2, backgroundColor: colors.background.cardSolid, marginHorizontal: spacing.sm },
-});
-
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   flashBg: { backgroundColor: '#FFFFFF' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
@@ -193,4 +190,10 @@ const styles = StyleSheet.create({
   startText: { ...typography.body, color: colors.text.primary, fontWeight: '700', marginTop: spacing.xs },
   resetButton: { backgroundColor: colors.red, width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center' },
   resetText: { ...typography.body, color: colors.text.primary, fontWeight: '700', marginTop: spacing.xs },
+  // Step indicator
+  stepContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xl * 2, gap: 0 },
+  step: { alignItems: 'center', flexDirection: 'row' },
+  dot: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  stepLabel: { ...typography.caption, color: colors.text.tertiary, position: 'absolute', top: 34, width: 50, textAlign: 'center' },
+  line: { width: 40, height: 2, backgroundColor: colors.background.cardSolid, marginHorizontal: spacing.sm },
 });

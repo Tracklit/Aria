@@ -7,13 +7,17 @@ import {
   Input as GSInput,
   InputField,
 } from '@gluestack-ui/themed';
-import { colors, typography, borderRadius, spacing } from '../../theme';
+import { useColors, useThemedStyles, typography, borderRadius, spacing } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface InputProps extends TextInputProps {
   label?: string;
 }
 
 export const Input: React.FC<InputProps> = ({ label, style, ...props }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <FormControl style={styles.container}>
       {label ? (
@@ -33,7 +37,7 @@ export const Input: React.FC<InputProps> = ({ label, style, ...props }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     marginBottom: spacing.md,
   },

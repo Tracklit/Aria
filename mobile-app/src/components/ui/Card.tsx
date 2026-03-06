@@ -3,7 +3,8 @@ import { StyleSheet, ViewStyle } from 'react-native';
 import { Box } from '@gluestack-ui/themed';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, borderRadius, shadows } from '../../theme';
+import { useColors, borderRadius, shadows } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CardProps {
   children: React.ReactNode;
@@ -20,6 +21,9 @@ export const Card: React.FC<CardProps> = ({
   gradient = false,
   gradientColors,
 }) => {
+  const colors = useColors();
+  const { effectiveTheme } = useTheme();
+
   if (gradient) {
     const gradColors = gradientColors || colors.gradient.primary;
     return (
@@ -37,7 +41,7 @@ export const Card: React.FC<CardProps> = ({
   if (blur) {
     return (
       <Box style={[styles.card, styles.shadow, style]}>
-        <BlurView intensity={20} tint="dark" style={styles.blurContainer}>
+        <BlurView intensity={20} tint={effectiveTheme === 'dark' ? 'dark' : 'light'} style={styles.blurContainer}>
           {children}
         </BlurView>
       </Box>
@@ -45,7 +49,7 @@ export const Card: React.FC<CardProps> = ({
   }
 
   return (
-    <Box style={[styles.card, styles.solidCard, styles.shadow, style]}>
+    <Box style={[styles.card, { backgroundColor: colors.background.card }, styles.shadow, style]}>
       {children}
     </Box>
   );
@@ -59,10 +63,6 @@ const styles = StyleSheet.create({
   blurContainer: {
     padding: 20,
     borderRadius: borderRadius.lg,
-  },
-  solidCard: {
-    backgroundColor: colors.background.card,
-    padding: 20,
   },
   gradientCard: {
     padding: 20,

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface WorkoutMetricProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -14,11 +15,15 @@ export const WorkoutMetric: React.FC<WorkoutMetricProps> = ({
   icon,
   value,
   unit,
-  color = colors.text.primary,
+  color,
 }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+  const iconColor = color || colors.text.primary;
+
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={20} color={color} style={styles.icon} />
+      <Ionicons name={icon} size={20} color={iconColor} style={styles.icon} />
       <View style={styles.textContainer}>
         <Text style={styles.value}>{value}</Text>
         <Text style={styles.unit}>{unit}</Text>
@@ -27,7 +32,7 @@ export const WorkoutMetric: React.FC<WorkoutMetricProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
   },

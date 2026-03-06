@@ -12,13 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth, useWorkout } from '../../src/context';
-import { colors } from '../../src/theme';
+import { useThemedStyles, useColors } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const formatDay = (date: string) =>
   new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
 
 export default function PlanScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { profile } = useAuth();
   const { activePlan, plannedWorkouts, isLoading, loadTrainingPlans } = useWorkout();
 
@@ -118,10 +121,10 @@ export default function PlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   loader: {
     flex: 1,
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 32,
     fontWeight: '700',
   },
@@ -150,27 +153,27 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderColor: '#00E5FF',
+    borderColor: colors.primary,
     borderWidth: 2,
   },
   avatarFallback: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    borderColor: '#00E5FF',
+    borderColor: colors.primary,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#111',
+    backgroundColor: colors.background.secondary,
   },
   avatarInitial: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontWeight: '700',
     fontSize: 24,
   },
   planFor: {
     marginTop: 12,
-    color: '#00E5FF',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '600',
     letterSpacing: 1,
@@ -181,13 +184,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   goalTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 32,
     fontWeight: '600',
     marginBottom: 8,
   },
   goalDate: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 18,
     fontWeight: '500',
   },
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   scheduleTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 22,
     fontWeight: '600',
     marginBottom: 14,
@@ -204,15 +207,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     padding: 16,
-    backgroundColor: '#0c0c0e',
+    backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#1c1c1e',
+    borderBottomColor: colors.background.cardSolid,
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
   },
   dayText: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '500',
     minWidth: 90,
@@ -226,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   workoutDetails: {
-    color: '#AAAAAA',
+    color: colors.text.secondary,
     fontSize: 14,
     marginTop: 4,
     textAlign: 'right',
@@ -234,17 +237,17 @@ const styles = StyleSheet.create({
   emptyCard: {
     marginTop: 28,
     padding: 20,
-    backgroundColor: '#111',
+    backgroundColor: colors.background.secondary,
     borderRadius: 16,
   },
   emptyTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 8,
   },
   emptyText: {
-    color: '#AAA',
+    color: colors.text.secondary,
     fontSize: 16,
     lineHeight: 22,
     marginBottom: 16,

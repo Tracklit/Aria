@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useWorkout } from '../../src/context';
-import { colors, spacing } from '../../src/theme';
+import { useThemedStyles, useColors, spacing } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -15,6 +16,8 @@ function formatDuration(totalSeconds: number) {
 }
 
 export default function ProgressScreen() {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { workoutHistory, loadWorkoutHistory } = useWorkout();
 
   useEffect(() => {
@@ -287,7 +290,7 @@ export default function ProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

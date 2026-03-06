@@ -14,9 +14,14 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Button, Input } from '../../src/components/ui';
 import { useWorkout } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 export default function CreatePlanScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
+  const { effectiveTheme } = useTheme();
   const router = useRouter();
   const { createLocalPlan } = useWorkout();
 
@@ -113,7 +118,7 @@ export default function CreatePlanScreen() {
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleDateChange}
               minimumDate={new Date()}
-              themeVariant="dark"
+              themeVariant={effectiveTheme === 'dark' ? 'dark' : 'light'}
             />
           )}
 
@@ -140,7 +145,7 @@ export default function CreatePlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

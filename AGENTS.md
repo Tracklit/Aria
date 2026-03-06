@@ -87,3 +87,11 @@
 - **Prevention guardrail**: Speech auth now supports managed identity deployments where shared keys/local auth are disabled; chat mic flow now has explicit state guards for recording/transcribing and clearer recoverable errors.
 - **Test coverage added**: Type/syntax validation (`mobile-app` TypeScript no-emit check, Python `py_compile` for updated voice modules). Manual API check confirmed prior production failure mode was Speech auth 401.
 - **Deployment/runtime caveat**: Requires deploying updated `aria-api` and `mobile-app`. Azure managed identity must have Cognitive Services access to the Speech resource (role assigned during debugging: `Cognitive Services User` on `aria-speech-dev` for `ca-aria-api-prod` identity).
+
+## 12. AI Chat Streaming 404 (2026-03-06)
+- **Symptom**: Mobile app chat streaming failed — aria-api `/ask/stream` returned 404, causing mobile-backend to forward an HTML error page as SSE, triggering `[EventSource] Unable to identify the line ending character` warnings in the app.
+- **Root cause**: After adding the `/ask/stream` endpoint in commit `8188e38`, neither aria-api nor mobile-backend were redeployed to production.
+- **Exact fix**: Built and pushed both Docker images (`aria-api`, `aria-mobile-app`) to ACR, then deployed to Azure Container Apps with `--revision-suffix` to force new revisions.
+- **Prevention guardrail**: When redeploying with the same `latest` image tag, Azure Container Apps does NOT create a new revision automatically. Must add `--revision-suffix "name-$(date +%s)"` to `az containerapp update` to force pulling the updated image.
+- **Test coverage added**: Verified `/ask/stream` returns non-404 (422 validation error with test data), and full E2E streaming chat works with real auth token.
+- **Deployment/runtime caveat**: Always use `--revision-suffix` when redeploying `latest` tags. Consider using unique tags (e.g., git SHA) instead of `latest` to avoid this class of issue.

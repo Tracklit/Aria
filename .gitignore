@@ -113,3 +113,4 @@ Dockerfile.mobile
 *.orig
 .backup/
 cleanup_commands.ps1
+.claude/

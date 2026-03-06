@@ -17,6 +17,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   sender: 'ai' | 'user';
+  animate?: boolean;
 }
 
 export interface Conversation {
@@ -152,6 +153,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       text: response.response,
       timestamp: new Date(),
       sender: 'ai',
+      animate: true,
     };
 
     setState((prev) => {
@@ -241,6 +243,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               text: finalText,
               timestamp: new Date(),
               sender: 'ai',
+              animate: true,
             };
 
             setState((prev) => {

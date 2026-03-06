@@ -10,28 +10,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../src/theme';
+import { useThemedStyles, useColors } from '../src/theme';
+import { ThemeColors } from '../src/theme/colors';
 
 const SUGGESTIONS = ['What if it rains?', 'Pre-race dinner ideas?', 'Warmup drills?'];
 
-function TipCard({
-  title,
-  message,
-  color,
-}: {
-  title: string;
-  message: string;
-  color: string;
-}) {
-  return (
-    <View style={[styles.tipCard, { borderLeftColor: color, backgroundColor: `${color}1A` }]}>
-      <Text style={styles.tipTitle}>{title}</Text>
-      <Text style={styles.tipMessage}>{message}</Text>
-    </View>
-  );
-}
-
 export default function RaceDayScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const router = useRouter();
   const [message, setMessage] = useState('');
 
@@ -39,7 +25,7 @@ export default function RaceDayScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity testID="raceDay.back" onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text testID="raceDay.title" style={styles.headerTitle}>Insights</Text>
         <View style={{ width: 24 }} />
@@ -54,21 +40,16 @@ export default function RaceDayScreen() {
           </Text>
         </View>
 
-        <TipCard
-          title="Pacing Strategy"
-          message="Start conservative at 8:15/mi for the first 3 miles. Settle into 7:55/mi for miles 4-10. Empty the tank the last 5K."
-          color="#00E676"
-        />
-        <TipCard
-          title="Nutrition"
-          message="Take a gel every 45 minutes. Hydrate at every other aid station. Don&apos;t try anything new on race morning."
-          color="#007AFF"
-        />
-        <TipCard
-          title="Race Morning Routine"
-          message="Wake up 3 hours before the gun. Eat your standard pre-long run breakfast. Arrive 45 minutes early for dynamic warmups."
-          color="#FF3B30"
-        />
+        {[
+          { title: 'Pacing Strategy', message: "Start conservative at 8:15/mi for the first 3 miles. Settle into 7:55/mi for miles 4-10. Empty the tank the last 5K.", color: colors.green },
+          { title: 'Nutrition', message: "Take a gel every 45 minutes. Hydrate at every other aid station. Don't try anything new on race morning.", color: colors.primary },
+          { title: 'Race Morning Routine', message: "Wake up 3 hours before the gun. Eat your standard pre-long run breakfast. Arrive 45 minutes early for dynamic warmups.", color: colors.red },
+        ].map((tip) => (
+          <View key={tip.title} style={[styles.tipCard, { borderLeftColor: tip.color, backgroundColor: `${tip.color}1A` }]}>
+            <Text style={styles.tipTitle}>{tip.title}</Text>
+            <Text style={styles.tipMessage}>{tip.message}</Text>
+          </View>
+        ))}
       </ScrollView>
 
       <View style={styles.chatDock}>
@@ -90,7 +71,7 @@ export default function RaceDayScreen() {
             testID="raceDay.input"
             style={styles.input}
             placeholder="Type a message"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.text.tertiary}
             value={message}
             onChangeText={setMessage}
           />
@@ -109,10 +90,10 @@ export default function RaceDayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background.primary,
   },
   header: {
     paddingHorizontal: 24,
@@ -126,7 +107,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    color: '#FFF',
+    color: colors.text.primary,
     fontWeight: '600',
   },
   scroll: {
@@ -145,13 +126,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heroTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 32,
     fontWeight: '700',
     marginBottom: 8,
   },
   heroText: {
-    color: 'rgba(255,255,255,0.8)',
+    color: colors.text.secondary,
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 23,
@@ -164,24 +145,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tipTitle: {
-    color: '#FFF',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
   },
   tipMessage: {
-    color: 'rgba(255,255,255,0.82)',
+    color: colors.text.secondary,
     fontSize: 15,
     lineHeight: 22,
   },
   chatDock: {
     borderTopWidth: 1,
-    borderTopColor: '#222',
-    backgroundColor: '#0f0f11',
+    borderTopColor: colors.background.secondary,
+    backgroundColor: colors.background.cardSolid,
     padding: 16,
   },
   chatDockTitle: {
-    color: '#8E8E93',
+    color: colors.text.tertiary,
     fontWeight: '600',
     marginBottom: 10,
     fontSize: 14,
@@ -195,13 +176,13 @@ const styles = StyleSheet.create({
   suggestionChip: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#333',
-    backgroundColor: '#17171A',
+    borderColor: colors.background.secondary,
+    backgroundColor: colors.background.cardSolid,
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
   suggestionText: {
-    color: '#C7C7CC',
+    color: colors.text.secondary,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -214,8 +195,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#1c1c1e',
-    color: '#FFF',
+    backgroundColor: colors.background.cardSolid,
+    color: colors.text.primary,
     paddingHorizontal: 14,
   },
   sendButton: {

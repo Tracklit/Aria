@@ -8,7 +8,8 @@ import { ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MacroDonutChart } from '../../src/components/features/MacroDonutChart';
 import { MacroBar } from '../../src/components/features/MacroBar';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 import { getNutritionPlan } from '../../src/lib/api';
 
 function getMealIcon(mealName: string): keyof typeof Ionicons.glyphMap {
@@ -21,6 +22,8 @@ function getMealIcon(mealName: string): keyof typeof Ionicons.glyphMap {
 }
 
 export default function NutritionPlanDetail() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { plans, deletePlan, updatePlan, generatePlan } = useNutrition();
   const [plan, setPlan] = useState<NutritionPlan | null>(null);
@@ -357,7 +360,7 @@ export default function NutritionPlanDetail() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', flex: 1, textAlign: 'center', marginHorizontal: spacing.md },

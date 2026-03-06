@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface ScheduleItemProps {
   day: string;
@@ -9,6 +10,8 @@ interface ScheduleItemProps {
 }
 
 export const ScheduleItem: React.FC<ScheduleItemProps> = ({ day, type, details }) => {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={styles.container}>
       <Text style={styles.day}>{day}</Text>
@@ -20,7 +23,7 @@ export const ScheduleItem: React.FC<ScheduleItemProps> = ({ day, type, details }
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',

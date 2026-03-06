@@ -6,12 +6,13 @@ import appleSigninAuth from 'apple-signin-auth';
 import { OAuth2Client } from 'google-auth-library';
 import { storage } from './storage';
 import { User, InsertUser } from '../shared/schema';
+import { seedDefaultContent } from './seed-defaults';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aria-dev-secret-change-in-production';
 const ACCESS_TOKEN_EXPIRY = '20m';
 const REFRESH_TOKEN_EXPIRY_DAYS = 30;
 const SALT_ROUNDS = 12;
-const DEFAULT_APPLE_AUDIENCE = 'com.aria.coaching';
+const DEFAULT_APPLE_AUDIENCE = 'com.aria.mobile';
 
 const googleOAuthClient = new OAuth2Client();
 
@@ -280,6 +281,13 @@ export async function register(input: RegisterInput): Promise<AuthResult> {
     userId: user.id,
   });
 
+  // Seed default programs and nutrition plans
+  try {
+    await seedDefaultContent(user.id);
+  } catch (err) {
+    console.error('Failed to seed default content for user', user.id, err);
+  }
+
   const accessToken = generateAccessToken(user);
 
   return {
@@ -421,6 +429,13 @@ export async function appleSignIn(input: AppleSignInInput): Promise<AuthResult> 
       await storage.createUserPreferences({
         userId: user.id,
       });
+
+      // Seed default programs and nutrition plans
+      try {
+        await seedDefaultContent(user.id);
+      } catch (err) {
+        console.error('Failed to seed default content for user', user.id, err);
+      }
     }
   }
 
@@ -528,6 +543,13 @@ export async function googleSignIn(input: GoogleSignInInput): Promise<AuthResult
       await storage.createUserPreferences({
         userId: user.id,
       });
+
+      // Seed default programs and nutrition plans
+      try {
+        await seedDefaultContent(user.id);
+      } catch (err) {
+        console.error('Failed to seed default content for user', user.id, err);
+      }
     }
   }
 

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 import { DashboardCard as DashboardCardType } from '../../context/DashboardContext';
 
 interface DashboardCardProps {
@@ -11,6 +12,9 @@ interface DashboardCardProps {
 }
 
 export const DashboardCard: React.FC<DashboardCardProps> = ({ card, onCTAPress, style }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   const getIconForType = () => {
     switch (card.type) {
       case 'workout_card':
@@ -53,13 +57,13 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ card, onCTAPress, 
           {typeof card.content === 'string' ? (
             <Text style={styles.contentText}>{card.content}</Text>
           ) : (
-            renderContent(card.content, card.type)
+            <RenderContent content={card.content} type={card.type} colors={colors} styles={styles} />
           )}
         </View>
       )}
 
       {card.cta && (
-        <TouchableOpacity style={styles.ctaButton} onPress={handleCTAPress} activeOpacity={0.7}>
+        <TouchableOpacity style={[styles.ctaButton, { backgroundColor: colors.teal + '20' }]} onPress={handleCTAPress} activeOpacity={0.7}>
           <Text style={styles.ctaButtonText}>{card.cta.label}</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.teal} />
         </TouchableOpacity>
@@ -68,8 +72,8 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ card, onCTAPress, 
   );
 };
 
-// Helper function to render different content types
-const renderContent = (content: any, type: string) => {
+// Helper component to render different content types
+const RenderContent: React.FC<{ content: any; type: string; colors: any; styles: any }> = ({ content, type, colors, styles }) => {
   if (type === 'stats_row' && content.stats) {
     return (
       <View style={styles.statsGrid}>
@@ -127,7 +131,7 @@ const renderContent = (content: any, type: string) => {
   return <Text style={styles.contentText}>{JSON.stringify(content)}</Text>;
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.xl,
@@ -250,7 +254,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.teal + '20',
   },
   ctaButtonText: {
     ...typography.body,

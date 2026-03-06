@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../theme';
+import { ThemeColors } from '../theme/colors';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -29,6 +30,8 @@ export const Toast: React.FC<ToastProps> = ({
   onHide,
   visible,
 }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -132,7 +135,7 @@ export const Toast: React.FC<ToastProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: 0,

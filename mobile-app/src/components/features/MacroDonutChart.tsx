@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, typography } from '../../theme';
+import { useColors, useThemedStyles, typography } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface MacroDonutChartProps {
   protein: number;
@@ -20,6 +21,9 @@ export const MacroDonutChart: React.FC<MacroDonutChartProps> = ({
   size = 120,
   strokeWidth = 12,
 }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   const total = protein + carbs + fats;
   if (total === 0) return null;
 
@@ -100,7 +104,7 @@ export const MacroDonutChart: React.FC<MacroDonutChartProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',

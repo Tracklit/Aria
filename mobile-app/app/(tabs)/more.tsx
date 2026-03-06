@@ -8,12 +8,16 @@ import { SettingsRow } from '../../src/components/features';
 import { Avatar } from '../../src/components/ui';
 import { useAuth, useTheme } from '../../src/context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { notificationWarning } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 import { ToastManager } from '../../src/components/Toast';
 
 const THEME_LABELS: Record<string, string> = { dark: 'Dark', light: 'Light', system: 'System' };
 
 export default function MoreScreen() {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { profile, logout, uploadProfilePicture } = useAuth();
   const { themeMode } = useTheme();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -72,6 +76,7 @@ export default function MoreScreen() {
   };
 
   const handleLogout = () => {
+    notificationWarning();
     Alert.alert(
       'Log Out',
       'Are you sure you want to log out?',
@@ -101,7 +106,7 @@ export default function MoreScreen() {
         {/* Profile Header */}
         {profile && (
           <LinearGradient
-            colors={['#1C1C1E', '#004D40', '#1C1C1E']}
+            colors={[colors.background.cardSolid, '#004D40', colors.background.cardSolid]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileCard}
@@ -211,7 +216,7 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

@@ -8,7 +8,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactLight, selectionChanged } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const FRAME_STEP = 1 / 30; // ~33ms for 30fps
 const SPEED_OPTIONS = [0.25, 0.5, 1] as const;
@@ -21,6 +23,8 @@ function formatTimestamp(seconds: number): string {
 }
 
 export default function PhotoFinishScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -112,6 +116,7 @@ export default function PhotoFinishScreen() {
   }, [applySelectedVideo]);
 
   const pickVideo = useCallback(() => {
+    impactLight();
     Alert.alert(
       'Select Video Source',
       'Choose where to pick your race video from.',
@@ -125,6 +130,7 @@ export default function PhotoFinishScreen() {
 
   const togglePlayPause = useCallback(() => {
     if (!player) return;
+    impactLight();
     if (player.playing) {
       player.pause();
     } else {
@@ -134,12 +140,14 @@ export default function PhotoFinishScreen() {
 
   const stepFrame = useCallback((direction: -1 | 1) => {
     if (!player) return;
+    selectionChanged();
     player.pause();
     player.seekBy(direction * FRAME_STEP);
   }, [player]);
 
   const changeSpeed = useCallback((newSpeed: number) => {
     if (!player) return;
+    selectionChanged();
     setSpeed(newSpeed);
     player.playbackRate = newSpeed;
   }, [player]);
@@ -309,7 +317,7 @@ export default function PhotoFinishScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },

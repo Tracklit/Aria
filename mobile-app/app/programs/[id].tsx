@@ -7,7 +7,8 @@ import { usePrograms, Program } from '../../src/context/ProgramsContext';
 import { useSession } from '../../src/context/SessionContext';
 import { getProgram } from '../../src/lib/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 interface ParsedSession {
   dayNumber: number;
@@ -43,6 +44,8 @@ function cleanDescription(desc: string | null | undefined): string | null {
 }
 
 export default function ProgramDetailScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { deleteProgram } = usePrograms();
   const { startSession } = useSession();
@@ -226,7 +229,7 @@ export default function ProgramDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', flex: 1, textAlign: 'center', marginHorizontal: spacing.md },

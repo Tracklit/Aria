@@ -7,7 +7,9 @@ import {
   Pressable,
   Text,
 } from '@gluestack-ui/themed';
-import { colors, typography, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
+import { impactLight } from '../../utils/haptics';
 
 interface ButtonProps {
   title: string;
@@ -26,10 +28,20 @@ export const Button: React.FC<ButtonProps> = ({
   disabled = false,
   style,
 }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
+  const handlePress = () => {
+    if (!disabled && !loading) {
+      impactLight();
+    }
+    onPress();
+  };
+
   if (variant === 'primary') {
     return (
       <GSButton
-        onPress={onPress}
+        onPress={handlePress}
         disabled={disabled || loading}
         style={[styles.primaryButton, style]}
         bg={colors.primary}
@@ -43,7 +55,7 @@ export const Button: React.FC<ButtonProps> = ({
   if (variant === 'text') {
     return (
       <Pressable
-        onPress={onPress}
+        onPress={handlePress}
         disabled={disabled || loading}
         style={[styles.textButton, style]}
       >
@@ -54,7 +66,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <GSButton
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       style={[styles.secondaryButton, disabled && styles.disabled, style]}
       bg="transparent"
@@ -67,7 +79,7 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   primaryButton: {
     height: 56,
     justifyContent: 'center',

@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
-import { colors } from '../../src/theme';
+import { useThemedStyles, useColors } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 type Sport = 'sprinting' | 'running' | 'track' | 'cycling' | 'swimming' | 'triathlon';
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced' | 'elite';
@@ -35,6 +36,8 @@ const LEVEL_OPTIONS: { label: string; value: ExperienceLevel }[] = [
 const GOALS = ['Speed', 'Endurance', 'Weight Loss', 'First Race', 'PR', 'Recovery', 'General Fitness'];
 
 export default function OnboardingStep1() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { profile, user, updateProfile, completeOnboarding } = useAuth();
 
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
@@ -185,7 +188,7 @@ export default function OnboardingStep1() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

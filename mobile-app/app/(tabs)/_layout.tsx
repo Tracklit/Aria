@@ -2,11 +2,18 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet } from 'react-native';
-import { colors } from '../../src/theme';
+import { useColors } from '../../src/theme';
+import { useTheme } from '../../src/context/ThemeContext';
+import { selectionChanged } from '../../src/utils/haptics';
 
 export default function TabsLayout() {
+  const colors = useColors();
+  const { effectiveTheme } = useTheme();
   return (
     <Tabs
+      screenListeners={{
+        tabPress: () => { selectionChanged(); },
+      }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.tab.active,
@@ -21,7 +28,7 @@ export default function TabsLayout() {
         },
         tabBarBackground: () =>
           Platform.OS === 'ios' ? (
-            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={80} tint={effectiveTheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           ) : null,
       }}
     >

@@ -14,9 +14,15 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../src/context';
-import { colors } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
+import { impactLight, notificationSuccess } from '../src/utils/haptics';
+import { useThemedStyles, useColors, spacing, borderRadius } from '../src/theme';
+import { ThemeColors } from '../src/theme/colors';
 
 export default function ProfileScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
+  const { effectiveTheme } = useTheme();
   const { profile, updateProfile } = useAuth();
   const [name, setName] = useState(profile?.displayName || '');
   const [gender, setGender] = useState(profile?.gender || '');
@@ -54,6 +60,7 @@ export default function ProfileScreen() {
         gender: gender || null,
         dateOfBirth: dateOfBirth ? dateOfBirth.toISOString() : null,
       });
+      notificationSuccess();
       Alert.alert('Saved', 'Profile updated.');
       router.back();
     } catch (error: any) {
@@ -112,7 +119,7 @@ export default function ProfileScreen() {
             <Text style={styles.label}>Date of Birth</Text>
             <TouchableOpacity
               testID="profile.dob"
-              onPress={() => setShowDatePicker(true)}
+              onPress={() => { impactLight(); setShowDatePicker(true); }}
               style={styles.dobButton}
             >
               <Text style={[styles.dobText, !dateOfBirth && styles.dobPlaceholder]}>
@@ -147,7 +154,7 @@ export default function ProfileScreen() {
                   onChange={handleDateChange}
                   maximumDate={new Date()}
                   minimumDate={new Date(1930, 0, 1)}
-                  themeVariant="dark"
+                  themeVariant={effectiveTheme === 'dark' ? 'dark' : 'light'}
                 />
               </View>
             </View>
@@ -178,7 +185,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

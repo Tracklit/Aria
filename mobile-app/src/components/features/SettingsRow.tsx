@@ -1,7 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
+import { impactLight } from '../../utils/haptics';
 
 interface SettingsRowProps {
   title: string;
@@ -13,8 +15,11 @@ interface SettingsRowProps {
 }
 
 export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress, icon, iconColor, subtitle, testID }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   return (
-    <TouchableOpacity testID={testID} style={styles.container} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity testID={testID} style={styles.container} onPress={() => { impactLight(); onPress(); }} activeOpacity={0.7}>
       <View style={styles.left}>
         {icon && (
           <Ionicons name={icon} size={20} color={iconColor || colors.text.secondary} style={styles.icon} />
@@ -29,7 +34,7 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({ title, onPress, icon, 
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',

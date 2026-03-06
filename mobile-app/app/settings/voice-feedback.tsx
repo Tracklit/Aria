@@ -3,7 +3,8 @@ import { View, Text, Switch, StyleSheet, TouchableOpacity, ActivityIndicator } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 import {
   getVoiceSettings,
   saveVoiceSettings,
@@ -27,6 +28,8 @@ const VOLUME_LEVELS = [
 ];
 
 export default function VoiceFeedbackScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [settings, setSettings] = useState<VoiceSettings | null>(null);
   const [testing, setTesting] = useState(false);
 
@@ -149,7 +152,7 @@ export default function VoiceFeedbackScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

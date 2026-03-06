@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { impactLight } from '../../src/utils/haptics';
 
 export default function WelcomeScreen() {
   const styles = useThemedStyles(createStyles);
@@ -65,7 +66,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             testID="welcome.get_started"
             style={styles.primaryButton}
-            onPress={() => router.push('/auth/register')}
+            onPress={() => { impactLight(); router.push('/auth/register'); }}
           >
             <Text style={styles.primaryButtonText}>Get Started</Text>
           </TouchableOpacity>
@@ -73,7 +74,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             testID="welcome.login"
             style={styles.secondaryButton}
-            onPress={() => router.push('/auth/login')}
+            onPress={() => { impactLight(); router.push('/auth/login'); }}
           >
             <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </TouchableOpacity>

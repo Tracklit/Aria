@@ -16,7 +16,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth, useDashboard, useWorkout } from '../../src/context';
-import { colors, spacing, borderRadius } from '../../src/theme';
+import { impactLight, selectionChanged } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 function getDisplayName(profileName?: string | null, greeting?: string) {
   if (profileName?.trim()) return profileName.trim();
@@ -27,6 +29,8 @@ function getDisplayName(profileName?: string | null, greeting?: string) {
 
 export default function DashboardScreen() {
   const reducedMotion = useReducedMotion();
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { profile } = useAuth();
   const { startWorkoutSession, todaysWorkout, loadTodaysWorkout } = useWorkout();
   const {
@@ -49,6 +53,7 @@ export default function DashboardScreen() {
       await refreshDashboard();
     } finally {
       setRefreshing(false);
+      impactLight();
     }
   }, [refreshDashboard]);
 
@@ -136,7 +141,7 @@ export default function DashboardScreen() {
                 key={chip}
                 testID={`dashboard.chip.${chip.replace(/[^a-zA-Z0-9]+/g, '_')}`}
                 style={styles.chip}
-                onPress={() => navigateToChat(chip)}
+                onPress={() => { selectionChanged(); navigateToChat(chip); }}
               >
                 <Text style={styles.chipText}>{chip}</Text>
               </TouchableOpacity>
@@ -260,7 +265,7 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -431,7 +436,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   workoutSubtitle: {
-    color: 'rgba(255,255,255,0.75)',
+    color: colors.text.secondary,
     fontSize: 16,
     marginBottom: 18,
   },
@@ -461,7 +466,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   workoutLabel: {
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.text.tertiary,
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase' as const,
@@ -488,7 +493,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   insightText: {
-    color: '#D5D5D5',
+    color: colors.text.secondary,
     fontSize: 14,
     lineHeight: 20,
   },

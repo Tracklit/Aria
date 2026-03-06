@@ -4,40 +4,44 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ToolCard } from '../../src/components/features/ToolCard';
-import { colors, typography, spacing } from '../../src/theme';
-
-const tools = [
-  {
-    id: 'photo-finish',
-    title: 'Photo Finish',
-    description: 'Analyze race finishes frame by frame',
-    icon: 'camera-outline',
-    accentColor: colors.teal,
-  },
-  {
-    id: 'start-gun',
-    title: 'Start Gun',
-    description: 'Realistic race start audio sequence',
-    icon: 'volume-high-outline',
-    accentColor: colors.green,
-  },
-  {
-    id: 'stopwatch',
-    title: 'Stopwatch',
-    description: 'Precision timing with lap splits',
-    icon: 'timer-outline',
-    accentColor: colors.orange,
-  },
-  {
-    id: 'sprint-predictor',
-    title: 'Sprint Predictor',
-    description: 'Predict times across distances',
-    icon: 'calculator-outline',
-    accentColor: colors.primary,
-  },
-];
+import { useThemedStyles, useColors, typography, spacing } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 export default function ToolsScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
+
+  const tools = [
+    {
+      id: 'photo-finish',
+      title: 'Photo Finish',
+      description: 'Analyze race finishes frame by frame',
+      icon: 'camera-outline',
+      accentColor: colors.teal,
+    },
+    {
+      id: 'start-gun',
+      title: 'Start Gun',
+      description: 'Realistic race start audio sequence',
+      icon: 'volume-high-outline',
+      accentColor: colors.green,
+    },
+    {
+      id: 'stopwatch',
+      title: 'Stopwatch',
+      description: 'Precision timing with lap splits',
+      icon: 'timer-outline',
+      accentColor: colors.orange,
+    },
+    {
+      id: 'sprint-predictor',
+      title: 'Sprint Predictor',
+      description: 'Predict times across distances',
+      icon: 'calculator-outline',
+      accentColor: colors.primary,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -70,7 +74,7 @@ export default function ToolsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

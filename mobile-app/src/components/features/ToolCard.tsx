@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
+import { impactLight } from '../../utils/haptics';
 
 interface ToolCardProps {
   title: string;
@@ -22,24 +24,29 @@ export const ToolCard: React.FC<ToolCardProps> = ({
   onPress,
   testID,
   variant = 'grid',
-  accentColor = colors.primary,
+  accentColor,
 }) => {
+  const colors = useColors();
+  const listS = useThemedStyles(createListStyles);
+  const gridS = useThemedStyles(createGridStyles);
+  const accent = accentColor || colors.primary;
+
   if (variant === 'list') {
     const displayDescription = description || subtitle;
     return (
       <TouchableOpacity
-        style={listStyles.container}
-        onPress={onPress}
+        style={listS.container}
+        onPress={() => { impactLight(); onPress(); }}
         activeOpacity={0.7}
         testID={testID}
       >
-        <View style={[listStyles.iconCircle, { backgroundColor: accentColor + '33' }]}>
-          <Ionicons name={icon as any} size={20} color={accentColor} />
+        <View style={[listS.iconCircle, { backgroundColor: accent + '33' }]}>
+          <Ionicons name={icon as any} size={20} color={accent} />
         </View>
-        <View style={listStyles.textContainer}>
-          <Text style={listStyles.title}>{title}</Text>
+        <View style={listS.textContainer}>
+          <Text style={listS.title}>{title}</Text>
           {displayDescription && (
-            <Text style={listStyles.description} numberOfLines={2}>
+            <Text style={listS.description} numberOfLines={2}>
               {displayDescription}
             </Text>
           )}
@@ -51,19 +58,19 @@ export const ToolCard: React.FC<ToolCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={gridStyles.container}
-      onPress={onPress}
+      style={gridS.container}
+      onPress={() => { impactLight(); onPress(); }}
       activeOpacity={0.7}
       testID={testID}
     >
-      <Ionicons name={icon as any} size={32} color={accentColor} style={gridStyles.icon} />
-      <Text style={gridStyles.title}>{title}</Text>
-      {subtitle && <Text style={gridStyles.subtitle}>{subtitle}</Text>}
+      <Ionicons name={icon as any} size={32} color={accent} style={gridS.icon} />
+      <Text style={gridS.title}>{title}</Text>
+      {subtitle && <Text style={gridS.subtitle}>{subtitle}</Text>}
     </TouchableOpacity>
   );
 };
 
-const listStyles = StyleSheet.create({
+const createListStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -97,7 +104,7 @@ const listStyles = StyleSheet.create({
   },
 });
 
-const gridStyles = StyleSheet.create({
+const createGridStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.cardSolid,

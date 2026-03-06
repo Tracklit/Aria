@@ -52,7 +52,7 @@ export const lightColors = {
     primary: '#FFFFFF',
     secondary: '#F2F2F7',
     card: 'rgba(242, 242, 247, 0.8)',
-    cardSolid: '#FFFFFF',
+    cardSolid: '#F2F2F7',
   },
 
   // Accent Colors (same as dark)
@@ -89,7 +89,7 @@ export const lightColors = {
     primary: ['#00E5FF', '#30D5C8'] as [string, string],
     avatar: ['#30D5C8', '#00E5FF'] as [string, string],
     accent: ['#00E5FF', '#32D74B'] as [string, string],
-    workout: ['#0A1628', '#0D2137', '#0A1A2E'] as [string, string, string],
+    workout: ['#E3F2FD', '#BBDEFB', '#E1F5FE'] as [string, string, string],
     progress: ['#00E5FF', '#30D5C8', '#FFD60A', '#FF453A'] as [string, string, string, string],
   },
 } as const;

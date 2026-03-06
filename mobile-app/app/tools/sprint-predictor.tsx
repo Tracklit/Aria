@@ -3,7 +3,9 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, Modal, FlatList, S
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactLight, selectionChanged } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 // Dick (1987) conversion factors relative to 100m
 const CONVERSION_FACTORS: Record<number, number> = {
@@ -14,18 +16,20 @@ const CONVERSION_FACTORS: Record<number, number> = {
 
 const DISTANCES = Object.keys(CONVERSION_FACTORS).map(Number);
 
-function getDistanceColor(distance: number): string {
-  if (distance <= 60) return colors.green;
-  if (distance <= 110) return colors.primary;
-  return colors.orange;
-}
-
 export default function SprintPredictorScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [selectedDistance, setSelectedDistance] = useState(100);
   const [inputTime, setInputTime] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
   const inputTimeNum = parseFloat(inputTime);
+
+  function getDistanceColor(distance: number): string {
+    if (distance <= 60) return colors.green;
+    if (distance <= 110) return colors.primary;
+    return colors.orange;
+  }
 
   const predictions = (() => {
     if (!inputTimeNum || inputTimeNum <= 0) return [];
@@ -54,7 +58,7 @@ export default function SprintPredictorScreen() {
         <Text style={styles.description}>Enter your time for a distance and predict your performance at other sprint distances using the Dick (1987) conversion model.</Text>
 
         <View style={styles.inputSection}>
-          <TouchableOpacity style={styles.distancePicker} onPress={() => setShowPicker(true)}>
+          <TouchableOpacity style={styles.distancePicker} onPress={() => { impactLight(); setShowPicker(true); }}>
             <Text style={styles.distanceText}>{selectedDistance}m</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </TouchableOpacity>
@@ -107,7 +111,7 @@ export default function SprintPredictorScreen() {
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[styles.modalOption, item === selectedDistance && styles.modalOptionSelected]}
-                  onPress={() => { setSelectedDistance(item); setShowPicker(false); }}
+                  onPress={() => { selectionChanged(); setSelectedDistance(item); setShowPicker(false); }}
                 >
                   <Text style={[styles.modalOptionText, item === selectedDistance && styles.modalOptionTextSelected]}>{item}m</Text>
                 </TouchableOpacity>
@@ -120,7 +124,7 @@ export default function SprintPredictorScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },

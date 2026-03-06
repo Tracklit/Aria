@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeMode } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
+import { selectionChanged } from '../../src/utils/haptics';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] = [
   { value: 'light', label: 'Light', description: 'Always use light appearance' },
@@ -14,6 +16,8 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; description: string }[] 
 
 export default function AppearanceScreen() {
   const { themeMode, setThemeMode } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -30,7 +34,7 @@ export default function AppearanceScreen() {
           <TouchableOpacity
             key={option.value}
             style={[styles.optionCard, themeMode === option.value && styles.optionCardSelected]}
-            onPress={() => setThemeMode(option.value)}
+            onPress={() => { selectionChanged(); setThemeMode(option.value); }}
           >
             <View style={styles.optionContent}>
               <Text style={styles.optionLabel}>{option.label}</Text>
@@ -46,7 +50,7 @@ export default function AppearanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

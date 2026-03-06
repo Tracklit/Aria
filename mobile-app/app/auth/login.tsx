@@ -22,6 +22,7 @@ import { useAuth } from '../../src/context';
 import { env } from '../../src/config/env';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { impactLight, notificationSuccess, notificationError } from '../../src/utils/haptics';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -131,11 +132,13 @@ export default function LoginScreen() {
       return;
     }
     setFieldErrors({});
+    impactLight();
 
     try {
       await login({ email: email.trim(), password });
+      notificationSuccess();
     } catch (err: any) {
-      // Error is handled in context
+      notificationError();
     }
   };
 

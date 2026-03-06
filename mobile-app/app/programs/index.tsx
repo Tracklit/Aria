@@ -9,11 +9,14 @@ import * as Sharing from 'expo-sharing';
 import { usePrograms, Program } from '../../src/context/ProgramsContext';
 import { ProgramCard } from '../../src/components/features/ProgramCard';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const CATEGORIES = ['all', 'sprint', 'endurance', 'strength', 'flexibility'];
 
 export default function ProgramsScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { programs, isLoading, fetchPrograms, uploadProgram, importSheet } = usePrograms();
   const [filter, setFilter] = useState<string[]>(['all']);
   const [showImport, setShowImport] = useState(false);
@@ -125,7 +128,7 @@ export default function ProgramsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },

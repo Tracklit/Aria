@@ -16,7 +16,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../src/context/SessionContext';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,6 +43,8 @@ export default function LiveSessionScreen() {
     finishSession,
   } = useSession();
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editSets, setEditSets] = useState('');
@@ -414,7 +417,7 @@ export default function LiveSessionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
 
   // Empty state

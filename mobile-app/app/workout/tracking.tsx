@@ -6,9 +6,8 @@ import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkout } from '../../src/context';
 import { ToastManager } from '../../src/components/Toast';
-import { colors } from '../../src/theme/colors';
-import { typography } from '../../src/theme/typography';
-import { spacing, borderRadius } from '../../src/theme/spacing';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 function formatTime(seconds: number) {
   const mins = Math.floor(seconds / 60);
@@ -21,6 +20,8 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * 110;
 export default function WorkoutTrackingScreen() {
   const router = useRouter();
   const { activeSession, todaysWorkout, finishWorkoutSession, updateWorkoutSession } = useWorkout();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
 
   if (!activeSession) {
     return (
@@ -133,7 +134,7 @@ export default function WorkoutTrackingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

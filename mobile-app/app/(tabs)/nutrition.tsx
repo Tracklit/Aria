@@ -5,12 +5,16 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext';
 import { NutritionPlanCard } from '../../src/components/features/NutritionPlanCard';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactLight, impactMedium } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 type FilterOption = 'All' | 'Active' | 'Archived';
 const FILTERS: FilterOption[] = ['All', 'Active', 'Archived'];
 
 export default function NutritionScreen() {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { plans, isLoading, fetchPlans } = useNutrition();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
@@ -19,7 +23,7 @@ export default function NutritionScreen() {
   }, [fetchPlans]);
 
   const onRefresh = useCallback(() => {
-    fetchPlans();
+    fetchPlans().then(() => impactLight());
   }, [fetchPlans]);
 
   const filteredPlans = useMemo(() => {
@@ -69,14 +73,14 @@ export default function NutritionScreen() {
         ListEmptyComponent={!isLoading ? renderEmpty : null}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={colors.primary} />}
       />
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/nutrition/create')}>
+      <TouchableOpacity style={styles.fab} onPress={() => { impactMedium(); router.push('/nutrition/create'); }}>
         <Ionicons name="add" size={28} color={colors.text.primary} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   title: { ...typography.h1, color: colors.text.primary, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.md },
   filterRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },

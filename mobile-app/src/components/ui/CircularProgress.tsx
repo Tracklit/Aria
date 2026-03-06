@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { colors } from '../../theme';
+import { useColors } from '../../theme';
 
 interface CircularProgressProps {
   size?: number;
@@ -16,6 +16,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   progress,
   children,
 }) => {
+  const colors = useColors();
   const center = size / 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -32,7 +33,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
             <Stop offset="100%" stopColor={colors.gradient.progress[3]} />
           </LinearGradient>
         </Defs>
-        
+
         {/* Background Circle */}
         <Circle
           cx={center}
@@ -42,7 +43,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        
+
         {/* Progress Circle */}
         <Circle
           cx={center}
@@ -58,7 +59,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           origin={`${center}, ${center}`}
         />
       </Svg>
-      
+
       <View style={styles.content}>{children}</View>
     </View>
   );

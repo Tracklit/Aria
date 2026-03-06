@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 import { MacroBar } from './MacroBar';
 
 interface NutritionPlanCardProps {
@@ -18,6 +19,9 @@ interface NutritionPlanCardProps {
 }
 
 export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
@@ -57,7 +61,7 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.lg,

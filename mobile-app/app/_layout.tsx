@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { useFonts, SpaceGrotesk_300Light, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { SpaceMono_400Regular } from '@expo-google-fonts/space-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppProviders, useAuth, useTheme } from '../src/context';
-import { colors } from '../src/theme';
+import { useColors } from '../src/theme';
 import { gluestackConfig } from '../src/theme/gluestack';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { ToastContainer } from '../src/components/Toast';
@@ -17,6 +17,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const { isAuthenticated, isLoading, profile } = useAuth();
   const { effectiveTheme } = useTheme();
+  const colors = useColors();
   const router = useRouter();
   const segments = useSegments();
   const [forceReady, setForceReady] = useState(false);
@@ -99,7 +100,7 @@ function RootLayoutNav() {
 
   if (!ready) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -153,11 +154,3 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

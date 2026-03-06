@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context';
 import { ChipGroup } from '../src/components/features/ChipGroup';
-import { colors, typography, spacing, borderRadius } from '../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../src/theme';
+import { ThemeColors } from '../src/theme/colors';
 
 const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
 const DIETARY_OPTIONS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'keto', 'paleo', 'halal', 'kosher', 'none'];
@@ -18,6 +19,8 @@ function formatForInput(value: number): string {
 }
 
 export default function AthleteInfoScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { profile, updateProfile } = useAuth();
   const units: 'imperial' | 'metric' = profile?.units === 'metric' ? 'metric' : 'imperial';
   const isImperial = units === 'imperial';
@@ -203,7 +206,7 @@ export default function AthleteInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

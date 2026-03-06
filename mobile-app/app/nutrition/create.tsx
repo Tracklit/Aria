@@ -6,13 +6,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNutrition } from '../../src/context/NutritionContext';
 import { useAuth } from '../../src/context';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactMedium, notificationSuccess } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
 const SEASONS = ['off_season', 'pre_season', 'in_season', 'post_season'];
 const DIETARY_OPTIONS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'keto', 'paleo', 'halal', 'kosher'];
 
 export default function CreateNutritionPlan() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const { generatePlan, createPlan } = useNutrition();
   const { profile } = useAuth();
   const [activityLevel, setActivityLevel] = useState<string[]>(['moderate']);
@@ -25,6 +29,7 @@ export default function CreateNutritionPlan() {
   const [manualTitle, setManualTitle] = useState('');
 
   const handleGenerate = async () => {
+    impactMedium();
     setIsGenerating(true);
     try {
       await generatePlan({
@@ -35,6 +40,7 @@ export default function CreateNutritionPlan() {
         calorieTarget: calorieTarget ? parseInt(calorieTarget) : undefined,
         preferredUnits: profile?.units === 'metric' ? 'metric' : 'imperial',
       });
+      notificationSuccess();
       router.back();
     } catch (error) {
       console.error('Failed to generate plan:', error);
@@ -126,7 +132,7 @@ export default function CreateNutritionPlan() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

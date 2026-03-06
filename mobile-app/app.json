@@ -22,7 +22,7 @@
         "light": "./assets/icon.png",
         "dark": "./assets/icon-dark.png"
       },
-      "buildNumber": "15",
+      "buildNumber": "16",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Aria needs access to your photo library to upload a profile picture.",
         "NSMicrophoneUsageDescription": "Aria needs microphone access for voice input to your AI coach.",

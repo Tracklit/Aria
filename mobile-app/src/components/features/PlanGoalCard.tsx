@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface PlanGoalCardProps {
   goalName: string;
@@ -14,6 +15,9 @@ const RING_RADIUS = (RING_SIZE - RING_STROKE_WIDTH) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export const PlanGoalCard: React.FC<PlanGoalCardProps> = ({ goalName, targetDate }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   const formattedDate = targetDate
     ? new Date(targetDate).toLocaleDateString('en-US', {
         month: 'long',
@@ -65,7 +69,7 @@ export const PlanGoalCard: React.FC<PlanGoalCardProps> = ({ goalName, targetDate
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.xl,

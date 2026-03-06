@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import {
   Avatar as GSAvatar,
@@ -7,7 +7,7 @@ import {
   Spinner,
 } from '@gluestack-ui/themed';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme';
+import { useColors } from '../../theme';
 
 interface AvatarProps {
   uri?: string;
@@ -30,8 +30,13 @@ export const Avatar: React.FC<AvatarProps> = ({
   showGradientRing = false,
   style,
 }) => {
+  const colors = useColors();
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
 
   const avatarSize = SIZES[size];
   const containerSize = showGradientRing ? avatarSize + RING_WIDTH * 4 : avatarSize;
@@ -54,11 +59,12 @@ export const Avatar: React.FC<AvatarProps> = ({
               {
                 width: avatarSize + RING_WIDTH * 2,
                 height: avatarSize + RING_WIDTH * 2,
+                backgroundColor: colors.background.primary,
               },
             ]}
           >
             {showPlaceholder ? (
-              <GSAvatar style={[styles.avatar, styles.placeholder, { width: avatarSize, height: avatarSize }]}>
+              <GSAvatar style={[styles.avatar, { backgroundColor: colors.background.cardSolid }, { width: avatarSize, height: avatarSize }]}>
                 <AvatarFallbackText>AR</AvatarFallbackText>
               </GSAvatar>
             ) : (
@@ -91,7 +97,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   return (
     <View style={[styles.container, style]}>
       {showPlaceholder ? (
-        <GSAvatar style={[styles.avatar, styles.placeholder, { width: avatarSize, height: avatarSize }]}>
+        <GSAvatar style={[styles.avatar, { backgroundColor: colors.background.cardSolid }, { width: avatarSize, height: avatarSize }]}>
           <AvatarFallbackText>AR</AvatarFallbackText>
         </GSAvatar>
       ) : (
@@ -130,16 +136,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   innerRing: {
-    backgroundColor: colors.background.primary,
     borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatar: {
     borderRadius: 9999,
-  },
-  placeholder: {
-    backgroundColor: colors.background.cardSolid,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

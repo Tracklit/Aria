@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface ChipGroupProps {
   options: string[];
@@ -10,6 +11,8 @@ interface ChipGroupProps {
 }
 
 export const ChipGroup: React.FC<ChipGroupProps> = ({ options, selected, onToggle, label }) => {
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -34,7 +37,7 @@ export const ChipGroup: React.FC<ChipGroupProps> = ({ options, selected, onToggl
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   label: {
     ...typography.caption,
     color: colors.text.secondary,

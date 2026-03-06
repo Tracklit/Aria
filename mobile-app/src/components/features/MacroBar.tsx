@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { colors } from '../../theme';
+import { useColors } from '../../theme';
 
 interface MacroBarProps {
   protein: number;
@@ -10,6 +10,7 @@ interface MacroBarProps {
 }
 
 export const MacroBar: React.FC<MacroBarProps> = ({ protein, carbs, fats, height = 8 }) => {
+  const colors = useColors();
   const total = protein + carbs + fats;
   if (total === 0) return null;
 

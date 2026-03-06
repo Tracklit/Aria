@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { impactLight, impactMedium, impactHeavy } from '../../src/utils/haptics';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 interface Lap {
   number: number;
@@ -17,6 +18,8 @@ const timerSize = Math.min(screenWidth * 0.55, 240);
 const timerFontSize = Math.min(screenWidth * 0.12, 60);
 
 export default function StopwatchScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
@@ -145,7 +148,7 @@ export default function StopwatchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.h2, color: colors.text.primary },

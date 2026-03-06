@@ -472,6 +472,11 @@ export function registerRoutes(app: Express): void {
           : storage.getUserPreferences(req.userId!),
       ]);
 
+      // Generate SAS URL for profile photo if stored as a blob URL
+      if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
+        profile.photoUrl = await generateBlobSasUrl(profile.photoUrl);
+      }
+
       res.json({ profile, preferences });
     } catch (error: any) {
       console.error('Update user error:', error);

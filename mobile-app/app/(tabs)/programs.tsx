@@ -9,11 +9,15 @@ import * as Sharing from 'expo-sharing';
 import { usePrograms, Program } from '../../src/context/ProgramsContext';
 import { ProgramCard } from '../../src/components/features/ProgramCard';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactLight, impactMedium, selectionChanged } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const CATEGORIES = ['all', 'sprint', 'endurance', 'strength', 'flexibility'];
 
 export default function ProgramsTabScreen() {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const { programs, isLoading, fetchPrograms, uploadProgram, importSheet } = usePrograms();
   const [filter, setFilter] = useState<string[]>(['all']);
   const [showImport, setShowImport] = useState(false);
@@ -64,11 +68,11 @@ export default function ProgramsTabScreen() {
 
   const showActions = () => {
     Alert.alert('Add Program', 'Choose how to add a program', [
-      { text: 'Create Manually', onPress: () => router.push('/programs/create') },
-      { text: 'Generate with AI', onPress: () => router.push('/programs/create?mode=ai') },
-      { text: 'Upload File', onPress: handleUpload },
-      { text: 'Import Google Sheet', onPress: () => setShowImport(true) },
-      { text: 'Download Template', onPress: downloadTemplate },
+      { text: 'Create Manually', onPress: () => { selectionChanged(); router.push('/programs/create'); } },
+      { text: 'Generate with AI', onPress: () => { selectionChanged(); router.push('/programs/create?mode=ai'); } },
+      { text: 'Upload File', onPress: () => { selectionChanged(); handleUpload(); } },
+      { text: 'Import Google Sheet', onPress: () => { selectionChanged(); setShowImport(true); } },
+      { text: 'Download Template', onPress: () => { selectionChanged(); downloadTemplate(); } },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -88,7 +92,7 @@ export default function ProgramsTabScreen() {
         )}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchPrograms} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => { fetchPrograms().then(() => impactLight()); }} tintColor={colors.primary} />}
         ListEmptyComponent={!isLoading ? (
           <View style={styles.empty}>
             <Ionicons name="barbell-outline" size={64} color={colors.text.tertiary} />
@@ -112,14 +116,14 @@ export default function ProgramsTabScreen() {
         </View>
       )}
 
-      <TouchableOpacity style={styles.fab} onPress={showActions}>
+      <TouchableOpacity style={styles.fab} onPress={() => { impactMedium(); showActions(); }}>
         <Ionicons name="add" size={28} color={colors.text.primary} />
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   title: { ...typography.h1, color: colors.text.primary, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.md },
   filterRow: { paddingHorizontal: spacing.lg, marginBottom: spacing.md },

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../theme';
+import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface ProgramCardProps {
   program: {
@@ -18,6 +19,9 @@ interface ProgramCardProps {
 }
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
+
   const getSourceIcon = (): { name: string; color: string } => {
     if (program.generatedBy === 'ai') return { name: 'sparkles', color: colors.primary };
     if (program.isUploadedProgram) return { name: 'cloud-upload-outline', color: colors.teal };
@@ -64,7 +68,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress }) =>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.lg,

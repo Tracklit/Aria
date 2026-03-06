@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, ViewStyle, Animated } from 'react-native';
-import { colors, borderRadius, spacing } from '../../theme';
+import { useColors, useThemedStyles, borderRadius, spacing } from '../../theme';
+import { ThemeColors } from '../../theme/colors';
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -15,6 +16,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   borderRadius: radius = 8,
   style,
 }) => {
+  const colors = useColors();
   const opacity = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   return (
     <Animated.View
       style={[
-        styles.container,
+        { backgroundColor: colors.background.secondary },
         { width: width as any, height, borderRadius: radius, opacity },
         style,
       ]}
@@ -46,6 +48,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 };
 
 export const SkeletonCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={[styles.card, style]}>
       <View style={styles.cardHeader}>
@@ -65,6 +68,7 @@ export const SkeletonCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
 };
 
 export const SkeletonStatsCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={[styles.card, style]}>
       <SkeletonLoader width="50%" height={24} style={{ marginBottom: spacing.md }} />
@@ -81,6 +85,8 @@ export const SkeletonStatsCard: React.FC<{ style?: ViewStyle }> = ({ style }) =>
 };
 
 export const SkeletonWarningCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={[styles.card, { borderWidth: 2, borderColor: colors.red + '50' }, style]}>
       <View style={styles.cardHeader}>
@@ -95,6 +101,7 @@ export const SkeletonWarningCard: React.FC<{ style?: ViewStyle }> = ({ style }) 
 };
 
 export const SkeletonPatternCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={[styles.card, { padding: spacing.md }, style]}>
       <View style={styles.cardHeader}>
@@ -110,6 +117,7 @@ export const SkeletonPatternCard: React.FC<{ style?: ViewStyle }> = ({ style }) 
 };
 
 export const SkeletonInsightCard: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={[styles.card, { padding: spacing.md }, style]}>
       <View style={styles.cardHeader}>
@@ -123,10 +131,7 @@ export const SkeletonInsightCard: React.FC<{ style?: ViewStyle }> = ({ style }) 
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.background.secondary,
-  },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: {
     backgroundColor: colors.background.cardSolid,
     borderRadius: borderRadius.xl,

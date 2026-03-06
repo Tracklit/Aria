@@ -6,12 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePrograms } from '../../src/context/ProgramsContext';
 import { useAuth } from '../../src/context';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { impactMedium, notificationSuccess } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const CATEGORIES = ['sprint', 'endurance', 'strength', 'flexibility'];
 const LEVELS = ['beginner', 'intermediate', 'advanced', 'elite'];
 
 export default function CreateProgramScreen() {
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const params = useLocalSearchParams<{ mode?: string }>();
   const { createProgram, generateProgram } = usePrograms();
   const { profile } = useAuth();
@@ -25,6 +29,7 @@ export default function CreateProgramScreen() {
 
   const handleCreate = async () => {
     if (!title.trim() && !isAI) return;
+    impactMedium();
     setIsGenerating(true);
     try {
       if (isAI) {
@@ -45,6 +50,7 @@ export default function CreateProgramScreen() {
           duration: parseInt(duration) || 4,
         });
       }
+      notificationSuccess();
       router.back();
     } catch (error) {
       console.error('Failed to create program:', error);
@@ -103,7 +109,7 @@ export default function CreateProgramScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

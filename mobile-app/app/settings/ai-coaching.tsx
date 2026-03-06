@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const COACHING_STYLES = [
   { value: 'motivational', label: 'Motivational', icon: 'flame-outline' as const, description: 'Encouraging, hype-focused feedback to keep you fired up' },
@@ -15,6 +16,8 @@ const COACHING_STYLES = [
 
 export default function AICoachingScreen() {
   const { preferences, updatePreferences } = useAuth();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [selected, setSelected] = useState(preferences?.aiCoachingStyle || 'balanced');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -66,7 +69,7 @@ export default function AICoachingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },

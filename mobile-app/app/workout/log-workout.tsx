@@ -14,7 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../../src/theme';
+import { impactLight, selectionChanged, notificationWarning, notificationSuccess } from '../../src/utils/haptics';
+import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 import { logSprintWorkout, completeWorkout } from '../../src/lib/api';
 
 interface Exercise {
@@ -30,6 +32,8 @@ export default function LogWorkoutScreen() {
     plannedWorkoutId?: string;
     workoutTitle?: string;
   }>();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US', {
@@ -71,6 +75,7 @@ export default function LogWorkoutScreen() {
   }, []);
 
   const addRep = useCallback((exIdx: number) => {
+    impactLight();
     setExercises((prev) => {
       const next = [...prev];
       next[exIdx] = { ...next[exIdx], repTimes: [...next[exIdx].repTimes, ''] };
@@ -79,6 +84,7 @@ export default function LogWorkoutScreen() {
   }, []);
 
   const removeRep = useCallback((exIdx: number, repIdx: number) => {
+    selectionChanged();
     setExercises((prev) => {
       const next = [...prev];
       const reps = next[exIdx].repTimes.filter((_, i) => i !== repIdx);
@@ -96,11 +102,13 @@ export default function LogWorkoutScreen() {
   }, []);
 
   const addExercise = useCallback(() => {
+    impactLight();
     setExercises((prev) => [...prev, { name: '', repTimes: [''], notes: '' }]);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
   }, []);
 
   const removeExercise = useCallback((idx: number) => {
+    notificationWarning();
     setExercises((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }, []);
 
@@ -156,6 +164,7 @@ export default function LogWorkoutScreen() {
         }
       }
 
+      notificationSuccess();
       // Build summary data
       setSavedSplits(
         splits.map((s) => ({
@@ -309,7 +318,7 @@ export default function LogWorkoutScreen() {
               <TouchableOpacity
                 key={n}
                 style={[styles.rpeCircle, rpe === n && styles.rpeSelected]}
-                onPress={() => setRpe(n === rpe ? null : n)}
+                onPress={() => { selectionChanged(); setRpe(n === rpe ? null : n); }}
               >
                 <Text style={[styles.rpeText, rpe === n && styles.rpeTextSelected]}>{n}</Text>
               </TouchableOpacity>
@@ -350,7 +359,7 @@ export default function LogWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
