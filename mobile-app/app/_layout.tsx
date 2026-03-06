@@ -7,6 +7,7 @@ import { useFonts, SpaceGrotesk_300Light, SpaceGrotesk_700Bold } from '@expo-goo
 import { SpaceMono_400Regular } from '@expo-google-fonts/space-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppProviders, useAuth, useTheme } from '../src/context';
+import { setupNotificationListeners } from '../src/services/notifications';
 import { useColors } from '../src/theme';
 import { gluestackConfig } from '../src/theme/gluestack';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
@@ -83,6 +84,11 @@ function RootLayoutNav() {
       }
     }
   }, [isAuthenticated, ready, profile?.onboardingCompleted, segments]);
+
+  useEffect(() => {
+    const cleanup = setupNotificationListeners();
+    return cleanup;
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {

@@ -647,6 +647,12 @@ export async function bulkUpsertSessions(programId: number, sessions: any[]) {
   return apiRequest(`/api/programs/${programId}/sessions`, { method: 'PUT', data: { sessions } });
 }
 
+// ==================== PUSH NOTIFICATIONS ====================
+
+export async function registerPushToken(token: string) {
+  return apiRequest('/api/push-token', { method: 'POST', data: { token } });
+}
+
 // Sprint Workout Logging
 export async function logSprintWorkout(data: {
   title: string;

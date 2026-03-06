@@ -86,6 +86,16 @@ const updatePreferencesSchema = z.object({
     weeklyReport: z.boolean().optional(),
     coachingTips: z.boolean().optional(),
     competitionAlerts: z.boolean().optional(),
+    missedWorkout: z.boolean().optional(),
+    restDay: z.boolean().optional(),
+    fatigue: z.boolean().optional(),
+    prPredictions: z.boolean().optional(),
+    raceReminders: z.boolean().optional(),
+    mealReminders: z.boolean().optional(),
+    hydration: z.boolean().optional(),
+    quietHoursEnabled: z.boolean().optional(),
+    quietHoursStart: z.string().optional(),
+    quietHoursEnd: z.string().optional(),
   }).optional(),
   privacyPrefs: z.object({
     shareWorkouts: z.boolean().optional(),
@@ -1856,6 +1866,21 @@ Competition - Meet / race day,,,,,,
       res.json(allSessions);
     } catch (error) {
       res.status(500).json({ error: 'Failed to sync sessions' });
+    }
+  });
+
+  // ==================== PUSH TOKENS ====================
+
+  app.post('/api/push-token', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { token } = z.object({ token: z.string().min(1) }).parse(req.body);
+      await storage.updatePushToken(req.userId!, token);
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to register push token' });
     }
   });
 

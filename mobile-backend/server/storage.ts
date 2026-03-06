@@ -67,6 +67,8 @@ export interface IStorage {
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
   updateUserRefreshToken(id: number, token: string | null, expiresAt: Date | null): Promise<void>;
   getUserByRefreshToken(token: string): Promise<User | undefined>;
+  updatePushToken(userId: number, token: string): Promise<void>;
+  getUserPushToken(userId: number): Promise<string | null>;
 
   // User Profiles
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
@@ -236,6 +238,15 @@ export class DatabaseStorage implements IStorage {
   async getUserByRefreshToken(token: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.refreshToken, token));
     return user;
+  }
+
+  async updatePushToken(userId: number, token: string): Promise<void> {
+    await db.update(users).set({ pushToken: token }).where(eq(users.id, userId));
+  }
+
+  async getUserPushToken(userId: number): Promise<string | null> {
+    const [user] = await db.select({ pushToken: users.pushToken }).from(users).where(eq(users.id, userId));
+    return user?.pushToken || null;
   }
 
   // ==================== USER PROFILES ====================

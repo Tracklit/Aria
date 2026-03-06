@@ -156,7 +156,7 @@ export default function MoreScreen() {
           <View style={styles.group}>
             <SettingsRow title="Edit Profile" icon="person-outline" onPress={handleEditProfile} testID="settings.edit_profile" />
             <View style={styles.divider} />
-            <SettingsRow title="Notifications" icon="notifications-outline" onPress={() => handlePress('Notifications')} testID="settings.notifications" />
+            <SettingsRow title="Notifications" icon="notifications-outline" onPress={() => router.push('/settings/notifications')} testID="settings.notifications" />
             <View style={styles.divider} />
             <SettingsRow title="Privacy" icon="shield-outline" onPress={() => handlePress('Privacy')} testID="settings.privacy" />
           </View>

@@ -31,6 +31,7 @@ import {
   setToken,
   setRefreshToken,
 } from '../lib/tokenStorage';
+import { registerForPushNotifications } from '../services/notifications';
 
 // Demo mode storage key
 const DEMO_MODE_KEY = 'aria_demo_mode';
@@ -79,6 +80,15 @@ export interface UserPreferences {
     weeklyReport: boolean;
     coachingTips: boolean;
     competitionAlerts: boolean;
+    missedWorkout?: boolean;
+    restDay?: boolean;
+    fatigue?: boolean;
+    prPredictions?: boolean;
+    mealReminders?: boolean;
+    hydration?: boolean;
+    quietHoursEnabled?: boolean;
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
   };
   privacyPrefs?: {
     shareWorkouts: boolean;
@@ -256,6 +266,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
       await setStoredUser(resolvedUser);
+
+      // Register for push notifications (non-blocking)
+      registerForPushNotifications().catch(err => console.error('[Auth] Push registration failed:', err));
+
       return true;
     } catch (error) {
       await clearAuthStorage();

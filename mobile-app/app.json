@@ -48,7 +48,14 @@
       "expo-router",
       "expo-video",
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0D0D12"
+        }
+      ]
     ]
   }
 }

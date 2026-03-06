@@ -26,6 +26,7 @@ export const users = pgTable('users', {
   refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   lastLoginAt: timestamp('last_login_at'),
+  pushToken: varchar('push_token', { length: 500 }),
 });
 
 export const userProfiles = pgTable('user_profiles', {
