@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,16 +9,48 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  FlatList,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth, useDashboard, useWorkout } from '../../src/context';
+import { useAuth, useDashboard, useWorkout, useSession } from '../../src/context';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - 48;
+const CARD_GAP = 16;
+
+const GRADIENT_PALETTE: [string, string, string][] = [
+  ['#0A1628', '#0D2137', '#0A1A2E'], // Deep blue
+  ['#1A0A28', '#2D0D37', '#1A0A2E'], // Purple
+  ['#0A2816', '#0D3721', '#0A2E1A'], // Green
+  ['#281A0A', '#37210D', '#2E1A0A'], // Amber
+  ['#280A0A', '#370D0D', '#2E0A0A'], // Red
+];
+
+const REST_GRADIENT: [string, string, string] = ['#1A1A1A', '#222222', '#1A1A1A'];
+
+interface WorkoutCardItem {
+  id: string;
+  kind: 'planned' | 'program' | 'empty';
+  badge: string;
+  title: string;
+  description: string;
+  gradient: [string, string, string];
+  plannedWorkoutId?: number;
+  programId?: number;
+  programTitle?: string;
+  sessionTitle?: string;
+  exercises?: any;
+}
 
 function getDisplayName(profileName?: string | null, greeting?: string) {
   if (profileName?.trim()) return profileName.trim();
@@ -32,7 +64,8 @@ export default function DashboardScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const { profile } = useAuth();
-  const { startWorkoutSession, todaysWorkout, loadTodaysWorkout } = useWorkout();
+  const { startWorkoutSession, todaysWorkout, todaysWorkouts, todaysProgramSessions, loadTodaysWorkout, loadTodaysWorkouts } = useWorkout();
+  const { startSession } = useSession();
   const {
     greeting,
     subtitle,
@@ -61,7 +94,8 @@ export default function DashboardScreen() {
     loadDashboard();
     loadPatterns();
     loadTodaysWorkout();
-  }, [loadDashboard, loadPatterns, loadTodaysWorkout]);
+    loadTodaysWorkouts();
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts]);
 
   const displayName = useMemo(
     () => getDisplayName(profile?.displayName, greeting),
@@ -86,9 +120,60 @@ export default function DashboardScreen() {
     'Help me warm up',
   ];
 
-  const workoutCard = cards.find((card) => card.type === 'workout_card');
-  const workoutTitle = workoutCard?.title || 'Sprint Intervals';
-  const workoutSubtitle = workoutCard?.subtitle || '6 x 150m, 90% effort';
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  const workoutCards: WorkoutCardItem[] = useMemo(() => {
+    const items: WorkoutCardItem[] = [];
+    let gradientIdx = 0;
+
+    todaysWorkouts.forEach((w) => {
+      items.push({
+        id: `planned-${w.id}`,
+        kind: 'planned',
+        badge: (w.type || 'WORKOUT').toUpperCase().replace(/_/g, ' '),
+        title: w.title || 'Sprint Session',
+        description: w.description || w.notes || '',
+        gradient: GRADIENT_PALETTE[gradientIdx % GRADIENT_PALETTE.length],
+        plannedWorkoutId: w.id,
+      });
+      gradientIdx++;
+    });
+
+    todaysProgramSessions.forEach((s) => {
+      items.push({
+        id: `program-${s.id}`,
+        kind: 'program',
+        badge: 'PROGRAM',
+        title: s.title || s.programTitle || 'Program Session',
+        description: s.description || `Day ${s.dayNumber}`,
+        gradient: GRADIENT_PALETTE[gradientIdx % GRADIENT_PALETTE.length],
+        programId: s.programId,
+        programTitle: s.programTitle,
+        sessionTitle: s.title || `Day ${s.dayNumber}`,
+        exercises: s.exercises,
+      });
+      gradientIdx++;
+    });
+
+    if (items.length === 0) {
+      items.push({
+        id: 'empty',
+        kind: 'empty',
+        badge: 'REST DAY',
+        title: 'No Workouts Planned',
+        description: 'Enjoy your recovery day',
+        gradient: REST_GRADIENT,
+      });
+    }
+
+    return items;
+  }, [todaysWorkouts, todaysProgramSessions]);
+
+  const onCarouselScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offset = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offset / (CARD_WIDTH + CARD_GAP));
+    setActiveCardIndex(index);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -189,31 +274,71 @@ export default function DashboardScreen() {
         )}
 
         <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(500).delay(100)}>
-        <LinearGradient
-          colors={colors.gradient.workout}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.workoutCard}
-        >
-          <Text style={styles.workoutLabel}>Today's Workout</Text>
-          <Text style={styles.workoutTitle}>{workoutTitle}</Text>
-          <Text style={styles.workoutSubtitle}>{workoutSubtitle}</Text>
-          <TouchableOpacity
-            testID="dashboard.log_workout"
-            style={styles.workoutButton}
-            onPress={() => {
-              router.push({
-                pathname: '/workout/log-workout',
-                params: {
-                  plannedWorkoutId: todaysWorkout?.id?.toString() ?? '',
-                  workoutTitle: workoutTitle ?? 'Sprint Session',
-                },
-              });
-            }}
-          >
-            <Text style={styles.workoutButtonText}>Log Workout</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+          <FlatList
+            data={workoutCards}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={CARD_WIDTH + CARD_GAP}
+            decelerationRate="fast"
+            contentContainerStyle={styles.carouselContent}
+            onScroll={onCarouselScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <LinearGradient
+                colors={item.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.workoutCard}
+              >
+                <View style={styles.badgeWrap}>
+                  <Text style={styles.badgeText}>{item.badge}</Text>
+                </View>
+                <Text style={styles.workoutTitle}>{item.title}</Text>
+                <Text style={styles.workoutSubtitle}>{item.description}</Text>
+                {item.kind !== 'empty' && (
+                  <TouchableOpacity
+                    testID={`dashboard.start_workout.${item.id}`}
+                    style={styles.workoutButton}
+                    onPress={() => {
+                      impactLight();
+                      if (item.kind === 'program' && item.programId && item.exercises) {
+                        startSession(
+                          item.programId,
+                          item.programTitle || 'Program',
+                          item.sessionTitle || 'Session',
+                          Array.isArray(item.exercises) ? item.exercises : (typeof item.exercises === 'string' ? JSON.parse(item.exercises) : []),
+                        );
+                      } else {
+                        router.push({
+                          pathname: '/workout/log-workout',
+                          params: {
+                            plannedWorkoutId: item.plannedWorkoutId?.toString() ?? '',
+                            workoutTitle: item.title ?? 'Sprint Session',
+                          },
+                        });
+                      }
+                    }}
+                  >
+                    <Text style={styles.workoutButtonText}>Start Workout</Text>
+                  </TouchableOpacity>
+                )}
+              </LinearGradient>
+            )}
+          />
+          {workoutCards.length > 1 && (
+            <View style={styles.dotsRow}>
+              {workoutCards.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.dot,
+                    idx === activeCardIndex ? styles.dotActive : styles.dotInactive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </Animated.View>
 
         <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.section}>
@@ -424,10 +549,49 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 6,
     fontWeight: '600',
   },
+  carouselContent: {
+    paddingHorizontal: 24,
+  },
   workoutCard: {
-    marginHorizontal: 24,
+    width: CARD_WIDTH,
+    marginRight: CARD_GAP,
     borderRadius: 20,
     padding: 20,
+  },
+  badgeWrap: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 8,
+  },
+  badgeText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    width: 18,
+    borderRadius: 4,
+  },
+  dotInactive: {
+    backgroundColor: colors.text.tertiary,
+    opacity: 0.4,
   },
   workoutTitle: {
     color: colors.text.primary,

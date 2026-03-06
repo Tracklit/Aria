@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -82,20 +82,6 @@ export default function LiveSessionScreen() {
     ]);
   };
 
-  const summary = useMemo(() => {
-    if (!activeSession) return null;
-    const totalExercises = activeSession.exercises.length;
-    const completedExercises = activeSession.exercises.filter(ex =>
-      ex.completedSets.every(Boolean)
-    ).length;
-    const totalSets = activeSession.exercises.reduce((sum, ex) => sum + ex.completedSets.length, 0);
-    const completedSets = activeSession.exercises.reduce(
-      (sum, ex) => sum + ex.completedSets.filter(Boolean).length,
-      0
-    );
-    return { totalExercises, completedExercises, totalSets, completedSets };
-  }, [activeSession]);
-
   if (!activeSession) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -115,51 +101,6 @@ export default function LiveSessionScreen() {
   const isLastExercise =
     activeSession.currentExerciseIndex === activeSession.exercises.length - 1;
   const allCurrentSetsDone = currentExercise.completedSets.every(Boolean);
-
-  // Finish summary modal
-  if (activeSession.isComplete) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <Modal visible transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.summaryCard}>
-              <Ionicons name="checkmark-circle" size={64} color={colors.green} />
-              <Text style={styles.summaryTitle}>Workout Complete!</Text>
-              <Text style={styles.summarySession}>{activeSession.sessionTitle}</Text>
-
-              <View style={styles.summaryStats}>
-                <View style={styles.summaryStatItem}>
-                  <Text style={styles.summaryStatValue}>{formatTime(elapsedTime)}</Text>
-                  <Text style={styles.summaryStatLabel}>Total Time</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryStatItem}>
-                  <Text style={styles.summaryStatValue}>
-                    {summary?.completedExercises}/{summary?.totalExercises}
-                  </Text>
-                  <Text style={styles.summaryStatLabel}>Exercises</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryStatItem}>
-                  <Text style={styles.summaryStatValue}>
-                    {summary?.completedSets}/{summary?.totalSets}
-                  </Text>
-                  <Text style={styles.summaryStatLabel}>Sets</Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.doneBtn}
-                onPress={() => router.back()}
-              >
-                <Text style={styles.doneBtnText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

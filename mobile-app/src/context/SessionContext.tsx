@@ -249,38 +249,50 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     setActiveSession(prev => {
       if (!prev) return null;
 
-      // Announce workout complete with duration
       const durationSec = Math.floor((Date.now() - prev.startedAt.getTime()) / 1000);
       const mins = Math.floor(durationSec / 60);
       const secs = durationSec % 60;
       const durationStr = mins > 0 ? `${mins} minutes and ${secs} seconds` : `${secs} seconds`;
       announceWorkoutComplete(durationStr);
 
+      const totalSets = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.length, 0);
+      const completedSetsCount = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.filter(Boolean).length, 0);
+
+      const workoutData = {
+        programId: prev.programId,
+        programTitle: prev.programTitle,
+        sessionTitle: prev.sessionTitle,
+        duration: durationSec,
+        exercisesCompleted: prev.exercises.length,
+        totalSets,
+        completedSets: completedSetsCount,
+        exercises: prev.exercises.map(ex => ({
+          name: ex.name,
+          sets: ex.actualSets ?? ex.sets,
+          reps: ex.actualReps ?? ex.reps,
+          completedSets: ex.completedSets,
+        })),
+      };
+
       // Persist session to backend
       if (prev.backendSessionId) {
-        const totalSets = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.length, 0);
-        const completedSets = prev.exercises.reduce((sum, ex) => sum + ex.completedSets.filter(Boolean).length, 0);
-        const workoutData = {
-          programId: prev.programId,
-          programTitle: prev.programTitle,
-          sessionTitle: prev.sessionTitle,
-          duration: Math.floor((Date.now() - prev.startedAt.getTime()) / 1000),
-          exercisesCompleted: prev.exercises.length,
-          totalSets,
-          completedSets,
-          exercises: prev.exercises.map(ex => ({
-            name: ex.name,
-            sets: ex.actualSets ?? ex.sets,
-            reps: ex.actualReps ?? ex.reps,
-            completedSets: ex.completedSets,
-          })),
-        };
         apiFinishSession(prev.backendSessionId, workoutData).catch(() => {
           if (__DEV__) console.log('[Session] Backend session finish failed');
         });
       }
 
-      return { ...prev, isComplete: true };
+      // Navigate to log-workout with session data (deferred to avoid setState-during-render)
+      setTimeout(() => {
+        router.replace({
+          pathname: '/workout/log-workout',
+          params: {
+            mode: 'post-session',
+            sessionData: JSON.stringify(workoutData),
+          },
+        });
+      }, 0);
+
+      return null; // Clear the active session
     });
   }, [clearElapsedTimer, clearRestTimer]);
 

@@ -3,9 +3,11 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
   useCallback,
 } from 'react';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   login as apiLogin,
@@ -203,6 +205,7 @@ const createDefaultProfile = (user?: User | null): UserProfile => ({
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const lastFetchedAt = useRef<number>(0);
   const [state, setState] = useState<AuthState>({
     user: null,
     profile: null,
@@ -266,22 +269,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
       await setStoredUser(resolvedUser);
+      lastFetchedAt.current = Date.now();
 
       // Register for push notifications (non-blocking)
       registerForPushNotifications().catch(err => console.error('[Auth] Push registration failed:', err));
 
       return true;
-    } catch (error) {
-      await clearAuthStorage();
-      setState((prev) => ({
-        ...prev,
-        user: null,
-        profile: null,
-        preferences: null,
-        isAuthenticated: false,
-        isLoading: false,
-        hasValidToken: false,
-      }));
+    } catch (error: any) {
+      // Only clear auth on 401 (invalid token). Network errors should preserve cached state.
+      if (error?.status === 401) {
+        await clearAuthStorage();
+        setState((prev) => ({
+          ...prev,
+          user: null,
+          profile: null,
+          preferences: null,
+          isAuthenticated: false,
+          isLoading: false,
+          hasValidToken: false,
+        }));
+      } else {
+        // Network error or server error — keep cached profile intact
+        if (__DEV__) {
+          console.log('[Auth] fetchUser failed (non-401), keeping cached state:', error?.message);
+        }
+        setState((prev) => ({ ...prev, isLoading: false }));
+      }
       return false;
     }
   }, []);
@@ -290,6 +303,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     debugAuthStorage();
     fetchUser();
   }, [fetchUser]);
+
+  // Refresh user data when app comes to foreground (if stale >1 hour)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && state.isAuthenticated && !state.isDemoMode) {
+        const hoursSinceLastFetch = (Date.now() - lastFetchedAt.current) / (1000 * 60 * 60);
+        if (hoursSinceLastFetch > 1) {
+          fetchUser();
+        }
+      }
+    });
+    return () => subscription.remove();
+  }, [state.isAuthenticated, state.isDemoMode, fetchUser]);
 
   const login = useCallback(async (input: LoginInput) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));

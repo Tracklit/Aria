@@ -326,6 +326,10 @@ export async function getTodaysWorkout() {
   return apiRequest('/api/workouts/today');
 }
 
+export async function getTodaysWorkouts() {
+  return apiRequest('/api/workouts/today-all');
+}
+
 export async function getWorkout(id: number) {
   return apiRequest(`/api/workouts/${id}`);
 }

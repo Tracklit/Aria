@@ -100,6 +100,8 @@ export interface IStorage {
   getPlannedWorkout(id: number): Promise<PlannedWorkout | undefined>;
   getPlannedWorkoutsForDateRange(planId: number, startDate: Date, endDate: Date): Promise<PlannedWorkout[]>;
   getTodaysPlannedWorkout(userId: number): Promise<PlannedWorkout | undefined>;
+  getTodaysPlannedWorkouts(userId: number): Promise<PlannedWorkout[]>;
+  getTodaysProgramSessions(userId: number): Promise<Array<ProgramSession & { programTitle: string; programId: number }>>;
   createPlannedWorkout(data: InsertPlannedWorkout): Promise<PlannedWorkout>;
   updatePlannedWorkout(id: number, data: Partial<InsertPlannedWorkout>): Promise<PlannedWorkout | undefined>;
   deletePlannedWorkout(id: number): Promise<void>;
@@ -403,6 +405,49 @@ export class DatabaseStorage implements IStorage {
       ))
       .limit(1);
     return workout;
+  }
+
+  async getTodaysPlannedWorkouts(userId: number): Promise<PlannedWorkout[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const activePlan = await this.getActiveTrainingPlan(userId);
+    if (!activePlan) return [];
+
+    return db.select().from(plannedWorkouts)
+      .where(and(
+        eq(plannedWorkouts.planId, activePlan.id),
+        gte(plannedWorkouts.date, today),
+        lte(plannedWorkouts.date, tomorrow)
+      ));
+  }
+
+  async getTodaysProgramSessions(userId: number): Promise<Array<ProgramSession & { programTitle: string; programId: number }>> {
+    const userPrograms = await db.select().from(programs)
+      .where(and(eq(programs.userId, userId), eq(programs.status, 'active')));
+
+    const results: Array<ProgramSession & { programTitle: string; programId: number }> = [];
+
+    for (const program of userPrograms) {
+      const daysSinceCreated = Math.floor(
+        (Date.now() - new Date(program.createdAt!).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const currentDay = daysSinceCreated + 1;
+
+      const sessions = await db.select().from(programSessions)
+        .where(and(
+          eq(programSessions.programId, program.id),
+          eq(programSessions.dayNumber, currentDay)
+        ));
+
+      for (const session of sessions) {
+        results.push({ ...session, programTitle: program.title, programId: program.id });
+      }
+    }
+
+    return results;
   }
 
   async createPlannedWorkout(data: InsertPlannedWorkout): Promise<PlannedWorkout> {

@@ -726,6 +726,17 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  app.get('/api/workouts/today-all', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const plannedWorkouts = await storage.getTodaysPlannedWorkouts(req.userId!);
+      const programSessions = await storage.getTodaysProgramSessions(req.userId!);
+      res.json({ plannedWorkouts, programSessions });
+    } catch (error: any) {
+      console.error('Get today-all workouts error:', error);
+      res.status(500).json({ error: 'Failed to fetch today workouts' });
+    }
+  });
+
   app.get('/api/workouts/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const workoutId = parseInt(req.params.id);

@@ -123,11 +123,11 @@ export async function uploadFileToBlob(
 /**
  * Generate a read-only SAS URL for a blob. Uses user delegation key (managed identity).
  * Falls back to connection string shared key if delegation fails.
- * SAS is valid for 24 hours.
+ * SAS is valid for 168 hours (7 days).
  */
 export async function generateBlobSasUrl(
   blobUrl: string,
-  expiresInHours = 24
+  expiresInHours = 168
 ): Promise<string> {
   // Parse the blob URL to extract container and blob name
   // Format: https://<account>.blob.core.windows.net/<container>/<blobName>

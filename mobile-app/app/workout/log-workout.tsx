@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { impactLight, selectionChanged, notificationWarning, notificationSuccess } from '../../src/utils/haptics';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 import { logSprintWorkout, completeWorkout } from '../../src/lib/api';
@@ -28,12 +29,24 @@ interface Exercise {
 const SESSION_START = new Date().toISOString();
 
 export default function LogWorkoutScreen() {
-  const { plannedWorkoutId, workoutTitle } = useLocalSearchParams<{
+  const { plannedWorkoutId, workoutTitle, mode, sessionData: sessionDataParam } = useLocalSearchParams<{
     plannedWorkoutId?: string;
     workoutTitle?: string;
+    mode?: string;
+    sessionData?: string;
   }>();
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+
+  const isPostSession = mode === 'post-session';
+  const parsedSessionData = useMemo(() => {
+    if (!isPostSession || !sessionDataParam) return null;
+    try {
+      return JSON.parse(sessionDataParam);
+    } catch {
+      return null;
+    }
+  }, [isPostSession, sessionDataParam]);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString('en-US', {
@@ -42,9 +55,18 @@ export default function LogWorkoutScreen() {
     day: 'numeric',
   });
 
-  const [exercises, setExercises] = useState<Exercise[]>([
-    { name: '', repTimes: [''], notes: '' },
-  ]);
+  const [exercises, setExercises] = useState<Exercise[]>(() => {
+    if (parsedSessionData?.exercises) {
+      return parsedSessionData.exercises.map((ex: any) => ({
+        name: ex.name || '',
+        repTimes: ex.completedSets
+          ? ex.completedSets.map((_: boolean, i: number) => String(i + 1))
+          : [''],
+        notes: '',
+      }));
+    }
+    return [{ name: '', repTimes: [''], notes: '' }];
+  });
   const [rpe, setRpe] = useState<number | null>(null);
   const [sessionNotes, setSessionNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -127,9 +149,9 @@ export default function LogWorkoutScreen() {
 
     setSaving(true);
     const endTime = new Date();
-    const durationSeconds = Math.round(
-      (endTime.getTime() - new Date(SESSION_START).getTime()) / 1000
-    );
+    const durationSeconds = isPostSession && parsedSessionData
+      ? parsedSessionData.duration
+      : Math.round((endTime.getTime() - new Date(SESSION_START).getTime()) / 1000);
 
     const splits = validExercises.map((ex) => {
       const repTimes = ex.repTimes
@@ -149,7 +171,7 @@ export default function LogWorkoutScreen() {
 
     try {
       await logSprintWorkout({
-        title: workoutTitle || 'Sprint Session',
+        title: parsedSessionData?.sessionTitle || workoutTitle || 'Sprint Session',
         startTime: SESSION_START,
         endTime: endTime.toISOString(),
         durationSeconds,
@@ -233,7 +255,7 @@ export default function LogWorkoutScreen() {
           <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Log Workout</Text>
+          <Text style={styles.headerTitle}>{isPostSession ? 'Session Complete' : 'Log Workout'}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -245,12 +267,34 @@ export default function LogWorkoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Title + date */}
-          <Text style={styles.screenTitle}>{workoutTitle || 'Sprint Session'}</Text>
+          <Text style={styles.screenTitle}>{parsedSessionData?.sessionTitle || workoutTitle || 'Sprint Session'}</Text>
           <Text style={styles.dateLabel}>{dateLabel}</Text>
+
+          {isPostSession && parsedSessionData && (
+            <Animated.View entering={FadeInUp.duration(400)} style={styles.statsBanner}>
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>
+                  {Math.floor((parsedSessionData.duration || 0) / 60)}:{String((parsedSessionData.duration || 0) % 60).padStart(2, '0')}
+                </Text>
+                <Text style={styles.statLabel}>Total Time</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{parsedSessionData.exercisesCompleted || 0}</Text>
+                <Text style={styles.statLabel}>Exercises</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statBox}>
+                <Text style={styles.statValue}>{parsedSessionData.completedSets || 0}/{parsedSessionData.totalSets || 0}</Text>
+                <Text style={styles.statLabel}>Sets</Text>
+              </View>
+            </Animated.View>
+          )}
 
           {/* Exercise cards */}
           {exercises.map((ex, exIdx) => (
-            <View key={exIdx} style={styles.exerciseCard}>
+            <Animated.View key={exIdx} entering={FadeInUp.duration(400).delay(100 + exIdx * 60)}>
+            <View style={styles.exerciseCard}>
               <View style={styles.exerciseHeader}>
                 <TextInput
                   style={styles.exerciseNameInput}
@@ -306,6 +350,7 @@ export default function LogWorkoutScreen() {
                 onChangeText={(v) => updateExerciseNotes(exIdx, v)}
               />
             </View>
+            </Animated.View>
           ))}
 
           <TouchableOpacity style={styles.addExerciseBtn} onPress={addExercise}>
@@ -316,15 +361,18 @@ export default function LogWorkoutScreen() {
           {/* RPE Selector */}
           <Text style={styles.sectionLabel}>How did it feel?</Text>
           <View style={styles.rpeRow}>
-            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-              <TouchableOpacity
-                key={n}
-                style={[styles.rpeCircle, rpe === n && styles.rpeSelected]}
-                onPress={() => { selectionChanged(); setRpe(n === rpe ? null : n); }}
-              >
-                <Text style={[styles.rpeText, rpe === n && styles.rpeTextSelected]}>{n}</Text>
-              </TouchableOpacity>
-            ))}
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+              const rpeColor = n <= 3 ? colors.green : n <= 6 ? colors.yellow : n <= 8 ? colors.orange : colors.red;
+              return (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.rpeCircle, rpe === n && { backgroundColor: rpeColor }]}
+                  onPress={() => { selectionChanged(); setRpe(n === rpe ? null : n); }}
+                >
+                  <Text style={[styles.rpeText, rpe === n && styles.rpeTextSelected]}>{n}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <View style={styles.rpeLabels}>
             <Text style={styles.rpeLabelText}>Easy</Text>
@@ -393,6 +441,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: 15,
     color: colors.text.secondary,
     marginBottom: spacing.lg,
+  },
+
+  // ── Stats Banner ──
+  statsBanner: {
+    flexDirection: 'row',
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.teal,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.background.secondary,
   },
 
   // ── Exercise Card ──
@@ -503,9 +581,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.background.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  rpeSelected: {
-    backgroundColor: colors.primary,
   },
   rpeText: {
     color: colors.text.secondary,

@@ -7,6 +7,7 @@ import {
   getPlannedWorkouts,
   getWorkouts,
   getTodaysWorkout,
+  getTodaysWorkouts,
   startSession,
   updateSession,
   finishSession,
@@ -89,6 +90,18 @@ interface WorkoutState {
   activePlan: TrainingPlan | null;
   plannedWorkouts: PlannedWorkout[];
   todaysWorkout: PlannedWorkout | null;
+  todaysWorkouts: PlannedWorkout[];
+  todaysProgramSessions: Array<{
+    id: number;
+    programId: number;
+    programTitle: string;
+    dayNumber: number;
+    title: string | null;
+    description: string | null;
+    exercises: any;
+    duration: number | null;
+    notes: string | null;
+  }>;
   workoutHistory: Workout[];
   activeSession: WorkoutSession | null;
   isLoading: boolean;
@@ -101,6 +114,9 @@ interface WorkoutContextType extends WorkoutState {
   createPlan: (data: any) => Promise<TrainingPlan>;
   createLocalPlan: (data: Partial<TrainingPlan>) => Promise<TrainingPlan>;
   loadTodaysWorkout: () => Promise<void>;
+  todaysWorkouts: PlannedWorkout[];
+  todaysProgramSessions: Array<any>;
+  loadTodaysWorkouts: () => Promise<void>;
   loadWorkoutHistory: (limit?: number) => Promise<void>;
   startWorkoutSession: (plannedWorkoutId?: number) => Promise<WorkoutSession>;
   updateWorkoutSession: (data: any) => Promise<void>;
@@ -184,6 +200,8 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
     activePlan: null,
     plannedWorkouts: [],
     todaysWorkout: null,
+    todaysWorkouts: [],
+    todaysProgramSessions: [],
     workoutHistory: [],
     activeSession: null,
     isLoading: false,
@@ -355,6 +373,23 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   }, []);
 
+  const loadTodaysWorkouts = useCallback(async () => {
+    try {
+      const response = await getTodaysWorkouts() as {
+        plannedWorkouts: PlannedWorkout[];
+        programSessions: Array<any>;
+      };
+      setState((prev) => ({
+        ...prev,
+        todaysWorkouts: response.plannedWorkouts || [],
+        todaysProgramSessions: response.programSessions || [],
+        todaysWorkout: response.plannedWorkouts?.[0] || prev.todaysWorkout,
+      }));
+    } catch {
+      // API unavailable — keep existing state
+    }
+  }, []);
+
   const loadWorkoutHistory = useCallback(async (limit?: number) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
@@ -486,6 +521,7 @@ export const WorkoutProvider: React.FC<{ children: ReactNode }> = ({ children })
         createPlan,
         createLocalPlan,
         loadTodaysWorkout,
+        loadTodaysWorkouts,
         loadWorkoutHistory,
         startWorkoutSession,
         updateWorkoutSession,

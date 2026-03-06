@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import {
   Avatar as GSAvatar,
@@ -13,6 +13,7 @@ interface AvatarProps {
   uri?: string;
   size?: 'small' | 'medium' | 'large';
   showGradientRing?: boolean;
+  fallbackText?: string;
   style?: ViewStyle;
 }
 
@@ -28,21 +29,37 @@ export const Avatar: React.FC<AvatarProps> = ({
   uri,
   size = 'medium',
   showGradientRing = false,
+  fallbackText,
   style,
 }) => {
   const colors = useColors();
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const retryCount = useRef(0);
+  const [effectiveUri, setEffectiveUri] = useState(uri);
 
   useEffect(() => {
     setHasError(false);
+    retryCount.current = 0;
+    setEffectiveUri(uri);
+  }, [uri]);
+
+  const handleError = useCallback(() => {
+    setIsLoading(false);
+    if (retryCount.current < 2 && uri) {
+      retryCount.current += 1;
+      const separator = uri.includes('?') ? '&' : '?';
+      setEffectiveUri(`${uri}${separator}t=${Date.now()}`);
+    } else {
+      setHasError(true);
+    }
   }, [uri]);
 
   const avatarSize = SIZES[size];
   const containerSize = showGradientRing ? avatarSize + RING_WIDTH * 4 : avatarSize;
 
-  const showPlaceholder = !uri || hasError;
-  const showSpinner = uri && isLoading && !hasError;
+  const showPlaceholder = !effectiveUri || hasError;
+  const showSpinner = effectiveUri && isLoading && !hasError;
 
   if (showGradientRing) {
     return (
@@ -65,20 +82,17 @@ export const Avatar: React.FC<AvatarProps> = ({
           >
             {showPlaceholder ? (
               <GSAvatar style={[styles.avatar, { backgroundColor: colors.background.cardSolid }, { width: avatarSize, height: avatarSize }]}>
-                <AvatarFallbackText>AR</AvatarFallbackText>
+                <AvatarFallbackText>{fallbackText || 'AR'}</AvatarFallbackText>
               </GSAvatar>
             ) : (
               <>
                 <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
                   <AvatarImage
-                    source={{ uri }}
+                    source={{ uri: effectiveUri }}
                     alt="Profile avatar"
                     onLoadStart={() => setIsLoading(true)}
                     onLoadEnd={() => setIsLoading(false)}
-                    onError={() => {
-                      setIsLoading(false);
-                      setHasError(true);
-                    }}
+                    onError={handleError}
                   />
                 </GSAvatar>
                 {showSpinner ? (
@@ -98,20 +112,17 @@ export const Avatar: React.FC<AvatarProps> = ({
     <View style={[styles.container, style]}>
       {showPlaceholder ? (
         <GSAvatar style={[styles.avatar, { backgroundColor: colors.background.cardSolid }, { width: avatarSize, height: avatarSize }]}>
-          <AvatarFallbackText>AR</AvatarFallbackText>
+          <AvatarFallbackText>{fallbackText || 'AR'}</AvatarFallbackText>
         </GSAvatar>
       ) : (
         <>
           <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
             <AvatarImage
-              source={{ uri }}
+              source={{ uri: effectiveUri }}
               alt="Profile avatar"
               onLoadStart={() => setIsLoading(true)}
               onLoadEnd={() => setIsLoading(false)}
-              onError={() => {
-                setIsLoading(false);
-                setHasError(true);
-              }}
+              onError={handleError}
             />
           </GSAvatar>
           {showSpinner ? (
