@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -18,7 +18,11 @@
       "bundleIdentifier": "com.aria.mobile",
       "usesAppleSignIn": true,
       "appleTeamId": "2V636U3DWT",
-      "buildNumber": "14",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-dark.png"
+      },
+      "buildNumber": "15",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Aria needs access to your photo library to upload a profile picture.",
         "NSMicrophoneUsageDescription": "Aria needs microphone access for voice input to your AI coach.",

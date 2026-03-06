@@ -2,34 +2,23 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
-import { useAuth } from '../../src/context';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 export default function WelcomeScreen() {
-  const { demoLogin } = useAuth();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
 
-  const handleDemoLogin = async () => {
-    try {
-      await demoLogin();
-    } catch (error) {
-      console.error('Demo login failed:', error);
-    }
-  };
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={[colors.primary, '#0066CC']}
-              style={styles.logoGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Text style={styles.logoText}>A</Text>
-            </LinearGradient>
+            <Image
+              source={require('../../assets/AriaIconAppDark.png')}
+              style={styles.logoImage}
+            />
           </View>
 
           <Text style={styles.title}>Aria</Text>
@@ -91,21 +80,13 @@ export default function WelcomeScreen() {
             <Text style={styles.secondaryButtonText}>I already have an account</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            testID="welcome.demo_login"
-            style={styles.demoButton}
-            onPress={handleDemoLogin}
-          >
-            <Ionicons name="flask-outline" size={18} color={colors.teal} style={styles.demoIcon} />
-            <Text style={styles.demoButtonText}>Try Demo (No Server Required)</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -125,17 +106,10 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginBottom: spacing.lg,
   },
-  logoGradient: {
-    width: 100,
-    height: 100,
+  logoImage: {
+    width: 120,
+    height: 120,
     borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: colors.text.primary,
   },
   title: {
     ...typography.h1,
@@ -202,24 +176,5 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...typography.body,
     color: colors.text.secondary,
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    marginTop: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.teal,
-    borderStyle: 'dashed',
-  },
-  demoIcon: {
-    marginRight: spacing.sm,
-  },
-  demoButtonText: {
-    ...typography.body,
-    color: colors.teal,
-    fontWeight: '500',
   },
 });

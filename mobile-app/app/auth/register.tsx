@@ -11,6 +11,7 @@ import {
   ScrollView,
   Linking,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -20,7 +21,8 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../src/context';
 import { env } from '../../src/config/env';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,6 +36,8 @@ type FieldErrors = {
 
 export default function RegisterScreen() {
   const { register, appleLogin, googleLogin, isLoading, error, clearError } = useAuth();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   const googleClientIdForPlatform =
     Platform.OS === 'ios'
@@ -183,9 +187,10 @@ export default function RegisterScreen() {
           keyboardDismissMode="on-drag"
         >
           <View style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>A</Text>
-            </View>
+            <Image
+              source={require('../../assets/AriaIconAppDark.png')}
+              style={styles.logoImage}
+            />
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Start your training journey with Aria</Text>
           </View>
@@ -387,7 +392,7 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -418,19 +423,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: spacing.lg,
-  },
-  logoText: {
-    ...typography.h1,
-    color: colors.text.primary,
-    fontSize: 36,
   },
   title: {
     ...typography.h1,

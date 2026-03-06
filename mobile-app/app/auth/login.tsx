@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import Animated, { FadeIn, FadeInUp, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,13 +20,16 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../src/context';
 import { env } from '../../src/config/env';
-import { colors, typography, spacing, borderRadius } from '../../src/theme';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const reducedMotion = useReducedMotion();
   const { login, appleLogin, googleLogin, isLoading, error, clearError } = useAuth();
+  const styles = useThemedStyles(createStyles);
+  const colors = useColors();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -157,9 +161,10 @@ export default function LoginScreen() {
 
         <View style={styles.content}>
           <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(500).delay(200)} style={styles.logoContainer}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>A</Text>
-            </View>
+            <Image
+              source={require('../../assets/AriaIconAppDark.png')}
+              style={styles.logoImage}
+            />
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue your training</Text>
           </Animated.View>
@@ -290,7 +295,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -317,19 +322,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: spacing.lg,
-  },
-  logoText: {
-    ...typography.h1,
-    color: colors.text.primary,
-    fontSize: 36,
   },
   title: {
     ...typography.h1,
