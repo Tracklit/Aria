@@ -16,7 +16,7 @@ export default function WelcomeScreen() {
         <View style={styles.heroSection}>
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/full_logo_dark.png')}
+              source={require('../../assets/full_logo_transparent.png')}
               style={styles.fullLogo}
               resizeMode="contain"
             />

@@ -162,7 +162,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(500).delay(200)} style={styles.logoContainer}>
             <Image
-              source={require('../../assets/AriaIconAppDark.png')}
+              source={require('../../assets/icon_transparent.png')}
               style={styles.logoImage}
             />
             <Text style={styles.title}>Welcome Back</Text>

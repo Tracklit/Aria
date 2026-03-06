@@ -188,7 +188,7 @@ export default function RegisterScreen() {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../assets/AriaIconAppDark.png')}
+              source={require('../../assets/icon_transparent.png')}
               style={styles.logoImage}
             />
             <Text style={styles.title}>Create Account</Text>
