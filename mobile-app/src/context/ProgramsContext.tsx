@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import {
   getPrograms as apiGetPrograms,
+  getProgram as apiGetProgram,
   createProgram as apiCreateProgram,
   updateProgram as apiUpdateProgram,
   deleteProgram as apiDeleteProgram,
   uploadProgramFile as apiUploadFile,
   importGoogleSheet as apiImportSheet,
   generateProgram as apiGenerateProgram,
+  bulkUpsertSessions as apiBulkUpsertSessions,
 } from '../lib/api';
 
 export interface ProgramSession {
@@ -59,12 +61,14 @@ interface ProgramsState {
 
 interface ProgramsContextType extends ProgramsState {
   fetchPrograms: () => Promise<void>;
+  fetchProgramDetail: (id: number) => Promise<Program>;
   createProgram: (data: Partial<Program>) => Promise<Program>;
   updateProgram: (id: number, data: Partial<Program>) => Promise<void>;
   deleteProgram: (id: number) => Promise<void>;
   uploadProgram: (formData: FormData) => Promise<Program>;
   importSheet: (data: { title: string; googleSheetUrl: string; description?: string }) => Promise<Program>;
   generateProgram: (input: any) => Promise<Program>;
+  saveProgramSessions: (programId: number, sessions: any[]) => Promise<ProgramSession[]>;
 }
 
 const ProgramsContext = createContext<ProgramsContextType | undefined>(undefined);
@@ -75,6 +79,11 @@ export const ProgramsProvider: React.FC<{ children: ReactNode }> = ({ children }
     isLoading: false,
     error: null,
   });
+
+  const fetchProgramDetail = useCallback(async (id: number): Promise<Program> => {
+    const program = await apiGetProgram(id) as Program;
+    return program;
+  }, []);
 
   const fetchPrograms = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
@@ -143,8 +152,13 @@ export const ProgramsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   }, []);
 
+  const saveProgramSessions = useCallback(async (programId: number, sessions: any[]): Promise<ProgramSession[]> => {
+    const result = await apiBulkUpsertSessions(programId, sessions) as ProgramSession[];
+    return result;
+  }, []);
+
   return (
-    <ProgramsContext.Provider value={{ ...state, fetchPrograms, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram }}>
+    <ProgramsContext.Provider value={{ ...state, fetchPrograms, fetchProgramDetail, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram, saveProgramSessions }}>
       {children}
     </ProgramsContext.Provider>
   );

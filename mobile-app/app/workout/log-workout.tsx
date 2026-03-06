@@ -63,12 +63,14 @@ export default function LogWorkoutScreen() {
   }, []);
 
   const updateRepTime = useCallback((exIdx: number, repIdx: number, value: string) => {
-    // Allow only numbers and a single decimal point
-    const cleaned = value.replace(/[^0-9.]/g, '');
+    // Allow only numbers and a single decimal point; convert commas to periods
+    const cleaned = value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    const parts = cleaned.split('.');
+    const final = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned;
     setExercises((prev) => {
       const next = [...prev];
       const reps = [...next[exIdx].repTimes];
-      reps[repIdx] = cleaned;
+      reps[repIdx] = final;
       next[exIdx] = { ...next[exIdx], repTimes: reps };
       return next;
     });

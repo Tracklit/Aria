@@ -631,6 +631,22 @@ export async function getProgramTemplateCSV() {
   return apiRequest('/api/programs/templates', { rawResponse: true });
 }
 
+export async function createProgramSession(programId: number, data: any) {
+  return apiRequest(`/api/programs/${programId}/sessions`, { method: 'POST', data });
+}
+
+export async function updateProgramSession(programId: number, sessionId: number, data: any) {
+  return apiRequest(`/api/programs/${programId}/sessions/${sessionId}`, { method: 'PATCH', data });
+}
+
+export async function deleteProgramSession(programId: number, sessionId: number) {
+  return apiRequest(`/api/programs/${programId}/sessions/${sessionId}`, { method: 'DELETE' });
+}
+
+export async function bulkUpsertSessions(programId: number, sessions: any[]) {
+  return apiRequest(`/api/programs/${programId}/sessions`, { method: 'PUT', data: { sessions } });
+}
+
 // Sprint Workout Logging
 export async function logSprintWorkout(data: {
   title: string;

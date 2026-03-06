@@ -318,6 +318,8 @@ const createProgramSchema2 = z.object({
   duration: z.number().optional(),
   totalSessions: z.number().optional(),
   generatedBy: z.enum(['user', 'ai']).optional(),
+  isTextBased: z.boolean().optional(),
+  textContent: z.string().optional(),
 });
 
 const generateProgramSchema = z.object({
@@ -334,6 +336,21 @@ const importSheetSchema = z.object({
   title: z.string().min(1),
   googleSheetUrl: z.string().url(),
   description: z.string().optional(),
+});
+
+const programSessionSchema = z.object({
+  dayNumber: z.number().int().min(1),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  exercises: z.array(z.object({
+    name: z.string(),
+    sets: z.number().optional(),
+    reps: z.string().optional(),
+    duration: z.number().optional(),
+    rest: z.number().optional(),
+    notes: z.string().optional(),
+  })).optional(),
+  isRestDay: z.boolean().optional(),
 });
 
 // ==================== ROUTE REGISTRATION ====================
@@ -1547,9 +1564,64 @@ export function registerRoutes(app: Express): void {
   });
 
   app.get('/api/programs/templates', authMiddleware, async (_req: AuthenticatedRequest, res: Response) => {
-    const csv = 'Day,Title,Description,Exercises,IsRestDay\n1,Sprint Drills,Warm up then sprint drills,"[{""name"":""100m Sprint"",""sets"":3,""reps"":""1"",""rest"":180}]",false\n2,Rest Day,Recovery day,,true';
+    const csv = `Aria Training Program Template,,,,,,
+Instructions: Fill in each row with one day's training. Use separate rows for each event group if workouts differ.,,,,,,
+Delete these instruction rows and example data before uploading.,,,,,,
+,,,,,,
+Date,Session Type,Event Group,Exercise / Workout,Sets x Reps / Distance,Intensity (%),Rest / Notes
+3/3/2025,Sprint,100m,Sprintprep 1 (warmup + accelerations),See notes,,Jump rope / med ball tosses / rollups / multibounds / progressive sprints 20-80m
+3/3/2025,Supplementary,Elite,Core / upper body circuit,,,
+3/4/2025,Tempo,100m,Tempo Runs,5 x 200m,65-70%,4 min rest between reps
+3/5/2025,Gym,100m,Deep Squats,5 x 8,,Progressive loading
+3/5/2025,Gym,100m,Deadlift,5 x 6,,
+3/5/2025,Gym,100m,Backstep Lunges,4 x 8 (4 per leg),,
+3/5/2025,Gym,100m,Calf Raises,4 x 12,,Weight optional
+3/5/2025,Gym,100m,Back Extension,4 x 25,,
+3/5/2025,Gym,100m,Conc. Hamstring Curl,4 x 8,,
+3/6/2025,Recovery,100m,Core,,,
+3/6/2025,Supplementary,Elite,Core / upper body circuit,,,
+3/7/2025,Speed,100m,Phosphate System,2 x 3 x 60m,90-92%,Walk back rest / 4 min between sets
+3/8/2025,Gym,100m,Gym Session 0.5,,,See gym reference sheet
+3/9/2025,Rest,100m,Rest Day,,,
+3/10/2025,Speed,100m,F4s Sprint Sets,1x4x60 + 1x5x60 + 1x3x60m,90%,Walk rest / 2 min alt / 4 min between sets
+3/10/2025,Supplementary,Elite,Core / upper body circuit,,,
+,,,,,,
+=== WEEK 2 (Microdose Week) ===,,,,,,
+3/11/2025,Gym (Micro),100m,Box Jumps,3 x 4,,
+3/11/2025,Gym (Micro),100m,Deep Squats,4 x 4,,
+3/11/2025,Gym (Micro),100m,Lunges,3 x 3 per leg,,
+3/11/2025,Gym (Micro),100m,ISO Mid-thigh Pull,3 x 3 (4s hold),,
+3/11/2025,Gym (Micro),100m,Eccentric Hamstring,3 x 4,,
+3/11/2025,Gym (Micro),100m,Ankle Hops,4 x 6,,
+3/12/2025,Gym (Micro),100m,Box Jumps Frog,2 x 3,,Reduced volume
+3/12/2025,Gym (Micro),100m,Deep Squats,3 x 3,,
+3/12/2025,Gym (Micro),100m,Lunges,2 x 3 per leg,,
+3/12/2025,Gym (Micro),100m,Eccentric Hamstring,2 x 4,,
+3/13/2025,Recovery,100m,Core,,,
+,,,,,,
+=== REFERENCE: SESSION TYPES ===,,,,,,
+Sprint - Sprint prep / acceleration / block work,,,,,,
+Tempo - Sub-maximal aerobic capacity runs (60-80%),,,,,,
+Speed - Maximal or near-maximal sprint work (90-100%),,,,,,
+Gym - Strength / weightroom sessions,,,,,,
+Gym (Micro) - Microdose / reduced-volume strength,,,,,,
+Recovery - Core / mobility / active recovery,,,,,,
+Supplementary - Extra sessions (elite athletes),,,,,,
+Rest - Full rest day,,,,,,
+Competition - Meet / race day,,,,,,
+,,,,,,
+=== REFERENCE: EVENT GROUPS ===,,,,,,
+100m | 200m | 400m | Hurdles | All | Elite,,,,,,
+,,,,,,
+=== REFERENCE: INTENSITY GUIDE ===,,,,,,
+80% - Easy / warmup pace,,,,,,
+85% - Moderate / controlled,,,,,,
+90% - Fast / quality reps,,,,,,
+92% - High quality,,,,,,
+92-95% - Near max,,,,,,
+95-100% - Max effort / competition,,,,,,`;
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=program-template.csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=Aria_Program_Template.csv');
     res.send(csv);
   });
 
@@ -1684,6 +1756,106 @@ export function registerRoutes(app: Express): void {
       console.error('Program generation error:', error?.message || error);
       if (error?.stack) console.error('Stack:', error.stack);
       res.status(500).json({ error: 'Failed to generate program' });
+    }
+  });
+
+  // ==================== PROGRAM SESSION CRUD ====================
+
+  app.post('/api/programs/:id/sessions', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const programId = parseInt(req.params.id);
+      const program = await storage.getProgram(programId);
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const data = programSessionSchema.parse(req.body);
+      const session = await storage.createProgramSession({ programId, ...data });
+      res.status(201).json(session);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: 'Failed to create session' });
+    }
+  });
+
+  app.patch('/api/programs/:id/sessions/:sessionId', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const programId = parseInt(req.params.id);
+      const sessionId = parseInt(req.params.sessionId);
+      const program = await storage.getProgram(programId);
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const existing = await storage.getProgramSession(sessionId);
+      if (!existing || existing.programId !== programId) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      const session = await storage.updateProgramSession(sessionId, req.body);
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update session' });
+    }
+  });
+
+  app.delete('/api/programs/:id/sessions/:sessionId', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const programId = parseInt(req.params.id);
+      const sessionId = parseInt(req.params.sessionId);
+      const program = await storage.getProgram(programId);
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const existing = await storage.getProgramSession(sessionId);
+      if (!existing || existing.programId !== programId) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+      await storage.deleteProgramSession(sessionId);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete session' });
+    }
+  });
+
+  app.put('/api/programs/:id/sessions', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const programId = parseInt(req.params.id);
+      const program = await storage.getProgram(programId);
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      const { sessions } = req.body;
+      if (!Array.isArray(sessions)) {
+        return res.status(400).json({ error: 'sessions must be an array' });
+      }
+
+      const keepIds: number[] = [];
+      const results = [];
+
+      for (const s of sessions) {
+        if (s.id) {
+          // Update existing session
+          const updated = await storage.updateProgramSession(s.id, s);
+          if (updated) {
+            keepIds.push(updated.id);
+            results.push(updated);
+          }
+        } else {
+          // Create new session
+          const created = await storage.createProgramSession({ programId, ...s });
+          keepIds.push(created.id);
+          results.push(created);
+        }
+      }
+
+      // Delete sessions not in the provided list
+      await storage.deleteSessionsByProgramExcluding(programId, keepIds);
+
+      // Return all sessions for the program
+      const allSessions = await storage.getProgramSessions(programId);
+      res.json(allSessions);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to sync sessions' });
     }
   });
 

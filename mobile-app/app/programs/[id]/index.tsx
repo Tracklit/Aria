@@ -3,12 +3,12 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { usePrograms, Program } from '../../src/context/ProgramsContext';
-import { useSession } from '../../src/context/SessionContext';
-import { getProgram } from '../../src/lib/api';
+import { usePrograms, Program } from '../../../src/context/ProgramsContext';
+import { useSession } from '../../../src/context/SessionContext';
+import { getProgram } from '../../../src/lib/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
-import { ThemeColors } from '../../src/theme/colors';
+import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../../src/theme';
+import { ThemeColors } from '../../../src/theme/colors';
 
 interface ParsedSession {
   dayNumber: number;
@@ -34,11 +34,8 @@ function parseAIContent(content: string | null | undefined): ParsedSession[] {
 /** Return a clean description string, or null if it's just raw JSON / code fences */
 function cleanDescription(desc: string | null | undefined): string | null {
   if (!desc) return null;
-  // Strip markdown code fences
   let cleaned = desc.replace(/```(?:json)?\s*[\s\S]*?```/g, '').trim();
-  // If what's left looks like a JSON object/array, skip it
   if (/^\s*[\[{]/.test(cleaned) && /[\]}]\s*$/.test(cleaned)) return null;
-  // If nothing meaningful left, return null
   if (!cleaned || cleaned.length < 5) return null;
   return cleaned;
 }
@@ -63,7 +60,6 @@ export default function ProgramDetailScreen() {
       const data = await getProgram(parseInt(id)) as Program;
       setProgram(data);
 
-      // If sessions are empty, try parsing AI content from textContent or description
       if (!data.sessions || data.sessions.length === 0) {
         const fromText = parseAIContent(data.textContent);
         if (fromText.length > 0) {
@@ -152,9 +148,14 @@ export default function ProgramDetailScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{program.title}</Text>
-        <TouchableOpacity onPress={handleDelete}>
-          <Ionicons name="trash-outline" size={22} color={colors.red} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity onPress={() => router.push(`/programs/${id}/edit` as any)}>
+            <Ionicons name="create-outline" size={22} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleDelete}>
+            <Ionicons name="trash-outline" size={22} color={colors.red} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>

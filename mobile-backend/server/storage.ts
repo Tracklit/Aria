@@ -1,5 +1,5 @@
 import { db } from './db';
-import { eq, and, desc, asc, gte, lte, sql, isNull } from 'drizzle-orm';
+import { eq, and, desc, asc, gte, lte, sql, isNull, notInArray } from 'drizzle-orm';
 import {
   users,
   userProfiles,
@@ -179,6 +179,7 @@ export interface IStorage {
   createProgramSession(data: InsertProgramSession): Promise<ProgramSession>;
   updateProgramSession(id: number, data: Partial<InsertProgramSession>): Promise<ProgramSession | undefined>;
   deleteProgramSession(id: number): Promise<void>;
+  deleteSessionsByProgramExcluding(programId: number, keepIds: number[]): Promise<void>;
 
   // Analytics helpers
   getWeeklyStats(userId: number, weekStart: Date): Promise<{
@@ -828,6 +829,16 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProgramSession(id: number): Promise<void> {
     await db.delete(programSessions).where(eq(programSessions.id, id));
+  }
+
+  async deleteSessionsByProgramExcluding(programId: number, keepIds: number[]): Promise<void> {
+    if (keepIds.length === 0) {
+      await db.delete(programSessions).where(eq(programSessions.programId, programId));
+    } else {
+      await db.delete(programSessions).where(
+        and(eq(programSessions.programId, programId), notInArray(programSessions.id, keepIds))
+      );
+    }
   }
 }
 

@@ -25,7 +25,9 @@ export default function CreateProgramScreen() {
   const [level, setLevel] = useState<string[]>(['intermediate']);
   const [duration, setDuration] = useState('4');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [textContent, setTextContent] = useState('');
   const isAI = params.mode === 'ai';
+  const isText = params.mode === 'text';
 
   const handleCreate = async () => {
     if (!title.trim() && !isAI) return;
@@ -33,7 +35,7 @@ export default function CreateProgramScreen() {
     setIsGenerating(true);
     try {
       if (isAI) {
-        await generateProgram({
+        const program = await generateProgram({
           title: title || undefined,
           category: category[0],
           level: level[0],
@@ -41,8 +43,21 @@ export default function CreateProgramScreen() {
           description: description || undefined,
           preferredUnits: profile?.units === 'metric' ? 'metric' : 'imperial',
         });
+        notificationSuccess();
+        router.back();
+        return;
+      }
+
+      let program;
+      if (isText) {
+        program = await createProgram({
+          title,
+          description: '',
+          textContent,
+          isTextBased: true,
+        } as any);
       } else {
-        await createProgram({
+        program = await createProgram({
           title,
           description,
           category: category[0],
@@ -51,7 +66,7 @@ export default function CreateProgramScreen() {
         });
       }
       notificationSuccess();
-      router.back();
+      router.replace(`/programs/${program.id}/edit` as any);
     } catch (error) {
       console.error('Failed to create program:', error);
       Alert.alert('Error', 'Failed to create program. Please try again.');
@@ -66,7 +81,7 @@ export default function CreateProgramScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={28} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isAI ? 'AI Program' : 'New Program'}</Text>
+        <Text style={styles.headerTitle}>{isAI ? 'AI Program' : isText ? 'Text Program' : 'New Program'}</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -76,23 +91,32 @@ export default function CreateProgramScreen() {
           <TextInput style={styles.textInput} value={title} onChangeText={setTitle} placeholder="Program name" placeholderTextColor={colors.text.tertiary} />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>{isAI ? 'What should the program focus on?' : 'Description'}</Text>
-          <TextInput style={[styles.textInput, styles.textArea]} value={description} onChangeText={setDescription} placeholder={isAI ? 'e.g. 100m sprint preparation with block starts' : 'Optional description'} placeholderTextColor={colors.text.tertiary} multiline />
-        </View>
+        {isText ? (
+          <View style={styles.card}>
+            <Text style={styles.fieldLabel}>Program Content</Text>
+            <TextInput style={[styles.textInput, styles.textAreaLarge]} value={textContent} onChangeText={setTextContent} placeholder="Paste your training program here..." placeholderTextColor={colors.text.tertiary} multiline textAlignVertical="top" />
+          </View>
+        ) : (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.fieldLabel}>{isAI ? 'What should the program focus on?' : 'Description'}</Text>
+              <TextInput style={[styles.textInput, styles.textArea]} value={description} onChangeText={setDescription} placeholder={isAI ? 'e.g. 100m sprint preparation with block starts' : 'Optional description'} placeholderTextColor={colors.text.tertiary} multiline />
+            </View>
 
-        <View style={styles.card}>
-          <ChipGroup label="Category" options={CATEGORIES} selected={category} onToggle={(val) => setCategory([val])} />
-        </View>
+            <View style={styles.card}>
+              <ChipGroup label="Category" options={CATEGORIES} selected={category} onToggle={(val) => setCategory([val])} />
+            </View>
 
-        <View style={styles.card}>
-          <ChipGroup label="Level" options={LEVELS} selected={level} onToggle={(val) => setLevel([val])} />
-        </View>
+            <View style={styles.card}>
+              <ChipGroup label="Level" options={LEVELS} selected={level} onToggle={(val) => setLevel([val])} />
+            </View>
 
-        <View style={styles.card}>
-          <Text style={styles.fieldLabel}>Duration (weeks)</Text>
-          <TextInput style={styles.textInput} value={duration} onChangeText={setDuration} keyboardType="number-pad" />
-        </View>
+            <View style={styles.card}>
+              <Text style={styles.fieldLabel}>Duration (weeks)</Text>
+              <TextInput style={styles.textInput} value={duration} onChangeText={setDuration} keyboardType="number-pad" />
+            </View>
+          </>
+        )}
 
         <TouchableOpacity style={styles.createButton} onPress={handleCreate} disabled={isGenerating}>
           {isGenerating ? (
@@ -100,7 +124,7 @@ export default function CreateProgramScreen() {
           ) : (
             <>
               {isAI && <Ionicons name="sparkles" size={20} color={colors.text.primary} />}
-              <Text style={styles.createText}>{isAI ? 'Generate Program' : 'Create Program'}</Text>
+              <Text style={styles.createText}>{isAI ? 'Generate Program' : isText ? 'Save Program' : 'Create Program'}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -118,6 +142,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   fieldLabel: { ...typography.caption, color: colors.text.secondary, fontWeight: '600', marginBottom: spacing.xs },
   textInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.md },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
+  textAreaLarge: { minHeight: 200, textAlignVertical: 'top' },
   createButton: { backgroundColor: colors.primary, borderRadius: borderRadius.lg, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   createText: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
 });
