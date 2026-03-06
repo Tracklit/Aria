@@ -16,6 +16,7 @@ import {
 } from './auth';
 import {
   handleChat,
+  handleChatStream,
   generateTrainingPlan,
   determineDashboardMode,
   generateDashboardContent,
@@ -179,6 +180,7 @@ const finishSessionSchema = z.object({
 const chatSchema = z.object({
   message: z.string(),
   conversationId: z.number().optional(),
+  stream: z.boolean().optional(),
 });
 
 const generatePlanSchema = z.object({
@@ -1277,14 +1279,20 @@ export function registerRoutes(app: Express): void {
   app.post('/api/aria/chat', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const data = chatSchema.parse(req.body);
-      const result = await handleChat(req.userId!, data);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Chat error:', error);
-      if (error.name === 'ZodError') {
-        res.status(400).json({ error: 'Invalid input', details: error.errors });
+      if (data.stream) {
+        await handleChatStream(req.userId!, data, res);
       } else {
-        res.status(500).json({ error: 'Failed to process chat message' });
+        const result = await handleChat(req.userId!, data);
+        res.json(result);
+      }
+    } catch (error: any) {
+      if (!res.headersSent) {
+        console.error('Chat error:', error);
+        if (error.name === 'ZodError') {
+          res.status(400).json({ error: 'Invalid input', details: error.errors });
+        } else {
+          res.status(500).json({ error: 'Failed to process chat message' });
+        }
       }
     }
   });

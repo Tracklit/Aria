@@ -233,7 +233,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               streamingMessage: streamingMessageRef.current,
             }));
           },
-          () => {
+          (streamedConversationId?: number) => {
             // On complete
             const finalText = streamingMessageRef.current;
             const aiMessage: Message = {
@@ -250,6 +250,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
               return {
                 ...prev,
+                currentConversationId: streamedConversationId || prev.currentConversationId,
                 messages: [...updatedMessages, aiMessage],
                 streamingMessage: null,
                 isSending: false,

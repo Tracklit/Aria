@@ -20,7 +20,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
 import { transcribeVoiceAudio } from '../../src/lib/api';
-import { colors } from '../../src/theme';
+import { useThemedStyles, useColors } from '../../src/theme';
+import { ThemeColors } from '../../src/theme/colors';
 
 const SUGGESTIONS = [
   'How should I prepare for my first 5K?',
@@ -28,6 +29,8 @@ const SUGGESTIONS = [
 ];
 
 export default function ChatScreen() {
+  const colors = useColors();
+  const styles = useThemedStyles(createStyles);
   const {
     messages,
     streamingMessage,
@@ -427,7 +430,7 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,

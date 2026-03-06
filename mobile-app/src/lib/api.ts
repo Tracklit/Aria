@@ -1,5 +1,6 @@
 import { env } from '../config/env';
 import { getToken, setToken, getRefreshToken, setRefreshToken, clearAuthStorage } from './tokenStorage';
+import EventSource from 'react-native-sse';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -451,106 +452,74 @@ export async function sendChatMessage(input: ChatInput): Promise<ChatResponse> {
 export async function sendChatMessageStream(
   input: ChatInput,
   onChunk: (text: string) => void,
-  onComplete?: () => void,
+  onComplete?: (conversationId?: number) => void,
   onError?: (error: Error) => void
 ): Promise<void> {
   const token = await getToken();
   const url = `${env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL}/api/aria/chat`;
 
   if (DEBUG_API) {
-    console.log('[API] POST /api/aria/chat (streaming)');
+    console.log('[API] POST /api/aria/chat (streaming via SSE)');
   }
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
+  return new Promise<void>((resolve, reject) => {
+    let conversationId: number | undefined;
+
+    const es = new EventSource<'message'>(url, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        Accept: 'text/event-stream',
       },
+      method: 'POST',
       body: JSON.stringify({ ...input, stream: true }),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || `Streaming request failed with status ${response.status}`);
-    }
+    es.addEventListener('message', (event: any) => {
+      const data = event.data;
+      if (!data) return;
 
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    // Read the stream
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
+      if (data === '[DONE]') {
         if (DEBUG_API) {
-          console.log('[API] Stream completed');
+          console.log('[API] Received [DONE] signal');
         }
-        onComplete?.();
-        break;
+        es.close();
+        onComplete?.(conversationId);
+        resolve();
+        return;
       }
 
-      // Decode the chunk
-      buffer += decoder.decode(value, { stream: true });
+      try {
+        const parsed = JSON.parse(data);
 
-      // Process complete lines
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-
-        if (trimmed === '') continue;
-
-        // Handle SSE format: "data: {json}"
-        if (trimmed.startsWith('data: ')) {
-          const data = trimmed.substring(6);
-
-          if (data === '[DONE]') {
-            if (DEBUG_API) {
-              console.log('[API] Received [DONE] signal');
-            }
-            onComplete?.();
-            return;
+        if (parsed.type === 'metadata') {
+          conversationId = parsed.conversationId;
+          if (DEBUG_API) {
+            console.log('[API] Stream metadata, conversationId:', conversationId);
           }
-
-          try {
-            const parsed = JSON.parse(data);
-
-            // Handle different streaming formats
-            if (parsed.content) {
-              onChunk(parsed.content);
-            } else if (parsed.token) {
-              onChunk(parsed.token);
-            } else if (parsed.text) {
-              onChunk(parsed.text);
-            } else if (typeof parsed === 'string') {
-              onChunk(parsed);
-            }
-          } catch (parseError) {
-            // If not JSON, treat as plain text
-            onChunk(data);
-          }
-        } else {
-          // Non-SSE format, just plain text
-          onChunk(trimmed);
+        } else if (parsed.type === 'chunk' && parsed.content) {
+          onChunk(parsed.content);
+        } else if (parsed.type === 'error') {
+          es.close();
+          const err = new Error(parsed.message || 'Streaming error');
+          onError?.(err);
+          reject(err);
         }
+      } catch {
+        // If not JSON, treat as plain text chunk
+        onChunk(data);
       }
-    }
-  } catch (error) {
-    if (DEBUG_API) {
-      console.error('[API] Streaming error:', error);
-    }
-    onError?.(error as Error);
-    throw error;
-  }
+    });
+
+    es.addEventListener('error', (event: any) => {
+      if (DEBUG_API) {
+        console.error('[API] SSE error:', event);
+      }
+      es.close();
+      const err = new Error(event?.message || 'SSE connection failed');
+      onError?.(err);
+      reject(err);
+    });
+  });
 }
 
 export async function generateAIPlan(data: any) {

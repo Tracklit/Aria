@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import os
 from dotenv import load_dotenv
-from openai import AzureOpenAI
+from openai import AzureOpenAI, AsyncAzureOpenAI
 from azure.identity import DefaultAzureCredential
 import requests
 from datetime import datetime, timezone, timedelta
@@ -102,12 +102,28 @@ try:
             )
         AZURE_OPENAI_DEPLOYMENT = get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT") or get_env_with_keyvault_resolution("AZURE_OPENAI_DEPLOYMENT_NAME")
         logger.info(f"Azure OpenAI initialized: endpoint={endpoint}, deployment={AZURE_OPENAI_DEPLOYMENT}")
+
+        # Initialize async client for streaming
+        if api_key:
+            async_client = AsyncAzureOpenAI(
+                azure_endpoint=endpoint,
+                api_key=api_key,
+                api_version="2024-02-15-preview"
+            )
+        else:
+            async_client = AsyncAzureOpenAI(
+                azure_endpoint=endpoint,
+                azure_ad_token_provider=lambda: credential.get_token("https://cognitiveservices.azure.com/.default").token,
+                api_version="2024-02-15-preview"
+            )
     else:
         client = None
+        async_client = None
         AZURE_OPENAI_DEPLOYMENT = None
         logger.warning("Azure OpenAI endpoint not found - AI features will be unavailable")
 except Exception as e:
     client = None
+    async_client = None
     AZURE_OPENAI_DEPLOYMENT = None
     logger.warning(f"Failed to initialize Azure OpenAI client: {e}")
 
@@ -769,46 +785,33 @@ async def cancel_subscription(request: Request, user_data: dict):
 # ENHANCED AI CONSULTATION ENDPOINTS
 # =============================================================================
 
-@app.post("/ask", response_model=AskResponse)
-@apply_rate_limit("ask")
-async def ask_aria(request: Request, req: AskRequest):
-    # Ensure Azure OpenAI is available
-    ensure_ai_available()
-    
-    try:
-        # Generate or use session ID for conversation continuity
-        import uuid
-        session_id = getattr(req, 'session_id', None) or str(uuid.uuid4())
-        
-        # Save user message to conversation history
-        save_conversation(
-            user_id=req.user_id,
-            session_id=session_id,
-            role="user",
-            message=req.user_input
-        )
-        
-        # Get user profile for context
-        user = get_athlete_profile(req.user_id)
-        mood = user.get("mood", "neutral")
-        streak = user.get("streak_count", 0)
-        badges = user.get("badges", [])
+def _build_ask_messages(req: AskRequest) -> tuple:
+    """Build messages array and session_id for /ask and /ask/stream endpoints."""
+    import uuid
+    session_id = getattr(req, 'session_id', None) or str(uuid.uuid4())
 
-        mood_extra = ""
-        if mood.lower() in ["tired", "sore"]:
-            mood_extra = " The athlete reports being " + mood + ". Adjust advice to be more recovery-oriented."
-        elif mood.lower() in ["motivated", "good"]:
-            mood_extra = " The athlete reports feeling " + mood + ". You can push a bit more."
+    save_conversation(user_id=req.user_id, session_id=session_id, role="user", message=req.user_input)
 
-        tone_instruction = COACH_MODES.get(user.get("coach_mode", "supportive"), COACH_MODES["supportive"])
+    user = get_athlete_profile(req.user_id)
+    mood = user.get("mood", "neutral")
+    streak = user.get("streak_count", 0)
+    badges = user.get("badges", [])
 
-        mood_flag = ""
-        if user.get("sleep_quality", "").lower() in ["bad", "poor"]:
-            mood_flag = "The athlete might be tired or mentally off today. Adjust tone accordingly."
-        if user.get("injury_status", "").lower() not in ["none", "", "no injury"]:
-            mood_flag += " They are dealing with an injury, so show empathy and caution."
+    mood_extra = ""
+    if mood.lower() in ["tired", "sore"]:
+        mood_extra = " The athlete reports being " + mood + ". Adjust advice to be more recovery-oriented."
+    elif mood.lower() in ["motivated", "good"]:
+        mood_extra = " The athlete reports feeling " + mood + ". You can push a bit more."
 
-        user_context = f"""
+    tone_instruction = COACH_MODES.get(user.get("coach_mode", "supportive"), COACH_MODES["supportive"])
+
+    mood_flag = ""
+    if user.get("sleep_quality", "").lower() in ["bad", "poor"]:
+        mood_flag = "The athlete might be tired or mentally off today. Adjust tone accordingly."
+    if user.get("injury_status", "").lower() not in ["none", "", "no injury"]:
+        mood_flag += " They are dealing with an injury, so show empathy and caution."
+
+    user_context = f"""
 Name: {user['name']}
 Gender: {user['gender']}
 Age: {user['age']}
@@ -821,40 +824,36 @@ Streak: {streak}
 Badges: {badges}
 """
 
-        # Build messages array with proper OpenAI format
-        messages = []
-        
-        # 1. Add system prompt (custom or default)
-        if req.system_prompt:
-            # Use custom system prompt from request
-            messages.append({"role": "system", "content": req.system_prompt})
-        else:
-            # Use default Aria prompt with coaching style and mood adjustments
-            system_content = f"{ARIA_PROMPT}\n\nCoaching Style: {tone_instruction}\n{mood_extra}\n{mood_flag}"
-            messages.append({"role": "system", "content": system_content})
-        
-        # 2. Add conversation history as individual messages (if provided)
-        if req.conversation_history:
-            for msg in req.conversation_history:
-                messages.append({
-                    "role": msg.get("role", "user"),
-                    "content": msg.get("content", "")
-                })
-        else:
-            # Fallback: Get recent context from database if no history provided
-            recent_context = get_recent_context(req.user_id, hours=24)
-            if recent_context:
-                for c in recent_context[-5:]:  # Last 5 messages
-                    messages.append({
-                        "role": c.get("role", "user"),
-                        "content": c.get("message", "")
-                    })
-        
-        # 3. Add user context as a system message (for athlete profile info)
-        messages.append({"role": "system", "content": f"Current athlete context:\n{user_context}"})
-        
-        # 4. Add current user message
-        messages.append({"role": "user", "content": req.user_input})
+    messages = []
+    if req.system_prompt:
+        messages.append({"role": "system", "content": req.system_prompt})
+    else:
+        system_content = f"{ARIA_PROMPT}\n\nCoaching Style: {tone_instruction}\n{mood_extra}\n{mood_flag}"
+        messages.append({"role": "system", "content": system_content})
+
+    if req.conversation_history:
+        for msg in req.conversation_history:
+            messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
+    else:
+        recent_context = get_recent_context(req.user_id, hours=24)
+        if recent_context:
+            for c in recent_context[-5:]:
+                messages.append({"role": c.get("role", "user"), "content": c.get("message", "")})
+
+    messages.append({"role": "system", "content": f"Current athlete context:\n{user_context}"})
+    messages.append({"role": "user", "content": req.user_input})
+
+    return messages, session_id
+
+
+@app.post("/ask", response_model=AskResponse)
+@apply_rate_limit("ask")
+async def ask_aria(request: Request, req: AskRequest):
+    # Ensure Azure OpenAI is available
+    ensure_ai_available()
+
+    try:
+        messages, session_id = _build_ask_messages(req)
 
         response = client.chat.completions.create(
             model=AZURE_OPENAI_DEPLOYMENT,
@@ -890,6 +889,45 @@ Badges: {badges}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ask/stream")
+@apply_rate_limit("ask")
+async def ask_aria_stream(request: Request, req: AskRequest):
+    ensure_ai_available()
+    if async_client is None:
+        raise HTTPException(status_code=503, detail="Async AI client not available")
+
+    messages, session_id = _build_ask_messages(req)
+
+    async def generate():
+        accumulated = ""
+        try:
+            stream = await async_client.chat.completions.create(
+                model=AZURE_OPENAI_DEPLOYMENT,
+                messages=messages,
+                temperature=0.7,
+                stream=True
+            )
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    token = chunk.choices[0].delta.content
+                    accumulated += token
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': token})}\n\n"
+
+            save_conversation(req.user_id, session_id, "assistant", accumulated)
+            await track_usage_internal(req.user_id, "ask", len(accumulated) // 4)
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            logger.error(f"Streaming error: {e}", user_id=req.user_id)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
+    )
+
 
 @app.post("/ask/media", response_model=AskResponse)
 @apply_rate_limit("ask_media")

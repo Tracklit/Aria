@@ -312,6 +312,75 @@ export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
   }
 }
 
+export interface StreamCallbacks {
+  onChunk: (content: string) => void;
+  onDone: () => void;
+  onError: (error: string) => void;
+}
+
+export async function callAriaAPIStream(request: AriaAPIRequest, callbacks: StreamCallbacks): Promise<void> {
+  const requestId = Math.random().toString(36).slice(2, 8);
+  console.log('Sending to Aria API (streaming):', {
+    request_id: requestId,
+    user_id: request.user_id,
+    user_input_length: request.user_input.length,
+  });
+
+  const response = await fetch(`${ARIA_API_URL}/ask/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Aria API returned ${response.status}: ${errorText}`);
+  }
+
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data: ')) continue;
+      const data = trimmed.substring(6);
+
+      if (data === '[DONE]') {
+        callbacks.onDone();
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.type === 'chunk' && parsed.content) {
+          callbacks.onChunk(parsed.content);
+        } else if (parsed.type === 'error') {
+          callbacks.onError(parsed.message || 'Unknown streaming error');
+          return;
+        }
+      } catch {
+        // Skip unparseable lines
+      }
+    }
+  }
+
+  // If stream ended without [DONE], call onDone anyway
+  callbacks.onDone();
+}
+
 // ==================== NUTRITION PLAN GENERATION ====================
 
 export interface NutritionPlanInput {
@@ -532,6 +601,106 @@ export async function handleChat(userId: number, input: ChatInput): Promise<Chat
     conversationId,
     response: aiResponse,
   };
+}
+
+export async function handleChatStream(userId: number, input: ChatInput, res: import('express').Response): Promise<void> {
+  const { message, conversationId: existingConversationId } = input;
+
+  let conversationId = existingConversationId;
+
+  // Create new conversation if needed
+  if (!conversationId) {
+    const isUuidLike = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(message || '');
+    const title = (message && !isUuidLike && message.trim().length > 0)
+      ? message.slice(0, 50) + (message.length > 50 ? '...' : '')
+      : 'New Conversation';
+
+    const conversation = await storage.createAriaConversation({ userId, title });
+    conversationId = conversation.id;
+  }
+
+  // Save user message
+  await storage.createAriaMessage({
+    conversationId,
+    role: 'user',
+    content: message,
+    promptCost: 1,
+  });
+
+  // Fetch conversation history
+  let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  try {
+    const allMessages = await storage.getAriaMessages(conversationId);
+    conversationHistory = allMessages.slice(-11, -1).map((msg) => ({
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+    }));
+  } catch (error) {
+    console.error('Error fetching conversation history:', error);
+  }
+
+  // Build context
+  const userContext = await buildUserContext(userId);
+  const contextString = formatUserContextForAI(userContext);
+  const systemPrompt = buildAriaSystemPrompt();
+  const userInputWithContext = `${message}\n\n${contextString}`;
+
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  // Send metadata event with conversationId
+  res.write(`data: ${JSON.stringify({ type: 'metadata', conversationId })}\n\n`);
+
+  let accumulated = '';
+
+  try {
+    await callAriaAPIStream(
+      {
+        user_id: userId.toString(),
+        user_input: userInputWithContext,
+        system_prompt: systemPrompt,
+        conversation_history: conversationHistory,
+      },
+      {
+        onChunk: (content: string) => {
+          accumulated += content;
+          res.write(`data: ${JSON.stringify({ type: 'chunk', content })}\n\n`);
+        },
+        onDone: () => {
+          // Will be handled after the await
+        },
+        onError: (errorMsg: string) => {
+          res.write(`data: ${JSON.stringify({ type: 'error', message: errorMsg })}\n\n`);
+        },
+      }
+    );
+
+    // Clean and save the response
+    const cleaned = cleanAIResponse(accumulated, message);
+
+    await storage.createAriaMessage({
+      conversationId,
+      role: 'assistant',
+      content: cleaned,
+      promptCost: 0,
+    });
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  } catch (error: any) {
+    console.error('Streaming chat error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to process streaming chat' });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Streaming failed' })}\n\n`);
+      res.end();
+    }
+  }
 }
 
 // ==================== PLAN GENERATION ====================
