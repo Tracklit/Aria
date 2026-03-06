@@ -24,6 +24,7 @@ export default function CreateNutritionPlan() {
   const [dietary, setDietary] = useState<string[]>([]);
   const [locality, setLocality] = useState('');
   const [calorieTarget, setCalorieTarget] = useState('');
+  const [notes, setNotes] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [manualTitle, setManualTitle] = useState('');
@@ -38,6 +39,7 @@ export default function CreateNutritionPlan() {
         dietaryRestrictions: dietary,
         locality: locality || undefined,
         calorieTarget: calorieTarget ? parseInt(calorieTarget) : undefined,
+        notes: notes || undefined,
         preferredUnits: profile?.units === 'metric' ? 'metric' : 'imperial',
       });
       notificationSuccess();
@@ -103,6 +105,19 @@ export default function CreateNutritionPlan() {
           <TextInput style={styles.textInput} value={calorieTarget} onChangeText={setCalorieTarget} placeholder="e.g. 2500" placeholderTextColor={colors.text.tertiary} keyboardType="number-pad" />
         </View>
 
+        <View style={styles.card}>
+          <Text style={styles.fieldLabel}>Additional Instructions (optional)</Text>
+          <TextInput
+            style={[styles.textInput, styles.textArea]}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="e.g. High protein breakfast, no dairy after lunch, include pre-workout snacks..."
+            placeholderTextColor={colors.text.tertiary}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
         <TouchableOpacity style={styles.generateButton} onPress={handleGenerate} disabled={isGenerating}>
           {isGenerating ? (
             <ActivityIndicator color={colors.text.primary} />
@@ -141,6 +156,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   card: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md },
   fieldLabel: { ...typography.caption, color: colors.text.secondary, fontWeight: '600', marginBottom: spacing.xs },
   textInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.md },
+  textArea: { minHeight: 80, textAlignVertical: 'top' as const },
   generateButton: { backgroundColor: colors.primary, borderRadius: borderRadius.lg, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   generateText: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
   manualButton: { alignItems: 'center', padding: spacing.md },

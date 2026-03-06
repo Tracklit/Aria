@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ const FILTERS: FilterOption[] = ['All', 'Active', 'Archived'];
 export default function NutritionScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
-  const { plans, isLoading, fetchPlans } = useNutrition();
+  const { plans, isLoading, fetchPlans, deletePlan, updatePlan } = useNutrition();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
   useEffect(() => {
@@ -35,6 +35,17 @@ export default function NutritionScreen() {
     <NutritionPlanCard
       plan={item}
       onPress={() => router.push(`/nutrition/${item.id}`)}
+      onDelete={() => {
+        Alert.alert('Delete Plan', 'Are you sure?', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlan(item.id); impactLight(); } },
+        ]);
+      }}
+      onEdit={() => router.push(`/nutrition/${item.id}`)}
+      onArchive={async () => {
+        await updatePlan(item.id, { status: item.status === 'active' ? 'archived' : 'active' });
+        impactLight();
+      }}
     />
   );
 

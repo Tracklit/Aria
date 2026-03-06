@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
 import { ThemeColors } from '../../theme/colors';
 import { MacroBar } from './MacroBar';
@@ -16,13 +18,65 @@ interface NutritionPlanCardProps {
     status?: string | null;
   };
   onPress: () => void;
+  onDelete?: () => void;
+  onEdit?: () => void;
+  onArchive?: () => void;
+  onShare?: () => void;
 }
 
-export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress }) => {
+export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress, onDelete, onEdit, onArchive, onShare }) => {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
+  const swipeableRef = React.useRef<Swipeable>(null);
+
+  const renderLeftActions = () => {
+    if (!onDelete && !onEdit) return null;
+    return (
+      <View style={styles.swipeActionsLeft}>
+        {onDelete && (
+          <TouchableOpacity style={[styles.swipeAction, styles.swipeDelete]} onPress={() => { swipeableRef.current?.close(); onDelete(); }}>
+            <Ionicons name="trash-outline" size={20} color="#fff" />
+            <Text style={styles.swipeActionText}>Delete</Text>
+          </TouchableOpacity>
+        )}
+        {onEdit && (
+          <TouchableOpacity style={[styles.swipeAction, styles.swipeEdit]} onPress={() => { swipeableRef.current?.close(); onEdit(); }}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.swipeActionText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderRightActions = () => {
+    if (!onArchive && !onShare) return null;
+    return (
+      <View style={styles.swipeActionsRight}>
+        {onArchive && (
+          <TouchableOpacity style={[styles.swipeAction, styles.swipeArchive]} onPress={() => { swipeableRef.current?.close(); onArchive(); }}>
+            <Ionicons name="archive-outline" size={20} color="#fff" />
+            <Text style={styles.swipeActionText}>Archive</Text>
+          </TouchableOpacity>
+        )}
+        {onShare && (
+          <TouchableOpacity style={[styles.swipeAction, styles.swipeShare]} onPress={() => { swipeableRef.current?.close(); onShare(); }}>
+            <Ionicons name="share-outline" size={20} color="#fff" />
+            <Text style={styles.swipeActionText}>Share</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
+    <Swipeable
+      ref={swipeableRef}
+      renderLeftActions={renderLeftActions}
+      renderRightActions={renderRightActions}
+      overshootLeft={false}
+      overshootRight={false}
+    >
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1}>{plan.title}</Text>
@@ -58,6 +112,7 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
         </View>
       )}
     </TouchableOpacity>
+    </Swipeable>
   );
 };
 
@@ -126,4 +181,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text.secondary,
     textTransform: 'capitalize',
   },
+  swipeActionsLeft: { flexDirection: 'row', marginBottom: spacing.md },
+  swipeActionsRight: { flexDirection: 'row', marginBottom: spacing.md },
+  swipeAction: { justifyContent: 'center', alignItems: 'center', width: 72, borderRadius: borderRadius.lg },
+  swipeDelete: { backgroundColor: '#FF453A' },
+  swipeEdit: { backgroundColor: '#0A84FF' },
+  swipeArchive: { backgroundColor: '#FF9F0A' },
+  swipeShare: { backgroundColor: '#30D5C8' },
+  swipeActionText: { color: '#fff', fontSize: 11, marginTop: 4, fontWeight: '500' },
 });

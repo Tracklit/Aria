@@ -15,9 +15,16 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../src/context';
 import { useTheme } from '../src/context/ThemeContext';
-import { impactLight, notificationSuccess } from '../src/utils/haptics';
+import { impactLight, selectionChanged, notificationSuccess } from '../src/utils/haptics';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../src/theme';
 import { ThemeColors } from '../src/theme/colors';
+
+const GENDER_OPTIONS = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Non-binary', value: 'non-binary' },
+  { label: 'Prefer not to say', value: 'undisclosed' },
+];
 
 export default function ProfileScreen() {
   const styles = useThemedStyles(createStyles);
@@ -106,14 +113,19 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Gender</Text>
-            <TextInput
-              testID="profile.gender"
-              style={styles.input}
-              value={gender}
-              onChangeText={setGender}
-              placeholder="Gender"
-              placeholderTextColor={colors.text.tertiary}
-            />
+            <View style={styles.genderPills}>
+              {GENDER_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.genderPill, gender === option.value && styles.genderPillSelected]}
+                  onPress={() => { selectionChanged(); setGender(option.value); }}
+                >
+                  <Text style={[styles.genderPillText, gender === option.value && styles.genderPillTextSelected]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Date of Birth</Text>
@@ -312,5 +324,28 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text.primary,
     fontSize: 18,
     fontWeight: '600',
+  },
+  genderPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  genderPill: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  genderPillSelected: {
+    backgroundColor: colors.chip.selected,
+  },
+  genderPillText: {
+    color: colors.text.primary,
+    fontSize: 14,
+  },
+  genderPillTextSelected: {
+    color: colors.text.primary,
+    fontWeight: '600' as const,
   },
 });

@@ -370,7 +370,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   // Summary card
   summaryCard: { borderRadius: borderRadius.lg, padding: spacing.lg },
   summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
-  summaryTitle: { ...typography.h2, color: colors.text.primary, flex: 1, marginRight: spacing.sm },
+  summaryTitle: { ...typography.h2, color: '#FFFFFF', flex: 1, marginRight: spacing.sm },
   statusBadge: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full },
   statusActive: { backgroundColor: 'rgba(50, 215, 75, 0.15)' },
   statusArchived: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
@@ -378,8 +378,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   statusTextActive: { color: colors.green },
   statusTextArchived: { color: colors.text.secondary },
   calorieRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
-  calorieValue: { fontSize: 36, fontWeight: '700', color: colors.text.primary },
-  calorieUnit: { ...typography.body, color: colors.text.secondary },
+  calorieValue: { fontSize: 36, fontWeight: '700', color: '#FFFFFF' },
+  calorieUnit: { ...typography.body, color: 'rgba(255,255,255,0.7)' },
   // Chart
   chartSection: { alignItems: 'center', paddingVertical: spacing.lg },
   // Card

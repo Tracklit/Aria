@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ const CATEGORIES = ['all', 'sprint', 'endurance', 'strength', 'flexibility'];
 export default function ProgramsTabScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
-  const { programs, isLoading, fetchPrograms } = usePrograms();
+  const { programs, isLoading, fetchPrograms, deleteProgram } = usePrograms();
   const [filter, setFilter] = useState<string[]>(['all']);
 
   useEffect(() => { fetchPrograms(); }, [fetchPrograms]);
@@ -33,7 +33,17 @@ export default function ProgramsTabScreen() {
       <FlatList
         data={filtered}
         renderItem={({ item }) => (
-          <ProgramCard program={item} onPress={() => router.push(`/programs/${item.id}` as any)} />
+          <ProgramCard
+            program={item}
+            onPress={() => router.push(`/programs/${item.id}` as any)}
+            onDelete={() => {
+              Alert.alert('Delete Program', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: async () => { await deleteProgram(item.id); impactLight(); } },
+              ]);
+            }}
+            onEdit={() => router.push(`/programs/${item.id}/edit` as any)}
+          />
         )}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
