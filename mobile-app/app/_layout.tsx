@@ -6,6 +6,7 @@ import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { useFonts, SpaceGrotesk_300Light, SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { SpaceMono_400Regular } from '@expo-google-fonts/space-mono';
 import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppProviders, useAuth, useTheme } from '../src/context';
 import { setupNotificationListeners } from '../src/services/notifications';
 import { useColors } from '../src/theme';
@@ -149,14 +150,16 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ErrorBoundary>
-      <GluestackUIProvider config={gluestackConfig as any}>
-        <AppProviders>
-          <RootLayoutNav />
-          <ToastContainer />
-        </AppProviders>
-      </GluestackUIProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <GluestackUIProvider config={gluestackConfig as any}>
+          <AppProviders>
+            <RootLayoutNav />
+            <ToastContainer />
+          </AppProviders>
+        </GluestackUIProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 
