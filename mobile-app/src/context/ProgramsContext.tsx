@@ -9,6 +9,8 @@ import {
   importGoogleSheet as apiImportSheet,
   generateProgram as apiGenerateProgram,
   bulkUpsertSessions as apiBulkUpsertSessions,
+  toggleProgramStatus as apiToggleStatus,
+  setActiveWeek as apiSetActiveWeek,
 } from '../lib/api';
 
 export interface ProgramSession {
@@ -47,6 +49,7 @@ export interface Program {
   isTextBased?: boolean;
   textContent?: string | null;
   generatedBy?: string | null;
+  activeWeek?: number | null;
   status?: string | null;
   sessions?: ProgramSession[];
   createdAt?: string;
@@ -69,6 +72,8 @@ interface ProgramsContextType extends ProgramsState {
   importSheet: (data: { title: string; googleSheetUrl: string; description?: string }) => Promise<Program>;
   generateProgram: (input: any) => Promise<Program>;
   saveProgramSessions: (programId: number, sessions: any[]) => Promise<ProgramSession[]>;
+  toggleProgramStatus: (id: number) => Promise<void>;
+  setActiveWeek: (programId: number, week: number) => Promise<void>;
 }
 
 const ProgramsContext = createContext<ProgramsContextType | undefined>(undefined);
@@ -157,8 +162,26 @@ export const ProgramsProvider: React.FC<{ children: ReactNode }> = ({ children }
     return result;
   }, []);
 
+  const toggleProgramStatus = useCallback(async (id: number) => {
+    const program = state.programs.find(p => p.id === id);
+    const newStatus = program?.status === 'archived' ? 'active' : 'archived';
+    const updated = await apiToggleStatus(id, newStatus) as Program;
+    setState(prev => ({
+      ...prev,
+      programs: prev.programs.map(p => p.id === id ? updated : p),
+    }));
+  }, [state.programs]);
+
+  const setActiveWeek = useCallback(async (programId: number, week: number) => {
+    const updated = await apiSetActiveWeek(programId, week) as Program;
+    setState(prev => ({
+      ...prev,
+      programs: prev.programs.map(p => p.id === programId ? updated : p),
+    }));
+  }, []);
+
   return (
-    <ProgramsContext.Provider value={{ ...state, fetchPrograms, fetchProgramDetail, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram, saveProgramSessions }}>
+    <ProgramsContext.Provider value={{ ...state, fetchPrograms, fetchProgramDetail, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram, saveProgramSessions, toggleProgramStatus, setActiveWeek }}>
       {children}
     </ProgramsContext.Provider>
   );

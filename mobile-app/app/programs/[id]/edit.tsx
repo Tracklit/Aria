@@ -1,4 +1,4 @@
-import React, { useReducer, useEffect, useState, useCallback } from 'react';
+import React, { useReducer, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   FlatList, Switch, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
@@ -8,29 +8,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { useAuth } from '../../../src/context';
 import { usePrograms } from '../../../src/context/ProgramsContext';
 import { getProgram } from '../../../src/lib/api';
 import { impactLight, selectionChanged, notificationSuccess } from '../../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../../src/theme';
 import { ThemeColors } from '../../../src/theme/colors';
-import { getDayLabel, safeParseExercises } from '../../../src/utils/formatting';
+import { getDayLabel } from '../../../src/utils/formatting';
+import { buildProgramEditorState, normalizeProgramSessions } from '../../../src/utils/programSessions';
+import type {
+  HydratedProgramExercise,
+  HydratedProgramSession,
+} from '../../../src/utils/programSessions';
 
-interface ExerciseDraft {
-  name: string;
-  sets?: number;
-  reps?: string;
-  duration?: number;
-  rest?: number;
-  notes?: string;
+type RestUnit = 'seconds' | 'minutes';
+type WeekMode = 'repeat' | 'custom';
+
+interface ExerciseDraft extends HydratedProgramExercise {
+  restUnit: RestUnit;
 }
 
-interface SessionDraft {
-  id?: number;
-  dayNumber: number;
-  title: string;
-  description: string;
+interface SessionDraft extends Omit<HydratedProgramSession, 'exercises'> {
   exercises: ExerciseDraft[];
-  isRestDay: boolean;
 }
 
 interface EditorState {
@@ -47,7 +46,91 @@ type EditorAction =
   | { type: 'TOGGLE_REST_DAY'; dayNumber: number }
   | { type: 'ADD_EXERCISE'; dayNumber: number }
   | { type: 'UPDATE_EXERCISE'; dayNumber: number; exerciseIdx: number; data: Partial<ExerciseDraft> }
+  | { type: 'UPDATE_EXERCISE_REST_UNIT'; dayNumber: number; exerciseIdx: number; restUnit: RestUnit }
   | { type: 'REMOVE_EXERCISE'; dayNumber: number; exerciseIdx: number };
+
+function inferRestUnit(rest?: number): RestUnit {
+  if (!rest) return 'seconds';
+  return rest >= 60 && rest % 60 === 0 ? 'minutes' : 'seconds';
+}
+
+function toRestInputValue(rest: number | undefined, restUnit: RestUnit): string {
+  if (rest === undefined) return '';
+  return restUnit === 'minutes' ? String(rest / 60) : String(rest);
+}
+
+function toStoredRestValue(value: string, restUnit: RestUnit): number | undefined {
+  if (!value.trim()) return undefined;
+  const parsed = parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  const seconds = restUnit === 'minutes' ? parsed * 60 : parsed;
+  return Math.round(seconds);
+}
+
+function toExerciseDraft(exercise: HydratedProgramExercise): ExerciseDraft {
+  return {
+    ...exercise,
+    restUnit: inferRestUnit(exercise.rest),
+  };
+}
+
+function toSessionDraft(session: HydratedProgramSession): SessionDraft {
+  return {
+    ...session,
+    exercises: session.exercises.map(toExerciseDraft),
+  };
+}
+
+function cloneExerciseDraft(exercise: ExerciseDraft): ExerciseDraft {
+  return { ...exercise };
+}
+
+function buildRepeatedWeekSessions(sessions: SessionDraft[], weeks: number): SessionDraft[] {
+  const firstWeekSessions = new Map<number, SessionDraft>();
+  const existingByDay = new Map<number, SessionDraft>();
+
+  for (const session of sessions) {
+    existingByDay.set(session.dayNumber, session);
+    if (session.dayNumber <= 7 && !firstWeekSessions.has(session.dayNumber)) {
+      firstWeekSessions.set(session.dayNumber, session);
+    }
+  }
+
+  const repeatedSessions: SessionDraft[] = [];
+  for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
+    const dayOffset = weekIndex * 7;
+    for (let dayInWeek = 1; dayInWeek <= 7; dayInWeek += 1) {
+      const template = firstWeekSessions.get(dayInWeek);
+      const targetDay = dayInWeek + dayOffset;
+      const existing = existingByDay.get(targetDay);
+
+      if (template) {
+        repeatedSessions.push({
+          ...(existing?.id !== undefined ? { id: existing.id } : {}),
+          dayNumber: targetDay,
+          title: template.title,
+          description: template.description,
+          exercises: template.exercises.map(cloneExerciseDraft),
+          isRestDay: template.isRestDay,
+          ...(existing?.isCompleted !== undefined ? { isCompleted: existing.isCompleted } : {}),
+        });
+        continue;
+      }
+
+      repeatedSessions.push({
+        ...(existing?.id !== undefined ? { id: existing.id } : {}),
+        dayNumber: targetDay,
+        title: '',
+        description: '',
+        exercises: [],
+        isRestDay: false,
+        ...(existing?.isCompleted !== undefined ? { isCompleted: existing.isCompleted } : {}),
+      });
+    }
+  }
+
+  return repeatedSessions;
+}
 
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -73,9 +156,11 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
     case 'TOGGLE_REST_DAY':
       return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, isRestDay: !s.isRestDay, exercises: !s.isRestDay ? [] : s.exercises } : s), isDirty: true };
     case 'ADD_EXERCISE':
-      return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, exercises: [...s.exercises, { name: '', sets: undefined, reps: '', rest: undefined }] } : s), isDirty: true };
+      return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, exercises: [...s.exercises, { name: '', sets: undefined, reps: '', rest: undefined, restUnit: 'seconds' }] } : s), isDirty: true };
     case 'UPDATE_EXERCISE':
       return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, exercises: s.exercises.map((ex, i) => i === action.exerciseIdx ? { ...ex, ...action.data } : ex) } : s), isDirty: true };
+    case 'UPDATE_EXERCISE_REST_UNIT':
+      return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, exercises: s.exercises.map((ex, i) => i === action.exerciseIdx ? { ...ex, restUnit: action.restUnit } : ex) } : s), isDirty: true };
     case 'REMOVE_EXERCISE':
       return { ...state, sessions: state.sessions.map(s => s.dayNumber === action.dayNumber ? { ...s, exercises: s.exercises.filter((_, i) => i !== action.exerciseIdx) } : s), isDirty: true };
     default:
@@ -87,42 +172,44 @@ export default function ProgramEditorScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { saveProgramSessions } = usePrograms();
+  const { hasValidToken, isLoading: isAuthLoading } = useAuth();
+  const { saveProgramSessions, updateProgram } = usePrograms();
   const [programTitle, setProgramTitle] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [selectedWeek, setSelectedWeek] = useState(1);
+  const [weekMode, setWeekMode] = useState<WeekMode>('custom');
 
   const [state, dispatch] = useReducer(editorReducer, { sessions: [], weeks: 1, isDirty: false });
 
-  useEffect(() => { loadProgram(); }, [id]);
+  useEffect(() => {
+    if (isAuthLoading) return;
+    if (!hasValidToken || !id) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    loadProgram();
+  }, [hasValidToken, id, isAuthLoading]);
+
+  useEffect(() => {
+    if (weekMode === 'repeat' && selectedWeek !== 1) {
+      setSelectedWeek(1);
+    }
+  }, [selectedWeek, weekMode]);
 
   const loadProgram = async () => {
     try {
       const data = await getProgram(parseInt(id));
       setProgramTitle((data as any).title);
-      const existingSessions = ((data as any).sessions || []).map((s: any) => ({
-        id: s.id,
-        dayNumber: s.dayNumber,
-        title: s.title || '',
-        description: s.description || '',
-        exercises: safeParseExercises(s.exercises),
-        isRestDay: s.isRestDay || false,
-      }));
-      const maxDay = existingSessions.reduce((max: number, s: any) => Math.max(max, s.dayNumber), 0);
-      const weeks = Math.max(1, Math.ceil(maxDay / 7));
-      const totalDays = weeks * 7;
-      const allSessions: SessionDraft[] = [];
-      for (let d = 1; d <= totalDays; d++) {
-        const existing = existingSessions.find((s: any) => s.dayNumber === d);
-        if (existing) {
-          allSessions.push(existing);
-        } else {
-          allSessions.push({ dayNumber: d, title: '', description: '', exercises: [], isRestDay: false });
-        }
-      }
-      dispatch({ type: 'INIT', sessions: allSessions, weeks });
+      const editorState = buildProgramEditorState(data as any);
+      const persistedSessions = normalizeProgramSessions((data as any).sessions);
+      const maxPersistedDay = persistedSessions.reduce((maxDay, session) => Math.max(maxDay, session.dayNumber), 0);
+      setWeekMode(editorState.weeks > 1 && (persistedSessions.length === 0 || maxPersistedDay <= 7) ? 'repeat' : 'custom');
+      setSelectedWeek(1);
+      dispatch({ type: 'INIT', sessions: editorState.sessions.map(toSessionDraft), weeks: editorState.weeks });
     } catch (error) {
       console.error('Failed to load program:', error);
       Alert.alert('Error', 'Failed to load program');
@@ -132,21 +219,38 @@ export default function ProgramEditorScreen() {
   };
 
   const handleSave = async () => {
+    if (!hasValidToken) {
+      Alert.alert('Sign In Required', 'Please sign in again to edit this program.');
+      return;
+    }
+
     setSaving(true);
     try {
-      const sessionsToSave = state.sessions
+      const sourceSessions = weekMode === 'repeat' && state.weeks > 1
+        ? buildRepeatedWeekSessions(state.sessions, state.weeks)
+        : state.sessions;
+      const sessionsToSave = sourceSessions
         .filter(s => s.isRestDay || s.exercises.length > 0 || s.title)
         .map(s => ({
           ...(s.id ? { id: s.id } : {}),
           dayNumber: s.dayNumber,
           title: s.title || (s.isRestDay ? 'Rest Day' : getDayLabel(s.dayNumber)),
           description: s.description,
-          exercises: s.isRestDay ? [] : s.exercises.filter(ex => ex.name.trim()),
+          exercises: s.isRestDay ? [] : s.exercises
+            .filter(ex => ex.name.trim())
+            .map(({ restUnit, ...exercise }) => exercise),
           isRestDay: s.isRestDay,
         }));
-      await saveProgramSessions(parseInt(id), sessionsToSave);
+      const [savedSessions] = await Promise.all([
+        saveProgramSessions(parseInt(id), sessionsToSave),
+        updateProgram(parseInt(id), { duration: state.weeks }),
+      ]);
+      const editorState = buildProgramEditorState(
+        { duration: state.weeks, sessions: savedSessions },
+        { minimumWeeks: state.weeks },
+      );
       notificationSuccess();
-      dispatch({ type: 'INIT', sessions: state.sessions, weeks: state.weeks });
+      dispatch({ type: 'INIT', sessions: editorState.sessions.map(toSessionDraft), weeks: editorState.weeks });
       Alert.alert('Saved', 'Program sessions saved successfully.');
     } catch (error) {
       console.error('Failed to save:', error);
@@ -166,6 +270,9 @@ export default function ProgramEditorScreen() {
   };
 
   const weekSessions = state.sessions.filter(s => {
+    if (weekMode === 'repeat') {
+      return s.dayNumber <= 7;
+    }
     const weekNum = Math.ceil(s.dayNumber / 7);
     return weekNum === selectedWeek;
   });
@@ -209,12 +316,33 @@ export default function ProgramEditorScreen() {
           />
         </View>
         <View style={styles.exerciseFieldWrap}>
-          <Text style={styles.exerciseFieldLabel}>Rest (s)</Text>
+          <View style={styles.restFieldHeader}>
+            <Text style={styles.exerciseFieldLabel}>Rest</Text>
+            <View style={styles.restUnitToggle}>
+              <TouchableOpacity
+                style={[styles.restUnitBtn, ex.restUnit === 'seconds' && styles.restUnitBtnActive]}
+                onPress={() => dispatch({ type: 'UPDATE_EXERCISE_REST_UNIT', dayNumber: session.dayNumber, exerciseIdx: exIdx, restUnit: 'seconds' })}
+              >
+                <Text style={[styles.restUnitText, ex.restUnit === 'seconds' && styles.restUnitTextActive]}>sec</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.restUnitBtn, ex.restUnit === 'minutes' && styles.restUnitBtnActive]}
+                onPress={() => dispatch({ type: 'UPDATE_EXERCISE_REST_UNIT', dayNumber: session.dayNumber, exerciseIdx: exIdx, restUnit: 'minutes' })}
+              >
+                <Text style={[styles.restUnitText, ex.restUnit === 'minutes' && styles.restUnitTextActive]}>min</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           <TextInput
             style={styles.exerciseFieldInput}
-            value={ex.rest?.toString() || ''}
-            onChangeText={text => dispatch({ type: 'UPDATE_EXERCISE', dayNumber: session.dayNumber, exerciseIdx: exIdx, data: { rest: text ? parseInt(text) || undefined : undefined } })}
-            keyboardType="number-pad"
+            value={toRestInputValue(ex.rest, ex.restUnit)}
+            onChangeText={text => dispatch({
+              type: 'UPDATE_EXERCISE',
+              dayNumber: session.dayNumber,
+              exerciseIdx: exIdx,
+              data: { rest: toStoredRestValue(text, ex.restUnit) },
+            })}
+            keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
             placeholder="-"
             placeholderTextColor={colors.text.tertiary}
           />
@@ -324,12 +452,40 @@ export default function ProgramEditorScreen() {
             <TouchableOpacity
               key={w}
               style={[styles.weekPill, selectedWeek === w && styles.weekPillActive]}
-              onPress={() => { selectionChanged(); setSelectedWeek(w); }}
+              onPress={() => {
+                if (weekMode === 'repeat') return;
+                selectionChanged();
+                setSelectedWeek(w);
+              }}
+              disabled={weekMode === 'repeat'}
             >
               <Text style={[styles.weekPillText, selectedWeek === w && styles.weekPillTextActive]}>Week {w}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        <View style={styles.modeCard}>
+          <Text style={styles.modeLabel}>Week Setup</Text>
+          <View style={styles.modeToggleRow}>
+            <TouchableOpacity
+              style={[styles.modeBtn, weekMode === 'repeat' && styles.modeBtnActive]}
+              onPress={() => setWeekMode('repeat')}
+            >
+              <Text style={[styles.modeBtnText, weekMode === 'repeat' && styles.modeBtnTextActive]}>Repeat Week 1</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeBtn, weekMode === 'custom' && styles.modeBtnActive]}
+              onPress={() => setWeekMode('custom')}
+            >
+              <Text style={[styles.modeBtnText, weekMode === 'custom' && styles.modeBtnTextActive]}>Custom Weeks</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.modeHint}>
+            {weekMode === 'repeat'
+              ? `Edit week 1 once. It will be copied to weeks 2-${state.weeks} when you save.`
+              : 'Each week can have its own sessions and exercises.'}
+          </Text>
+        </View>
 
         {/* Week Controls */}
         <View style={styles.weekControls}>
@@ -386,6 +542,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   weekPillActive: { backgroundColor: colors.teal },
   weekPillText: { ...typography.caption, color: colors.text.secondary },
   weekPillTextActive: { color: '#fff', fontWeight: '600' },
+  modeCard: { marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, gap: spacing.xs },
+  modeLabel: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
+  modeToggleRow: { flexDirection: 'row', gap: spacing.xs },
+  modeBtn: { flex: 1, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.text.tertiary + '25', paddingVertical: spacing.sm, alignItems: 'center', backgroundColor: colors.background.secondary },
+  modeBtnActive: { backgroundColor: colors.teal, borderColor: colors.teal },
+  modeBtnText: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
+  modeBtnTextActive: { color: '#fff' },
+  modeHint: { ...typography.caption, color: colors.text.tertiary },
   weekControls: { flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   weekControlBtn: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: borderRadius.sm, backgroundColor: colors.background.cardSolid, borderWidth: 1, borderColor: colors.text.tertiary + '20' },
   weekControlText: { ...typography.caption, color: colors.text.secondary },
@@ -408,6 +572,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   exerciseNameInput: { ...typography.body, color: colors.text.primary, flex: 1 },
   exerciseFields: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
   exerciseFieldWrap: { flex: 1 },
+  restFieldHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, gap: spacing.xs },
+  restUnitToggle: { flexDirection: 'row', backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, borderWidth: 1, borderColor: colors.text.tertiary + '20', overflow: 'hidden' },
+  restUnitBtn: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
+  restUnitBtnActive: { backgroundColor: colors.teal },
+  restUnitText: { ...typography.caption, color: colors.text.tertiary, fontSize: 10, fontWeight: '600' },
+  restUnitTextActive: { color: '#fff' },
   exerciseFieldLabel: { ...typography.caption, color: colors.text.tertiary, fontSize: 10, marginBottom: 2 },
   exerciseFieldInput: { ...typography.caption, color: colors.text.primary, backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, padding: spacing.xs, textAlign: 'center', borderWidth: 1, borderColor: colors.text.tertiary + '25' },
   addExerciseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.sm, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.teal, borderStyle: 'dashed', gap: spacing.xs },

@@ -95,3 +95,19 @@
 - **Prevention guardrail**: When redeploying with the same `latest` image tag, Azure Container Apps does NOT create a new revision automatically. Must add `--revision-suffix "name-$(date +%s)"` to `az containerapp update` to force pulling the updated image.
 - **Test coverage added**: Verified `/ask/stream` returns non-404 (422 validation error with test data), and full E2E streaming chat works with real auth token.
 - **Deployment/runtime caveat**: Always use `--revision-suffix` when redeploying `latest` tags. Consider using unique tags (e.g., git SHA) instead of `latest` to avoid this class of issue.
+
+## 13. Profile Picture Local Cache / Expired SAS Hardening (2026-03-06)
+- **Symptom**: Profile photo uploads could still 500 during the blob/container path, and even successful uploads could later disappear because the app rendered expiring SAS URLs directly with no persisted profile or local photo cache on cold start/offline.
+- **Root cause**: The storage upload fallback still attempted `containerClient.create({ access: 'blob' })` against a storage account with blob public access disabled, SAS generation was still treated as part of the critical response path after upload, only the user object was persisted locally, and some profile-photo surfaces bypassed the shared `Avatar` fallback behavior by rendering raw `Image` components.
+- **Exact fix**: In `mobile-backend/server/azure-storage.ts`, changed missing-container creation to `containerClient.create()` so the upload flow stays compatible with private blob access. In `mobile-backend/server/routes.ts`, added phased diagnostics for profile upload failures (`storage_upload`, `db_update`, `sas_generation`) and made SAS generation non-fatal after a successful blob upload + DB write by returning the raw blob URL when needed. In the mobile app, added `mobile-app/src/lib/profileImageCache.ts` using `expo-file-system`, persisted `@aria_profile` alongside the stored user in `tokenStorage.ts`, hydrated cached profile + local cached image in `AuthContext` before `fetchUser()`, cached the local image immediately on upload, refreshed the local cache in the background after `fetchUser()`, and cleared stored profile/image state in `clearAuthStorage()`. Updated `Avatar.tsx` to fall back to the cached local file on first image-load failure, and switched dashboard + plan profile-photo rendering to the shared `Avatar` component.
+- **Prevention guardrail**: Profile photos are now treated as an on-device cached asset with server URLs acting as sync state instead of the sole display source. Storage logs now identify which phase failed, and profile-photo UI should use the shared `Avatar` component rather than raw `Image` tags so expired SAS URLs can fall back to the local cache path.
+- **Test coverage added**: Type/syntax validation only — `mobile-app` `npm run test:types` and `mobile-backend` `npm run build:server`.
+- **Deployment/runtime caveat**: No schema or deployment changes required for this code path, but blob upload still depends on the existing `profile-images` container and valid Azure Blob permissions for the backend identity/credentials.
+
+## 14. Dashboard Hardcoded "Good Morning" Greeting (2026-03-07)
+- **Symptom**: Dashboard always showed "Good Morning" regardless of time of day
+- **Root cause**: Line 210 of `dashboard.tsx` hardcoded `"Good Morning, {displayName}"` instead of using the `greeting` variable from `useDashboard()` which already computes time-based greetings
+- **Exact fix**: Changed to `{greeting || 'Good Morning'}, {displayName}` in `dashboard.tsx`
+- **Prevention guardrail**: No durable learning identified — simple variable reference fix
+- **Test coverage added**: None
+- **Deployment/runtime caveat**: None

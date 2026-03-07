@@ -22,12 +22,16 @@ interface NutritionPlanCardProps {
   onEdit?: () => void;
   onArchive?: () => void;
   onShare?: () => void;
+  onActivate?: () => void;
 }
 
-export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress, onDelete, onEdit, onArchive, onShare }) => {
+export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress, onDelete, onEdit, onArchive, onShare, onActivate }) => {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const swipeableRef = React.useRef<Swipeable>(null);
+
+  const isActive = plan.status === 'active';
+  const isArchived = plan.status === 'archived';
 
   const renderLeftActions = () => {
     if (!onDelete && !onEdit) return null;
@@ -56,7 +60,7 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
         {onArchive && (
           <TouchableOpacity style={[styles.swipeAction, styles.swipeArchive]} onPress={() => { swipeableRef.current?.close(); onArchive(); }}>
             <Ionicons name="archive-outline" size={20} color="#fff" />
-            <Text style={styles.swipeActionText}>Archive</Text>
+            <Text style={styles.swipeActionText}>{isArchived ? 'Restore' : 'Archive'}</Text>
           </TouchableOpacity>
         )}
         {onShare && (
@@ -77,22 +81,39 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
       overshootLeft={false}
       overshootRight={false}
     >
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[
+        styles.container,
+        isActive && styles.containerActive,
+        isArchived && styles.containerArchived,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1}>{plan.title}</Text>
-        {plan.status && (
-          <View style={[styles.statusBadge, plan.status === 'active' ? styles.activeBadge : styles.archivedBadge]}>
-            <Text style={styles.statusText}>{plan.status}</Text>
-          </View>
-        )}
+        <Text style={[styles.title, isArchived && styles.titleArchived]} numberOfLines={1}>{plan.title}</Text>
+        <View style={styles.headerRight}>
+          {isActive && (
+            <View style={styles.activeBadge}>
+              <Ionicons name="checkmark-circle" size={12} color="#32D74B" />
+              <Text style={styles.activeBadgeText}>ACTIVE</Text>
+            </View>
+          )}
+          {isArchived && (
+            <View style={styles.archivedBadge}>
+              <Ionicons name="archive" size={12} color="#8E8E93" />
+              <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {plan.calorieTarget && (
-        <Text style={styles.calories}>{plan.calorieTarget} kcal / day</Text>
+        <Text style={[styles.calories, isArchived && styles.textArchived]}>{plan.calorieTarget} kcal / day</Text>
       )}
 
       {(plan.proteinGrams || plan.carbsGrams || plan.fatsGrams) && (
-        <View style={styles.macroSection}>
+        <View style={[styles.macroSection, isArchived && { opacity: 0.5 }]}>
           <MacroBar
             protein={plan.proteinGrams || 0}
             carbs={plan.carbsGrams || 0}
@@ -106,11 +127,19 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
         </View>
       )}
 
-      {plan.season && (
-        <View style={styles.seasonBadge}>
-          <Text style={styles.seasonText}>{plan.season.replace('_', ' ')}</Text>
-        </View>
-      )}
+      <View style={styles.footerRow}>
+        {plan.season && (
+          <View style={styles.seasonBadge}>
+            <Text style={styles.seasonText}>{plan.season.replace('_', ' ')}</Text>
+          </View>
+        )}
+        {!isActive && !isArchived && onActivate && (
+          <TouchableOpacity style={styles.activateBtn} onPress={onActivate}>
+            <Ionicons name="flash" size={14} color="#32D74B" />
+            <Text style={styles.activateBtnText}>Activate</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </TouchableOpacity>
     </Swipeable>
   );
@@ -123,11 +152,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.md,
   },
+  containerActive: {
+    borderWidth: 1,
+    borderColor: 'rgba(50, 215, 75, 0.4)',
+  },
+  containerArchived: {
+    opacity: 0.6,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   title: {
     ...typography.body,
@@ -135,27 +176,46 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
-  statusBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    marginLeft: spacing.sm,
+  titleArchived: {
+    color: colors.text.tertiary,
   },
   activeBadge: {
-    backgroundColor: 'rgba(50, 215, 75, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(50, 215, 75, 0.15)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  activeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#32D74B',
+    letterSpacing: 0.5,
   },
   archivedBadge: {
-    backgroundColor: 'rgba(142, 142, 147, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(142, 142, 147, 0.15)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
   },
-  statusText: {
-    ...typography.caption,
-    color: colors.text.secondary,
-    textTransform: 'capitalize',
+  archivedBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#8E8E93',
+    letterSpacing: 0.5,
   },
   calories: {
     ...typography.h3,
     color: colors.text.primary,
     marginBottom: spacing.sm,
+  },
+  textArchived: {
+    color: colors.text.tertiary,
   },
   macroSection: {
     marginTop: spacing.xs,
@@ -168,18 +228,37 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   macroLabel: {
     ...typography.caption,
   },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
+  },
   seasonBadge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.background.secondary,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
-    marginTop: spacing.sm,
   },
   seasonText: {
     ...typography.caption,
     color: colors.text.secondary,
     textTransform: 'capitalize',
+  },
+  activateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(50, 215, 75, 0.1)',
+  },
+  activateBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#32D74B',
   },
   swipeActionsLeft: { flexDirection: 'row', marginBottom: spacing.md },
   swipeActionsRight: { flexDirection: 'row', marginBottom: spacing.md },

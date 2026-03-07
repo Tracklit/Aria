@@ -33,6 +33,12 @@ const sprintTools = [
     gradient: ['#BF5AF2', '#5E5CE6'] as [string, string],
     route: '/tools/sprint-predictor',
   },
+  {
+    title: 'Timer',
+    icon: 'timer-outline' as const,
+    gradient: ['#FF9F0A', '#FF453A'] as [string, string],
+    route: '/tools/timer',
+  },
 ];
 
 const trainingItems = [

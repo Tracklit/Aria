@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Ale
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../src/context';
 import { usePrograms, Program } from '../../src/context/ProgramsContext';
 import { ProgramCard } from '../../src/components/features/ProgramCard';
 import { ChipGroup } from '../../src/components/features/ChipGroup';
@@ -15,10 +16,14 @@ const CATEGORIES = ['all', 'sprint', 'endurance', 'strength', 'flexibility'];
 export default function ProgramsScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { hasValidToken, isLoading: isAuthLoading } = useAuth();
   const { programs, isLoading, fetchPrograms, deleteProgram } = usePrograms();
   const [filter, setFilter] = useState<string[]>(['all']);
 
-  useEffect(() => { fetchPrograms(); }, [fetchPrograms]);
+  useEffect(() => {
+    if (isAuthLoading || !hasValidToken) return;
+    fetchPrograms();
+  }, [fetchPrograms, hasValidToken, isAuthLoading]);
 
   const filtered = filter[0] === 'all' ? programs : programs.filter(p => p.category === filter[0]);
 
@@ -53,7 +58,10 @@ export default function ProgramsScreen() {
         )}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchPrograms} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={() => {
+          if (!hasValidToken) return;
+          fetchPrograms();
+        }} tintColor={colors.primary} />}
         ListEmptyComponent={!isLoading ? (
           <View style={styles.empty}>
             <Ionicons name="barbell-outline" size={64} color={colors.text.tertiary} />

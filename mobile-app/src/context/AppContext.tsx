@@ -7,6 +7,7 @@ import { DashboardProvider } from './DashboardContext';
 import { NutritionProvider } from './NutritionContext';
 import { ProgramsProvider } from './ProgramsContext';
 import { SessionProvider } from './SessionContext';
+import { EventsProvider } from './EventsContext';
 import { ThemeProvider } from './ThemeContext';
 
 // Create a client
@@ -30,9 +31,11 @@ export const AppProviders: React.FC<{ children: ReactNode }> = ({ children }) =>
             <DashboardProvider>
               <NutritionProvider>
                 <ProgramsProvider>
-                  <SessionProvider>
-                    {children}
-                  </SessionProvider>
+                  <EventsProvider>
+                    <SessionProvider>
+                      {children}
+                    </SessionProvider>
+                  </EventsProvider>
                 </ProgramsProvider>
               </NutritionProvider>
             </DashboardProvider>

@@ -48,6 +48,12 @@ export const userProfiles = pgTable('user_profiles', {
   dietaryRestrictions: json('dietary_restrictions').$type<string[]>().default([]),
   foodPreferences: json('food_preferences').$type<Record<string, any>>(),
   injuryHistory: text('injury_history'),
+  averageSleepHours: real('average_sleep_hours'),
+  sleepQuality: varchar('sleep_quality', { length: 20 }), // poor, fair, good, excellent
+  currentMood: varchar('current_mood', { length: 20 }), // great, good, okay, tired, stressed
+  trainingDaysPerWeek: integer('training_days_per_week'),
+  injuryStatus: varchar('injury_status', { length: 20 }), // healthy, minor, recovering, injured
+  trainingFocus: json('training_focus').$type<string[]>().default([]), // speed, endurance, strength, power, flexibility, recovery
   weeklyGoalDistance: real('weekly_goal_distance'), // in meters
   weeklyGoalDuration: integer('weekly_goal_duration'), // in minutes
   onboardingCompleted: boolean('onboarding_completed').default(false),
@@ -98,10 +104,72 @@ export const connectedDevices = pgTable('connected_devices', {
   scopes: json('scopes').$type<string[]>().default([]),
   lastSyncAt: timestamp('last_sync_at'),
   isActive: boolean('is_active').default(true),
+  syncPreferences: json('sync_preferences').$type<{
+    workouts: boolean;
+    heartRate: boolean;
+    sleep: boolean;
+    recovery: boolean;
+    bodyMetrics: boolean;
+    steps: boolean;
+  }>().default({
+    workouts: true,
+    heartRate: true,
+    sleep: true,
+    recovery: true,
+    bodyMetrics: true,
+    steps: true,
+  }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   userProviderIdx: index('connected_devices_user_provider_idx').on(table.userId, table.provider),
+}));
+
+// ==================== HEALTH METRICS ====================
+
+export const healthMetrics = pgTable('health_metrics', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  date: timestamp('date').notNull(),
+  provider: varchar('provider', { length: 50 }).notNull(), // apple_health, garmin, strava, manual
+
+  // Sleep
+  sleepDurationSeconds: integer('sleep_duration_seconds'),
+  sleepEfficiency: real('sleep_efficiency'),
+  deepSleepSeconds: integer('deep_sleep_seconds'),
+  remSleepSeconds: integer('rem_sleep_seconds'),
+  sleepScore: integer('sleep_score'),
+  bedtime: timestamp('bedtime'),
+  wakeTime: timestamp('wake_time'),
+
+  // HR/HRV
+  restingHeartRate: integer('resting_heart_rate'),
+  avgHeartRate: integer('avg_heart_rate'),
+  maxHeartRate: integer('max_heart_rate'),
+  hrvRmssd: real('hrv_rmssd'),
+
+  // Recovery
+  readinessScore: integer('readiness_score'), // 0-100
+  recoveryScore: integer('recovery_score'), // 0-100
+  stressScore: integer('stress_score'),
+  bodyBattery: integer('body_battery'),
+
+  // Body
+  weightKg: real('weight_kg'),
+  bodyFatPercentage: real('body_fat_percentage'),
+
+  // Activity
+  steps: integer('steps'),
+  activeMinutes: integer('active_minutes'),
+  caloriesBurned: integer('calories_burned'),
+
+  // Meta
+  rawData: json('raw_data').$type<Record<string, any>>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userDateProviderIdx: index('health_metrics_user_date_provider_idx').on(table.userId, table.date, table.provider),
+  userDateIdx: index('health_metrics_user_date_idx').on(table.userId, table.date),
 }));
 
 // ==================== TRAINING PLANS ====================
@@ -379,6 +447,26 @@ export const races = pgTable('races', {
   userDateIdx: index('races_user_date_idx').on(table.userId, table.date),
 }));
 
+// ==================== EVENTS ====================
+
+export const events = pgTable('events', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  name: varchar('name', { length: 200 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull(), // race, competition, meet, time_trial, tryout, camp, clinic, charity_run
+  date: timestamp('date').notNull(),
+  location: varchar('location', { length: 200 }),
+  distance: real('distance'), // in meters
+  distanceLabel: varchar('distance_label', { length: 50 }), // 60m, 100m, 200m, etc.
+  goalTime: real('goal_time'), // in seconds
+  notes: text('notes'),
+  priority: varchar('priority', { length: 20 }).default('medium'), // high, medium, low
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userDateIdx: index('events_user_date_idx').on(table.userId, table.date),
+}));
+
 // ==================== NUTRITION PLANS ====================
 
 export const nutritionPlans = pgTable('nutrition_plans', {
@@ -398,6 +486,8 @@ export const nutritionPlans = pgTable('nutrition_plans', {
     calories: number;
     macros: { protein: number; carbs: number; fats: number };
   }>>(),
+  isMultiDay: boolean('is_multi_day').default(false),
+  dailyMealPlans: json('daily_meal_plans').$type<Record<string, any[]>>(),
   createdBy: varchar('created_by', { length: 20 }).default('user'), // user, ai
   aiPromptUsed: text('ai_prompt_used'),
   status: varchar('status', { length: 20 }).default('active'), // active, archived
@@ -427,6 +517,7 @@ export const programs = pgTable('programs', {
   isTextBased: boolean('is_text_based').default(false),
   textContent: text('text_content'),
   generatedBy: varchar('generated_by', { length: 20 }).default('user'), // user, ai
+  activeWeek: integer('active_week').default(1),
   status: varchar('status', { length: 20 }).default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -478,8 +569,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   ariaConversations: many(ariaConversations),
   races: many(races),
+  events: many(events),
   nutritionPlans: many(nutritionPlans),
   programs: many(programs),
+  healthMetrics: many(healthMetrics),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -499,6 +592,13 @@ export const userPreferencesRelations = relations(userPreferences, ({ one }) => 
 export const connectedDevicesRelations = relations(connectedDevices, ({ one }) => ({
   user: one(users, {
     fields: [connectedDevices.userId],
+    references: [users.id],
+  }),
+}));
+
+export const healthMetricsRelations = relations(healthMetrics, ({ one }) => ({
+  user: one(users, {
+    fields: [healthMetrics.userId],
     references: [users.id],
   }),
 }));
@@ -613,6 +713,13 @@ export const programSessionsRelations = relations(programSessions, ({ one }) => 
   }),
 }));
 
+export const eventsRelations = relations(events, ({ one }) => ({
+  user: one(users, {
+    fields: [events.userId],
+    references: [users.id],
+  }),
+}));
+
 export const racesRelations = relations(races, ({ one }) => ({
   user: one(users, {
     fields: [races.userId],
@@ -679,3 +786,9 @@ export type InsertProgram = typeof programs.$inferInsert;
 
 export type ProgramSession = typeof programSessions.$inferSelect;
 export type InsertProgramSession = typeof programSessions.$inferInsert;
+
+export type Event = typeof events.$inferSelect;
+export type InsertEvent = typeof events.$inferInsert;
+
+export type HealthMetric = typeof healthMetrics.$inferSelect;
+export type InsertHealthMetric = typeof healthMetrics.$inferInsert;

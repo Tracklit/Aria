@@ -59,6 +59,17 @@ export interface UserProfile {
   gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
   height: number | null; // cm
   weight: number | null; // kg
+  country: string | null;
+  activityLevel: string | null;
+  bodyFatPercentage: number | null;
+  dietaryRestrictions: string[] | null;
+  injuryHistory: string | null;
+  averageSleepHours: number | null;
+  sleepQuality: 'poor' | 'fair' | 'good' | 'excellent' | null;
+  currentMood: 'great' | 'good' | 'okay' | 'tired' | 'stressed' | null;
+  trainingDaysPerWeek: number | null;
+  injuryStatus: 'healthy' | 'minor' | 'recovering' | 'injured' | null;
+  trainingFocus: string[] | null;
   weeklyGoalDistance: number | null;
   weeklyGoalDuration: number | null; // minutes
   onboardingCompleted: boolean;
@@ -76,12 +87,25 @@ export interface UpdateProfileRequest {
   gender?: string;
   height?: number;
   weight?: number;
+  country?: string;
+  activityLevel?: string;
+  bodyFatPercentage?: number;
+  dietaryRestrictions?: string[];
+  injuryHistory?: string;
+  averageSleepHours?: number;
+  sleepQuality?: string;
+  currentMood?: string;
+  trainingDaysPerWeek?: number;
+  injuryStatus?: string;
+  trainingFocus?: string[];
   weeklyGoalDistance?: number;
   weeklyGoalDuration?: number;
+  email?: string;
 }
 
 export interface ProfilePictureResponse {
   profileImageUrl: string;
+  photoUrl?: string;
 }
 
 // ============================================================================
@@ -615,4 +639,60 @@ export function isWorkout(workout: any): workout is Workout {
     typeof workout.type === 'string' &&
     typeof workout.status === 'string'
   );
+}
+
+// ============================================================================
+// Events
+// ============================================================================
+
+export type EventType = 'race' | 'competition' | 'meet' | 'time_trial' | 'tryout' | 'camp' | 'clinic' | 'charity_run';
+export type EventPriority = 'high' | 'medium' | 'low';
+
+export interface AriaEvent {
+  id: number;
+  userId: number;
+  name: string;
+  eventType: EventType;
+  date: string;
+  location?: string | null;
+  distance?: number | null;
+  distanceLabel?: string | null;
+  goalTime?: number | null;
+  notes?: string | null;
+  priority: EventPriority;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventRequest {
+  name: string;
+  eventType: EventType;
+  date: string;
+  location?: string;
+  distance?: number;
+  distanceLabel?: string;
+  goalTime?: number;
+  notes?: string;
+  priority?: EventPriority;
+}
+
+export interface UpdateEventRequest {
+  name?: string;
+  eventType?: EventType;
+  date?: string;
+  location?: string;
+  distance?: number;
+  distanceLabel?: string;
+  goalTime?: number;
+  notes?: string;
+  priority?: EventPriority;
+}
+
+// ============================================================================
+// Change Password
+// ============================================================================
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }

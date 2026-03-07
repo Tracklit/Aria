@@ -13,6 +13,8 @@ import {
   generateAccessToken,
   generateRefreshToken,
   getRefreshTokenExpiry,
+  hashPassword,
+  verifyPassword,
 } from './auth';
 import {
   handleChat,
@@ -28,6 +30,14 @@ import {
 } from './aria-ai';
 import { uploadFileToBlob, deleteBlob, generateBlobSasUrl } from './azure-storage';
 import { parseDocument } from './document-parser';
+import {
+  getStravaAuthUrl,
+  exchangeStravaCode,
+  refreshStravaToken,
+  getStravaActivities,
+  mapStravaActivityToWorkout,
+  syncStravaActivities,
+} from './strava';
 import multer from 'multer';
 
 // ==================== VALIDATION SCHEMAS ====================
@@ -77,6 +87,13 @@ const updateProfileSchema = z.object({
   dietaryRestrictions: z.array(z.string()).nullable().optional(),
   foodPreferences: z.record(z.any()).nullable().optional(),
   injuryHistory: z.string().nullable().optional(),
+  averageSleepHours: z.number().nullable().optional(),
+  sleepQuality: z.enum(['poor', 'fair', 'good', 'excellent']).nullable().optional(),
+  currentMood: z.enum(['great', 'good', 'okay', 'tired', 'stressed']).nullable().optional(),
+  trainingDaysPerWeek: z.number().min(1).max(7).nullable().optional(),
+  injuryStatus: z.enum(['healthy', 'minor', 'recovering', 'injured']).nullable().optional(),
+  trainingFocus: z.array(z.string()).nullable().optional(),
+  email: z.string().email().optional(),
 });
 
 const updatePreferencesSchema = z.object({
@@ -229,6 +246,89 @@ const updateRaceSchema = z.object({
   ageGroupPlace: z.number().optional(),
 });
 
+const createEventSchema = z.object({
+  name: z.string().min(1),
+  eventType: z.enum(['race', 'competition', 'meet', 'time_trial', 'tryout', 'camp', 'clinic', 'charity_run']),
+  date: z.string().datetime(),
+  location: z.string().optional(),
+  distance: z.number().optional(),
+  distanceLabel: z.string().optional(),
+  goalTime: z.number().optional(),
+  notes: z.string().optional(),
+  priority: z.enum(['high', 'medium', 'low']).optional(),
+});
+
+const updateEventSchema = z.object({
+  name: z.string().min(1).optional(),
+  eventType: z.enum(['race', 'competition', 'meet', 'time_trial', 'tryout', 'camp', 'clinic', 'charity_run']).optional(),
+  date: z.string().datetime().optional(),
+  location: z.string().optional(),
+  distance: z.number().optional(),
+  distanceLabel: z.string().optional(),
+  goalTime: z.number().optional(),
+  notes: z.string().optional(),
+  priority: z.enum(['high', 'medium', 'low']).optional(),
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(8),
+});
+
+const connectSchema = z.object({
+  provider: z.enum(['apple_health', 'strava', 'garmin']),
+});
+
+const syncPreferencesSchema = z.object({
+  workouts: z.boolean().optional(),
+  heartRate: z.boolean().optional(),
+  sleep: z.boolean().optional(),
+  recovery: z.boolean().optional(),
+  bodyMetrics: z.boolean().optional(),
+  steps: z.boolean().optional(),
+});
+
+const appleHealthMetricSchema = z.object({
+  date: z.string(),
+  sleepDurationSeconds: z.number().optional(),
+  sleepEfficiency: z.number().optional(),
+  deepSleepSeconds: z.number().optional(),
+  remSleepSeconds: z.number().optional(),
+  sleepScore: z.number().optional(),
+  bedtime: z.string().optional(),
+  wakeTime: z.string().optional(),
+  restingHeartRate: z.number().optional(),
+  avgHeartRate: z.number().optional(),
+  maxHeartRate: z.number().optional(),
+  hrvRmssd: z.number().optional(),
+  readinessScore: z.number().optional(),
+  recoveryScore: z.number().optional(),
+  stressScore: z.number().optional(),
+  bodyBattery: z.number().optional(),
+  weightKg: z.number().optional(),
+  bodyFatPercentage: z.number().optional(),
+  steps: z.number().optional(),
+  activeMinutes: z.number().optional(),
+  caloriesBurned: z.number().optional(),
+});
+
+const appleHealthSyncSchema = z.object({
+  metrics: z.array(appleHealthMetricSchema),
+  workouts: z.array(z.object({
+    externalId: z.string(),
+    type: z.string(),
+    title: z.string().optional(),
+    startTime: z.string(),
+    endTime: z.string().optional(),
+    durationSeconds: z.number().optional(),
+    distanceMeters: z.number().optional(),
+    elevationGainMeters: z.number().optional(),
+    avgHeartRate: z.number().optional(),
+    maxHeartRate: z.number().optional(),
+    calories: z.number().optional(),
+  })).optional(),
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -294,6 +394,89 @@ function unwrapEnvelope(parsed: any): any {
     } catch { /* not nested JSON */ }
   }
   return parsed;
+}
+
+const aiGeneratedProgramExerciseSchema = z.object({
+  name: z.string().min(1),
+  sets: z.coerce.number().optional(),
+  reps: z.union([z.string(), z.number()]).optional(),
+  duration: z.coerce.number().optional(),
+  rest: z.coerce.number().optional(),
+  notes: z.string().optional(),
+});
+
+const aiGeneratedProgramSessionSchema = z.object({
+  dayNumber: z.coerce.number().int().min(1).optional(),
+  weekNumber: z.coerce.number().int().min(1).optional(),
+  dayOfWeek: z.coerce.number().int().min(1).max(7).optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  exercises: z.array(aiGeneratedProgramExerciseSchema).optional(),
+  isRestDay: z.boolean().optional(),
+});
+
+type NormalizedGeneratedProgramSession = {
+  dayNumber: number;
+  title?: string;
+  description?: string;
+  exercises: Array<{
+    name: string;
+    sets?: number;
+    reps?: string;
+    duration?: number;
+    rest?: number;
+    notes?: string;
+  }>;
+  isRestDay: boolean;
+};
+
+function normalizeGeneratedProgramSessions(
+  sessions: unknown,
+  durationWeeks?: number,
+): NormalizedGeneratedProgramSession[] {
+  if (!Array.isArray(sessions)) return [];
+
+  const totalDays = Math.max(1, (durationWeeks || 1) * 7);
+  const normalized = sessions
+    .map((session) => aiGeneratedProgramSessionSchema.safeParse(session))
+    .filter((result): result is z.SafeParseSuccess<z.infer<typeof aiGeneratedProgramSessionSchema>> => result.success)
+    .map((result) => {
+      const value = result.data;
+      const computedDayNumber =
+        value.weekNumber && value.dayOfWeek
+          ? ((value.weekNumber - 1) * 7) + value.dayOfWeek
+          : value.dayNumber;
+
+      if (!computedDayNumber || computedDayNumber < 1 || computedDayNumber > totalDays) {
+        return null;
+      }
+
+      return {
+        dayNumber: computedDayNumber,
+        title: value.title,
+        description: value.description,
+        exercises: (value.exercises || []).map((exercise) => ({
+          name: exercise.name,
+          ...(exercise.sets !== undefined ? { sets: exercise.sets } : {}),
+          ...(exercise.reps !== undefined ? { reps: String(exercise.reps) } : {}),
+          ...(exercise.duration !== undefined ? { duration: exercise.duration } : {}),
+          ...(exercise.rest !== undefined ? { rest: exercise.rest } : {}),
+          ...(exercise.notes !== undefined ? { notes: exercise.notes } : {}),
+        })),
+        isRestDay: value.isRestDay || false,
+      } satisfies NormalizedGeneratedProgramSession;
+    })
+    .filter((session): session is NormalizedGeneratedProgramSession => session !== null)
+    .sort((left, right) => left.dayNumber - right.dayNumber);
+
+  const deduped = new Map<number, NormalizedGeneratedProgramSession>();
+  for (const session of normalized) {
+    if (!deduped.has(session.dayNumber)) {
+      deduped.set(session.dayNumber, session);
+    }
+  }
+
+  return Array.from(deduped.values()).sort((left, right) => left.dayNumber - right.dayNumber);
 }
 
 const createNutritionPlanSchema = z.object({
@@ -462,6 +645,38 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // ==================== CHANGE PASSWORD ====================
+
+  app.post('/api/auth/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      const user = await storage.getUser(req.userId!);
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      if (user.authProvider !== 'email' || !user.passwordHash) {
+        res.status(400).json({ error: 'Password change not available for social login accounts' });
+        return;
+      }
+      const isValid = await verifyPassword(currentPassword, user.passwordHash);
+      if (!isValid) {
+        res.status(401).json({ error: 'Current password is incorrect' });
+        return;
+      }
+      const newHash = await hashPassword(newPassword);
+      await storage.updateUser(req.userId!, { passwordHash: newHash });
+      res.json({ message: 'Password changed successfully' });
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: 'Invalid input', details: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to change password' });
+      }
+    }
+  });
+
   // ==================== USER ROUTES ====================
 
   app.get('/api/user', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
@@ -490,9 +705,25 @@ export function registerRoutes(app: Express): void {
       const profileData = updateProfileSchema.parse(req.body.profile || {});
       const preferencesData = updatePreferencesSchema.parse(req.body.preferences || {});
 
+      // Handle email change separately (requires uniqueness check)
+      const { email: newEmail, ...profileFields } = profileData;
+      if (newEmail) {
+        const user = await storage.getUser(req.userId!);
+        if (user?.authProvider !== 'email') {
+          res.status(400).json({ error: 'Email change not supported for social login accounts' });
+          return;
+        }
+        const existing = await storage.getUserByEmail(newEmail);
+        if (existing && existing.id !== req.userId) {
+          res.status(409).json({ error: 'Email already in use' });
+          return;
+        }
+        await storage.updateUser(req.userId!, { email: newEmail });
+      }
+
       const [profile, preferences] = await Promise.all([
-        Object.keys(profileData).length > 0
-          ? storage.updateUserProfile(req.userId!, profileData as any)
+        Object.keys(profileFields).length > 0
+          ? storage.updateUserProfile(req.userId!, profileFields as any)
           : storage.getUserProfile(req.userId!),
         Object.keys(preferencesData).length > 0
           ? storage.updateUserPreferences(req.userId!, preferencesData as any)
@@ -530,6 +761,8 @@ export function registerRoutes(app: Express): void {
   // ==================== PHOTO UPLOAD ROUTE ====================
 
   app.post('/api/user/public-profile', authMiddleware, upload.single('profileImage'), async (req: AuthenticatedRequest, res: Response) => {
+    let phase: 'storage_upload' | 'db_update' | 'sas_generation' = 'storage_upload';
+
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No image file provided' });
@@ -542,12 +775,31 @@ export function registerRoutes(app: Express): void {
         'profile-images',
       );
 
+      phase = 'db_update';
       await storage.updateUserProfile(req.userId!, { photoUrl: blobUrl });
 
-      const sasUrl = await generateBlobSasUrl(blobUrl);
-      res.json({ profileImageUrl: sasUrl, photoUrl: sasUrl, success: true });
+      phase = 'sas_generation';
+      try {
+        const sasUrl = await generateBlobSasUrl(blobUrl);
+        res.json({ profileImageUrl: sasUrl, photoUrl: sasUrl, success: true });
+      } catch (sasError: any) {
+        console.warn('SAS generation failed after successful upload:', {
+          phase,
+          errorCode: sasError?.code || sasError?.details?.errorCode,
+          userId: req.userId,
+          mimeType: req.file.mimetype,
+          message: sasError?.message,
+        });
+        res.json({ profileImageUrl: blobUrl, photoUrl: blobUrl, success: true });
+      }
     } catch (error: any) {
-      console.error('Photo upload error:', error);
+      console.error('Photo upload error:', {
+        phase,
+        errorCode: error?.code || error?.details?.errorCode,
+        userId: req.userId,
+        mimeType: req.file?.mimetype,
+        message: error?.message,
+      });
       res.status(500).json({ error: 'Failed to upload profile image' });
     }
   });
@@ -1466,6 +1718,100 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // ==================== EVENTS ====================
+
+  app.get('/api/events', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userEvents = await storage.getEvents(req.userId!);
+      res.json(userEvents);
+    } catch (error: any) {
+      console.error('Get events error:', error);
+      res.status(500).json({ error: 'Failed to fetch events' });
+    }
+  });
+
+  app.get('/api/events/upcoming', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const upcoming = await storage.getUpcomingEvents(req.userId!, limit);
+      res.json(upcoming);
+    } catch (error: any) {
+      console.error('Get upcoming events error:', error);
+      res.status(500).json({ error: 'Failed to fetch upcoming events' });
+    }
+  });
+
+  app.post('/api/events', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const data = createEventSchema.parse(req.body);
+      const event = await storage.createEvent({
+        userId: req.userId!,
+        ...data,
+        date: new Date(data.date),
+      });
+      res.status(201).json(event);
+    } catch (error: any) {
+      console.error('Create event error:', error);
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: 'Invalid input', details: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to create event' });
+      }
+    }
+  });
+
+  app.get('/api/events/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const event = await storage.getEvent(parseInt(req.params.id));
+      if (!event || event.userId !== req.userId!) {
+        res.status(404).json({ error: 'Event not found' });
+        return;
+      }
+      res.json(event);
+    } catch (error: any) {
+      console.error('Get event error:', error);
+      res.status(500).json({ error: 'Failed to fetch event' });
+    }
+  });
+
+  app.patch('/api/events/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getEvent(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        res.status(404).json({ error: 'Event not found' });
+        return;
+      }
+      const data = updateEventSchema.parse(req.body);
+      const event = await storage.updateEvent(parseInt(req.params.id), {
+        ...data,
+        date: data.date ? new Date(data.date) : undefined,
+      });
+      res.json(event);
+    } catch (error: any) {
+      console.error('Update event error:', error);
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: 'Invalid input', details: error.errors });
+      } else {
+        res.status(500).json({ error: 'Failed to update event' });
+      }
+    }
+  });
+
+  app.delete('/api/events/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getEvent(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        res.status(404).json({ error: 'Event not found' });
+        return;
+      }
+      await storage.deleteEvent(parseInt(req.params.id));
+      res.json({ message: 'Event deleted successfully' });
+    } catch (error: any) {
+      console.error('Delete event error:', error);
+      res.status(500).json({ error: 'Failed to delete event' });
+    }
+  });
+
   // ==================== NUTRITION PLANS ====================
 
   app.get('/api/nutrition/plans', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
@@ -1525,6 +1871,30 @@ export function registerRoutes(app: Express): void {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete nutrition plan' });
+    }
+  });
+
+  app.post('/api/nutrition/plans/:id/activate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const planId = parseInt(req.params.id);
+      const plan = await storage.getNutritionPlan(planId);
+      if (!plan || plan.userId !== req.userId!) {
+        res.status(404).json({ error: 'Nutrition plan not found' });
+        return;
+      }
+      // Archive all other plans for this user
+      const allPlans = await storage.getNutritionPlans(req.userId!);
+      await Promise.all(
+        allPlans
+          .filter(p => p.id !== planId && p.status === 'active')
+          .map(p => storage.updateNutritionPlan(p.id, { status: 'archived' }))
+      );
+      // Activate the target plan
+      const activated = await storage.updateNutritionPlan(planId, { status: 'active' });
+      res.json(activated);
+    } catch (error) {
+      console.error('Activate nutrition plan error:', error);
+      res.status(500).json({ error: 'Failed to activate nutrition plan' });
     }
   });
 
@@ -1672,6 +2042,25 @@ Competition - Meet / race day,,,,,,
     }
   });
 
+  app.patch('/api/programs/:id/active-week', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const existing = await storage.getProgram(parseInt(req.params.id));
+      if (!existing || existing.userId !== req.userId!) {
+        res.status(404).json({ error: 'Program not found' });
+        return;
+      }
+      const { activeWeek } = z.object({ activeWeek: z.number().int().min(1) }).parse(req.body);
+      const program = await storage.updateProgram(parseInt(req.params.id), { activeWeek } as any);
+      res.json(program);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: 'Invalid input', details: error.errors });
+        return;
+      }
+      res.status(500).json({ error: 'Failed to update active week' });
+    }
+  });
+
   app.delete('/api/programs/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const existing = await storage.getProgram(parseInt(req.params.id));
@@ -1742,6 +2131,10 @@ Competition - Meet / race day,,,,,,
       const aiResponse = await generateProgram(req.userId!, input);
 
       const parsedProgram = parseAIJsonResponse(aiResponse, 'program');
+      const normalizedSessions = normalizeGeneratedProgramSessions(
+        parsedProgram.sessions,
+        parsedProgram.duration || input.durationWeeks,
+      );
 
       const program = await storage.createProgram({
         userId: req.userId!,
@@ -1750,13 +2143,13 @@ Competition - Meet / race day,,,,,,
         category: parsedProgram.category || input.category,
         level: parsedProgram.level || input.level,
         duration: parsedProgram.duration || input.durationWeeks,
-        totalSessions: parsedProgram.sessions?.length,
+        totalSessions: normalizedSessions.length,
         generatedBy: 'ai',
       });
 
       // Create sessions if AI provided them
-      if (parsedProgram.sessions && Array.isArray(parsedProgram.sessions)) {
-        for (const session of parsedProgram.sessions) {
+      if (normalizedSessions.length > 0) {
+        for (const session of normalizedSessions) {
           await storage.createProgramSession({
             programId: program.id,
             dayNumber: session.dayNumber,
@@ -1877,6 +2270,375 @@ Competition - Meet / race day,,,,,,
       res.json(allSessions);
     } catch (error) {
       res.status(500).json({ error: 'Failed to sync sessions' });
+    }
+  });
+
+  // ==================== INTEGRATIONS ROUTES ====================
+
+  // List connected devices
+  app.get('/api/integrations', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const devices = await storage.getConnectedDevices(req.userId!);
+      res.json(devices);
+    } catch (error) {
+      console.error('Error fetching integrations:', error);
+      res.status(500).json({ error: 'Failed to fetch integrations' });
+    }
+  });
+
+  // Connect a provider
+  app.post('/api/integrations/connect', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { provider } = connectSchema.parse(req.body);
+
+      // Check if already connected
+      const existing = await storage.getConnectedDevice(req.userId!, provider);
+      if (existing) {
+        return res.status(409).json({ error: `${provider} is already connected` });
+      }
+
+      if (provider === 'strava') {
+        try {
+          const authUrl = getStravaAuthUrl();
+          return res.json({ authUrl });
+        } catch (e: any) {
+          return res.status(503).json({ error: e.message });
+        }
+      }
+
+      if (provider === 'apple_health') {
+        const device = await storage.createConnectedDevice({
+          userId: req.userId!,
+          provider: 'apple_health',
+          isActive: true,
+        });
+        return res.json(device);
+      }
+
+      if (provider === 'garmin') {
+        // Garmin uses Terra or direct OAuth - create placeholder record
+        const device = await storage.createConnectedDevice({
+          userId: req.userId!,
+          provider: 'garmin',
+          isActive: true,
+        });
+        return res.json(device);
+      }
+
+      res.status(400).json({ error: 'Unsupported provider' });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error connecting integration:', error);
+      res.status(500).json({ error: 'Failed to connect integration' });
+    }
+  });
+
+  // Disconnect a provider
+  app.delete('/api/integrations/:provider', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { provider } = req.params;
+      const device = await storage.getConnectedDevice(req.userId!, provider);
+      if (!device) {
+        return res.status(404).json({ error: 'Integration not found' });
+      }
+      await storage.deleteConnectedDevice(device.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error disconnecting integration:', error);
+      res.status(500).json({ error: 'Failed to disconnect integration' });
+    }
+  });
+
+  // Update sync preferences
+  app.patch('/api/integrations/:provider/preferences', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { provider } = req.params;
+      const prefs = syncPreferencesSchema.parse(req.body);
+
+      const device = await storage.getConnectedDevice(req.userId!, provider);
+      if (!device) {
+        return res.status(404).json({ error: 'Integration not found' });
+      }
+
+      const currentPrefs = (device as any).syncPreferences || {
+        workouts: true, heartRate: true, sleep: true,
+        recovery: true, bodyMetrics: true, steps: true,
+      };
+
+      const updated = await storage.updateConnectedDevice(device.id, {
+        syncPreferences: { ...currentPrefs, ...prefs },
+      } as any);
+
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error updating sync preferences:', error);
+      res.status(500).json({ error: 'Failed to update sync preferences' });
+    }
+  });
+
+  // Apple Health sync - receive data from device
+  app.post('/api/integrations/apple-health/sync', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { metrics, workouts: appleWorkouts } = appleHealthSyncSchema.parse(req.body);
+
+      // Upsert health metrics
+      const upsertedMetrics = [];
+      for (const metric of metrics) {
+        const upserted = await storage.upsertHealthMetrics({
+          userId: req.userId!,
+          date: new Date(metric.date),
+          provider: 'apple_health',
+          sleepDurationSeconds: metric.sleepDurationSeconds,
+          sleepEfficiency: metric.sleepEfficiency,
+          deepSleepSeconds: metric.deepSleepSeconds,
+          remSleepSeconds: metric.remSleepSeconds,
+          sleepScore: metric.sleepScore,
+          bedtime: metric.bedtime ? new Date(metric.bedtime) : undefined,
+          wakeTime: metric.wakeTime ? new Date(metric.wakeTime) : undefined,
+          restingHeartRate: metric.restingHeartRate,
+          avgHeartRate: metric.avgHeartRate,
+          maxHeartRate: metric.maxHeartRate,
+          hrvRmssd: metric.hrvRmssd,
+          readinessScore: metric.readinessScore,
+          recoveryScore: metric.recoveryScore,
+          stressScore: metric.stressScore,
+          bodyBattery: metric.bodyBattery,
+          weightKg: metric.weightKg,
+          bodyFatPercentage: metric.bodyFatPercentage,
+          steps: metric.steps,
+          activeMinutes: metric.activeMinutes,
+          caloriesBurned: metric.caloriesBurned,
+        });
+        upsertedMetrics.push(upserted);
+      }
+
+      // Import workouts with dedup on externalId
+      const importedWorkouts = [];
+      if (appleWorkouts) {
+        for (const w of appleWorkouts) {
+          // Check for existing workout with same externalId
+          const existingWorkouts = await storage.getWorkouts(req.userId!, 200);
+          const duplicate = existingWorkouts.find(
+            (existing) => existing.externalId === w.externalId && existing.providerSource === 'apple_health'
+          );
+          if (duplicate) continue;
+
+          const workout = await storage.createWorkout({
+            userId: req.userId!,
+            providerSource: 'apple_health',
+            externalId: w.externalId,
+            type: w.type,
+            title: w.title || `${w.type} workout`,
+            startTime: new Date(w.startTime),
+            endTime: w.endTime ? new Date(w.endTime) : undefined,
+            durationSeconds: w.durationSeconds,
+            distanceMeters: w.distanceMeters,
+            elevationGainMeters: w.elevationGainMeters,
+            avgHeartRate: w.avgHeartRate,
+            maxHeartRate: w.maxHeartRate,
+            calories: w.calories,
+          });
+          importedWorkouts.push(workout);
+        }
+      }
+
+      // Update lastSyncAt
+      const device = await storage.getConnectedDevice(req.userId!, 'apple_health');
+      if (device) {
+        await storage.updateConnectedDevice(device.id, { lastSyncAt: new Date() });
+      }
+
+      res.json({
+        metricsCount: upsertedMetrics.length,
+        workoutsImported: importedWorkouts.length,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error syncing Apple Health data:', error);
+      res.status(500).json({ error: 'Failed to sync Apple Health data' });
+    }
+  });
+
+  // Query health metrics
+  app.get('/api/integrations/health-metrics', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const startDate = req.query.startDate
+        ? new Date(req.query.startDate as string)
+        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // default 30 days
+      const endDate = req.query.endDate
+        ? new Date(req.query.endDate as string)
+        : new Date();
+
+      const metrics = await storage.getHealthMetrics(req.userId!, startDate, endDate);
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching health metrics:', error);
+      res.status(500).json({ error: 'Failed to fetch health metrics' });
+    }
+  });
+
+  // Today's readiness score
+  app.get('/api/integrations/readiness', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const latest = await storage.getLatestHealthMetrics(req.userId!);
+      if (!latest) {
+        return res.json({
+          score: null,
+          recommendation: 'No health data available. Connect a device to get readiness insights.',
+        });
+      }
+
+      // Calculate composite readiness from available data
+      let score = 70; // baseline
+      let factors: string[] = [];
+
+      if (latest.recoveryScore != null) {
+        score = latest.recoveryScore;
+        factors.push(`Recovery: ${latest.recoveryScore}/100`);
+      } else if (latest.readinessScore != null) {
+        score = latest.readinessScore;
+        factors.push(`Readiness: ${latest.readinessScore}/100`);
+      } else {
+        // Estimate from available metrics
+        if (latest.restingHeartRate != null) {
+          // Lower resting HR generally = better recovery
+          const hrFactor = latest.restingHeartRate < 60 ? 85 : latest.restingHeartRate < 70 ? 75 : 60;
+          score = hrFactor;
+          factors.push(`Resting HR: ${latest.restingHeartRate} bpm`);
+        }
+        if (latest.hrvRmssd != null) {
+          // Higher HRV = better recovery
+          const hrvFactor = latest.hrvRmssd > 50 ? 85 : latest.hrvRmssd > 30 ? 70 : 55;
+          score = Math.round((score + hrvFactor) / 2);
+          factors.push(`HRV: ${latest.hrvRmssd.toFixed(1)} ms`);
+        }
+        if (latest.sleepDurationSeconds != null) {
+          const sleepHours = latest.sleepDurationSeconds / 3600;
+          const sleepFactor = sleepHours >= 7.5 ? 90 : sleepHours >= 6.5 ? 75 : 55;
+          score = Math.round((score + sleepFactor) / 2);
+          factors.push(`Sleep: ${sleepHours.toFixed(1)} hrs`);
+        }
+      }
+
+      let recommendation: string;
+      if (score >= 80) {
+        recommendation = 'You are well recovered. Great day for a hard workout or race.';
+      } else if (score >= 60) {
+        recommendation = 'Moderate recovery. A normal training session should be fine.';
+      } else {
+        recommendation = 'Recovery is low. Consider an easy session or rest day.';
+      }
+
+      res.json({ score, factors, recommendation, date: latest.date });
+    } catch (error) {
+      console.error('Error calculating readiness:', error);
+      res.status(500).json({ error: 'Failed to calculate readiness' });
+    }
+  });
+
+  // Strava OAuth callback
+  app.post('/api/integrations/strava/callback', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { code } = z.object({ code: z.string() }).parse(req.body);
+      const tokens = await exchangeStravaCode(code);
+
+      // Check if already connected
+      const existing = await storage.getConnectedDevice(req.userId!, 'strava');
+      if (existing) {
+        const updated = await storage.updateConnectedDevice(existing.id, {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiresAt: tokens.expiresAt,
+          providerUserId: tokens.athleteId,
+          isActive: true,
+        });
+        return res.json(updated);
+      }
+
+      const device = await storage.createConnectedDevice({
+        userId: req.userId!,
+        provider: 'strava',
+        providerUserId: tokens.athleteId,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        tokenExpiresAt: tokens.expiresAt,
+        isActive: true,
+      });
+
+      res.json(device);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error handling Strava callback:', error);
+      res.status(500).json({ error: 'Failed to complete Strava authorization' });
+    }
+  });
+
+  // Garmin/Terra webhook callback
+  app.post('/api/integrations/garmin/callback', async (req: Request, res: Response) => {
+    try {
+      // Terra/Garmin sends webhook data with user and data payloads
+      console.log('Garmin webhook received:', JSON.stringify(req.body).substring(0, 500));
+      // TODO: Process Garmin webhook payload when Terra integration is configured
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error handling Garmin callback:', error);
+      res.status(500).json({ error: 'Failed to process Garmin callback' });
+    }
+  });
+
+  // Trigger manual sync for a provider
+  app.post('/api/integrations/sync/:provider', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { provider } = req.params;
+      const device = await storage.getConnectedDevice(req.userId!, provider);
+      if (!device) {
+        return res.status(404).json({ error: 'Integration not found' });
+      }
+
+      if (provider === 'strava') {
+        if (!device.accessToken) {
+          return res.status(400).json({ error: 'Strava not properly connected' });
+        }
+
+        // Check if token needs refresh
+        let accessToken = device.accessToken;
+        if (device.tokenExpiresAt && new Date(device.tokenExpiresAt) < new Date()) {
+          if (!device.refreshToken) {
+            return res.status(401).json({ error: 'Strava token expired, please reconnect' });
+          }
+          const refreshed = await refreshStravaToken(device.refreshToken);
+          accessToken = refreshed.accessToken;
+          await storage.updateConnectedDevice(device.id, {
+            accessToken: refreshed.accessToken,
+            refreshToken: refreshed.refreshToken,
+            tokenExpiresAt: refreshed.expiresAt,
+          });
+        }
+
+        const result = await syncStravaActivities(req.userId!, accessToken, device.lastSyncAt);
+        await storage.updateConnectedDevice(device.id, { lastSyncAt: new Date() });
+
+        return res.json(result);
+      }
+
+      if (provider === 'apple_health') {
+        // Apple Health sync is push-based from the device
+        return res.json({ message: 'Apple Health sync is triggered from the device' });
+      }
+
+      res.json({ message: `Manual sync for ${provider} is not yet supported` });
+    } catch (error) {
+      console.error('Error triggering sync:', error);
+      res.status(500).json({ error: 'Failed to sync' });
     }
   });
 

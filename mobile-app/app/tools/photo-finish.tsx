@@ -44,6 +44,9 @@ export default function PhotoFinishScreen() {
   const [speed, setSpeed] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [startKeyframe, setStartKeyframe] = useState<number | null>(null);
+  const [endKeyframe, setEndKeyframe] = useState<number | null>(null);
+  const [showCenterLine, setShowCenterLine] = useState(true);
 
   useEffect(() => {
     if (loaded) {
@@ -88,11 +91,46 @@ export default function PhotoFinishScreen() {
     };
   }, [player, isSeeking]);
 
+  const setStartMark = useCallback(() => {
+    impactLight();
+    setStartKeyframe(currentTime);
+  }, [currentTime]);
+
+  const setEndMark = useCallback(() => {
+    impactLight();
+    setEndKeyframe(currentTime);
+  }, [currentTime]);
+
+  const clearKeyframes = useCallback(() => {
+    selectionChanged();
+    setStartKeyframe(null);
+    setEndKeyframe(null);
+  }, []);
+
+  // Loop between keyframes
+  useEffect(() => {
+    if (!player || startKeyframe === null || endKeyframe === null) return;
+    if (startKeyframe >= endKeyframe) return;
+    if (currentTime >= endKeyframe && isPlaying) {
+      player.currentTime = startKeyframe;
+    }
+  }, [currentTime, startKeyframe, endKeyframe, isPlaying, player]);
+
+  const keyframeDelta = (startKeyframe !== null && endKeyframe !== null && endKeyframe > startKeyframe)
+    ? endKeyframe - startKeyframe
+    : null;
+
+  const frameCount = keyframeDelta !== null
+    ? Math.round(keyframeDelta / settings.frameStep)
+    : null;
+
   const applySelectedVideo = useCallback((uri: string) => {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
     setSpeed(1);
+    setStartKeyframe(null);
+    setEndKeyframe(null);
     setVideoUri(uri);
   }, []);
 
@@ -211,6 +249,9 @@ export default function PhotoFinishScreen() {
           <View style={styles.videoContainer}>
             <View style={styles.videoWrapper}>
               <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
+              {showCenterLine && (
+                <View style={styles.centerLine} pointerEvents="none" />
+              )}
               {isLoading && (
                 <View style={styles.loadingOverlay}>
                   <ActivityIndicator size="large" color={colors.primary} />
@@ -224,6 +265,36 @@ export default function PhotoFinishScreen() {
               <Text style={styles.timestamp}>{formatTimestamp(currentTime, settings.showMilliseconds)}</Text>
               <Text style={styles.timestampSeparator}>/</Text>
               <Text style={styles.timestampTotal}>{formatTimestamp(duration, settings.showMilliseconds)}</Text>
+            </View>
+
+            {/* Keyframe Controls */}
+            <View style={styles.keyframeRow}>
+              <TouchableOpacity style={[styles.keyframeButton, startKeyframe !== null && styles.keyframeButtonActive]} onPress={setStartMark}>
+                <Ionicons name="flag-outline" size={16} color={startKeyframe !== null ? '#FFFFFF' : colors.text.secondary} />
+                <Text style={[styles.keyframeLabel, startKeyframe !== null && styles.keyframeLabelActive]}>
+                  {startKeyframe !== null ? formatTimestamp(startKeyframe, true) : 'START'}
+                </Text>
+              </TouchableOpacity>
+
+              {keyframeDelta !== null && (
+                <View style={styles.keyframeDelta}>
+                  <Text style={styles.keyframeDeltaText}>{formatTimestamp(keyframeDelta, true)}</Text>
+                  {frameCount !== null && <Text style={styles.keyframeFrameCount}>{frameCount} frames</Text>}
+                </View>
+              )}
+
+              <TouchableOpacity style={[styles.keyframeButton, endKeyframe !== null && styles.keyframeButtonActive]} onPress={setEndMark}>
+                <Ionicons name="flag" size={16} color={endKeyframe !== null ? '#FFFFFF' : colors.text.secondary} />
+                <Text style={[styles.keyframeLabel, endKeyframe !== null && styles.keyframeLabelActive]}>
+                  {endKeyframe !== null ? formatTimestamp(endKeyframe, true) : 'END'}
+                </Text>
+              </TouchableOpacity>
+
+              {(startKeyframe !== null || endKeyframe !== null) && (
+                <TouchableOpacity style={styles.clearKeyframes} onPress={clearKeyframes}>
+                  <Ionicons name="close-circle" size={20} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Timeline Scrubber */}
@@ -374,6 +445,12 @@ export default function PhotoFinishScreen() {
           value={settings.showMilliseconds}
           onValueChange={(val) => update({ showMilliseconds: val })}
         />
+        <SettingsToggleRow
+          label="Center Line"
+          description="Show dashed vertical line overlay"
+          value={showCenterLine}
+          onValueChange={setShowCenterLine}
+        />
       </ToolSettingsModal>
     </SafeAreaView>
   );
@@ -474,6 +551,59 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   speedTextActive: {
     color: colors.background.primary,
+  },
+  centerLine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    width: 2,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(255, 59, 48, 0.7)',
+    borderStyle: 'dashed',
+  },
+  keyframeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  keyframeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background.cardSolid,
+  },
+  keyframeButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  keyframeLabel: {
+    ...typography.captionBold,
+    color: colors.text.secondary,
+  },
+  keyframeLabelActive: {
+    color: '#FFFFFF',
+  },
+  keyframeDelta: {
+    alignItems: 'center',
+  },
+  keyframeDeltaText: {
+    ...typography.data,
+    fontSize: 14,
+    color: colors.teal,
+  },
+  keyframeFrameCount: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontSize: 10,
+  },
+  clearKeyframes: {
+    padding: 4,
   },
   changeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: colors.background.cardSolid },
   changeText: { ...typography.body, color: colors.text.primary },

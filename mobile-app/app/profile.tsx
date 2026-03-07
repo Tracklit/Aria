@@ -30,14 +30,19 @@ export default function ProfileScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
   const { effectiveTheme } = useTheme();
-  const { profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile } = useAuth();
   const [name, setName] = useState(profile?.displayName || '');
   const [gender, setGender] = useState(profile?.gender || '');
+  const [country, setCountry] = useState(profile?.country || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
     profile?.dateOfBirth ? new Date(profile.dateOfBirth) : null
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Email is only editable for email/password auth users (not Apple/Google sign-in)
+  const isEmailEditable = !!(user?.email && !user.email.endsWith('@privaterelay.appleid.com'));
 
   const initial = useMemo(() => (name?.trim()?.charAt(0) || 'A').toUpperCase(), [name]);
 
@@ -66,7 +71,9 @@ export default function ProfileScreen() {
         displayName: name || null,
         gender: gender || null,
         dateOfBirth: dateOfBirth ? dateOfBirth.toISOString() : null,
-      });
+        country: country || null,
+        ...(isEmailEditable ? { email: email || null } : {}),
+      } as any);
       notificationSuccess();
       Alert.alert('Saved', 'Profile updated.');
       router.back();
@@ -126,6 +133,31 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Country</Text>
+            <TextInput
+              testID="profile.country"
+              style={styles.input}
+              value={country}
+              onChangeText={setCountry}
+              placeholder="e.g. USA, Kenya, Jamaica"
+              placeholderTextColor={colors.text.tertiary}
+            />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              testID="profile.email"
+              style={[styles.input, !isEmailEditable && styles.inputDisabled]}
+              value={email}
+              onChangeText={isEmailEditable ? setEmail : undefined}
+              editable={isEmailEditable}
+              placeholder="Email address"
+              placeholderTextColor={colors.text.tertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Date of Birth</Text>
@@ -265,6 +297,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text.primary,
     fontSize: 16,
     paddingVertical: 4,
+  },
+  inputDisabled: {
+    opacity: 0.5,
   },
   dobButton: {
     flexDirection: 'row',

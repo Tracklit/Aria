@@ -73,6 +73,16 @@ async function attemptTokenRefresh(): Promise<boolean> {
   return refreshPromise;
 }
 
+function buildAuthRequiredError(): Error & { status?: number; payload?: unknown } {
+  const error = new Error('Authentication required') as Error & {
+    status?: number;
+    payload?: unknown;
+  };
+  error.status = 401;
+  error.payload = { error: 'Authentication required' };
+  return error;
+}
+
 export async function apiRequest<T = any>(
   path: string,
   options: RequestOptions = {}
@@ -89,10 +99,22 @@ export async function apiRequest<T = any>(
 
   let hasToken = false;
   if (!skipAuth) {
-    const token = await getToken();
+    let token = await getToken();
+    if (!token) {
+      const refreshed = await attemptTokenRefresh();
+      if (refreshed) {
+        token = await getToken();
+      }
+    }
+
     if (token) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
       hasToken = true;
+    } else {
+      if (DEBUG_API) {
+        console.log(`[API] Missing auth token for ${method} ${path}`);
+      }
+      throw buildAuthRequiredError();
     }
   }
 
@@ -581,6 +603,10 @@ export async function generateNutritionPlan(data: any) {
   return apiRequest('/api/nutrition/generate', { method: 'POST', data });
 }
 
+export async function activateNutritionPlan(id: number) {
+  return apiRequest(`/api/nutrition/plans/${id}/activate`, { method: 'POST' });
+}
+
 // ==================== PROGRAMS ====================
 
 export async function getPrograms() {
@@ -631,6 +657,14 @@ export async function generateProgram(data: any) {
   return apiRequest('/api/programs/generate', { method: 'POST', data });
 }
 
+export async function toggleProgramStatus(id: number, status: string) {
+  return apiRequest(`/api/programs/${id}`, { method: 'PATCH', data: { status } });
+}
+
+export async function setActiveWeek(programId: number, week: number) {
+  return apiRequest(`/api/programs/${programId}/active-week`, { method: 'PATCH', data: { activeWeek: week } });
+}
+
 export async function getProgramTemplateCSV() {
   return apiRequest('/api/programs/templates', { rawResponse: true });
 }
@@ -649,6 +683,28 @@ export async function deleteProgramSession(programId: number, sessionId: number)
 
 export async function bulkUpsertSessions(programId: number, sessions: any[]) {
   return apiRequest(`/api/programs/${programId}/sessions`, { method: 'PUT', data: { sessions } });
+}
+
+// ==================== EVENTS ====================
+
+export async function getEvents() {
+  return apiRequest('/api/events');
+}
+
+export async function createEvent(data: any) {
+  return apiRequest('/api/events', { method: 'POST', data });
+}
+
+export async function getEvent(id: number) {
+  return apiRequest(`/api/events/${id}`);
+}
+
+export async function updateEvent(id: number, data: any) {
+  return apiRequest(`/api/events/${id}`, { method: 'PATCH', data });
+}
+
+export async function deleteEvent(id: number) {
+  return apiRequest(`/api/events/${id}`, { method: 'DELETE' });
 }
 
 // ==================== PUSH NOTIFICATIONS ====================
@@ -676,6 +732,14 @@ export async function logSprintWorkout(data: {
   });
 }
 
+// Change Password
+export async function changePassword(currentPassword: string, newPassword: string) {
+  return apiRequest('/api/auth/change-password', {
+    method: 'POST',
+    data: { currentPassword, newPassword },
+  });
+}
+
 // Health check
 export async function healthCheck() {
   return apiRequest('/api/health', { skipAuth: true });
@@ -684,6 +748,7 @@ export async function healthCheck() {
 // Profile Picture Upload
 export interface ProfilePictureResponse {
   profileImageUrl: string;
+  photoUrl?: string;
   success: boolean;
 }
 

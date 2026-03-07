@@ -14,14 +14,55 @@ import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
 
 const METERS_TO_YARDS = 1.09361;
 
-// Dick (1987) conversion factors relative to 100m
-const CONVERSION_FACTORS: Record<number, number> = {
-  30: 0.371, 40: 0.441, 50: 0.510, 55: 0.543,
-  60: 0.577, 80: 0.710, 100: 1.000, 110: 1.064,
-  150: 1.350, 200: 1.730, 250: 2.120,
+// Brianmac / Dick (1987) quadratic polynomial coefficients
+// time = a + b*x + c*x^2, where x = 100m time
+const COEFFICIENTS: Record<number, { a: number; b: number; c: number; min: number; max: number }> = {
+  30:  { a: -2.232894, b: 0.6284907, c: -0.005192, min: 3.5, max: 6.1 },
+  40:  { a: -3.096923, b: 0.9058205, c: -0.015513, min: 4.4, max: 7.1 },
+  50:  { a: -4.062308, b: 1.1970513, c: -0.026282, min: 5.2, max: 8.0 },
+  60:  { a: -5.036141, b: 1.4909718, c: -0.037205, min: 6.1, max: 9.0 },
+  70:  { a: -3.93,     b: 1.392,     c: -0.0288,   min: 7.1, max: 10.5 },
+  80:  { a: -2.518071, b: 1.2454859, c: -0.018602, min: 8.0, max: 12.0 },
+  90:  { a: -1.18,     b: 1.11,      c: -0.0088,   min: 9.0, max: 13.5 },
+  100: { a: 0,         b: 1,         c: 0,          min: 9.9, max: 15.1 },
+  120: { a: 2.5180705, b: 0.7545141, c: 0.0186025,  min: 11.9, max: 18.1 },
+  150: { a: -2.089313, b: 1.7710869, c: -0.008948,  min: 14.7, max: 22.5 },
+  200: { a: -6.038257, b: 2.991126,  c: -0.039017,  min: 19.9, max: 30.1 },
+  250: { a: -14.85469, b: 4.9675416, c: -0.096238,  min: 25.1, max: 38.1 },
 };
 
-const DISTANCES = Object.keys(CONVERSION_FACTORS).map(Number);
+const DISTANCES = Object.keys(COEFFICIENTS).map(Number);
+
+function polynomial(coeff: { a: number; b: number; c: number }, x: number): number {
+  return coeff.a + coeff.b * x + coeff.c * x * x;
+}
+
+/**
+ * Given an input time at a specific distance, reverse-solve to find the 100m equivalent (x).
+ * Iterates from 9.9 in 0.01 increments until the polynomial output exceeds the input time.
+ */
+function solve100mEquivalent(distance: number, time: number): number | null {
+  if (distance === 100) return time;
+
+  const coeff = COEFFICIENTS[distance];
+  if (!coeff) return null;
+
+  // Determine search direction: for most distances, polynomial increases with x
+  // We iterate x from 9.9 upward and find where predicted crosses input time
+  let bestX = 9.9;
+  let bestDiff = Math.abs(polynomial(coeff, bestX) - time);
+
+  for (let x = 9.9; x <= 15.2; x += 0.01) {
+    const predicted = polynomial(coeff, x);
+    const diff = Math.abs(predicted - time);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestX = x;
+    }
+  }
+
+  return Math.round(bestX * 100) / 100;
+}
 
 function formatDistanceLabel(meters: number, unit: 'meters' | 'yards'): string {
   if (unit === 'yards') {
@@ -52,20 +93,32 @@ export default function SprintPredictorScreen() {
 
   function getDistanceColor(distance: number): string {
     if (distance <= 60) return colors.green;
-    if (distance <= 110) return colors.primary;
+    if (distance <= 100) return colors.primary;
     return colors.orange;
   }
 
+  const validationError = (() => {
+    if (!inputTimeNum || inputTimeNum <= 0) return null;
+    const coeff = COEFFICIENTS[selectedDistance];
+    if (!coeff) return null;
+    if (inputTimeNum < coeff.min || inputTimeNum > coeff.max) {
+      return `Valid range for ${selectedDistance}m: ${coeff.min}s - ${coeff.max}s`;
+    }
+    return null;
+  })();
+
   const predictions = (() => {
-    if (!inputTimeNum || inputTimeNum <= 0) return [];
+    if (!inputTimeNum || inputTimeNum <= 0 || validationError) return [];
 
-    const baseFactor = CONVERSION_FACTORS[selectedDistance];
-    const equivalent100m = inputTimeNum / baseFactor;
+    const x = solve100mEquivalent(selectedDistance, inputTimeNum);
+    if (x === null) return [];
 
-    return DISTANCES.filter(d => d !== selectedDistance).map(d => {
-      const predicted = +(equivalent100m * CONVERSION_FACTORS[d]).toFixed(2);
-      const delta = +(predicted - inputTimeNum).toFixed(2);
-      return { distance: d, time: predicted, delta };
+    return DISTANCES.map(d => {
+      const coeff = COEFFICIENTS[d];
+      const predicted = d === selectedDistance ? inputTimeNum : polynomial(coeff, x);
+      const time = Math.round(predicted * 100) / 100;
+      const delta = +(time - inputTimeNum).toFixed(2);
+      return { distance: d, time, delta, isInput: d === selectedDistance };
     });
   })();
 
@@ -82,7 +135,9 @@ export default function SprintPredictorScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.description}>Enter your time for a distance and predict your performance at other sprint distances using the Dick (1987) conversion model.</Text>
+        <Text style={styles.description}>
+          Enter your time for a distance and predict your performance at other sprint distances using the brianmac / Dick (1987) quadratic polynomial model.
+        </Text>
 
         <View style={styles.inputSection}>
           <TouchableOpacity style={styles.distancePicker} onPress={() => { impactLight(); setShowPicker(true); }}>
@@ -100,29 +155,57 @@ export default function SprintPredictorScreen() {
           />
         </View>
 
+        {validationError && (
+          <View style={styles.validationError}>
+            <Ionicons name="warning-outline" size={16} color={colors.red} />
+            <Text style={styles.validationErrorText}>{validationError}</Text>
+          </View>
+        )}
+
         {predictions.length > 0 ? (
           <View style={styles.resultsSection}>
             <Text style={styles.resultsTitle}>Predicted Times</Text>
             {predictions.map((p) => (
-              <View key={p.distance} style={[styles.resultCard, { borderLeftColor: getDistanceColor(p.distance) }]}>
+              <View
+                key={p.distance}
+                style={[
+                  styles.resultCard,
+                  { borderLeftColor: getDistanceColor(p.distance) },
+                  p.isInput && styles.resultCardHighlighted,
+                ]}
+              >
                 <View>
-                  <Text style={styles.resultDistance}>{formatDistanceLabel(p.distance, settings.distanceUnit)}</Text>
-                  {settings.showDelta && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.resultDistance}>
+                      {formatDistanceLabel(p.distance, settings.distanceUnit)}
+                    </Text>
+                    {p.isInput && (
+                      <View style={styles.inputBadge}>
+                        <Text style={styles.inputBadgeText}>INPUT</Text>
+                      </View>
+                    )}
+                  </View>
+                  {settings.showDelta && !p.isInput && (
                     <Text style={styles.resultDelta}>
                       {p.delta >= 0 ? '+' : ''}{p.delta.toFixed(2)}s
                     </Text>
                   )}
                 </View>
-                <Text style={styles.resultTime}>{p.time}s</Text>
+                <Text style={[styles.resultTime, p.isInput && styles.resultTimeHighlighted]}>
+                  {p.time.toFixed(2)}s
+                </Text>
               </View>
             ))}
+            <Text style={styles.timingNote}>
+              100m/200m are electronic timings; shorter distances are hand timings (+0.24s)
+            </Text>
           </View>
-        ) : (
+        ) : !validationError ? (
           <View style={styles.emptyState}>
             <Ionicons name="fitness-outline" size={56} color={colors.text.tertiary} />
             <Text style={styles.emptyText}>Enter your time above to see predictions</Text>
           </View>
-        )}
+        ) : null}
       </ScrollView>
 
       <Modal visible={showPicker} transparent animationType="slide">
@@ -194,16 +277,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerTitle: { ...typography.h2, color: colors.text.primary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
   description: { ...typography.caption, color: colors.text.secondary, marginBottom: spacing.lg },
-  inputSection: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
+  inputSection: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
   distancePicker: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.primary },
   distanceText: { ...typography.h3, color: colors.primary },
   timeInput: { flex: 1, ...typography.body, color: colors.text.primary, backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md },
-  resultsSection: { gap: spacing.sm },
+  validationError: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.lg, paddingHorizontal: spacing.sm },
+  validationErrorText: { ...typography.caption, color: colors.red },
+  resultsSection: { gap: spacing.sm, marginTop: spacing.md },
   resultsTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', marginBottom: spacing.sm },
   resultCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.md, padding: spacing.md, borderLeftWidth: 3 },
+  resultCardHighlighted: { borderWidth: 1, borderColor: colors.primary, borderLeftWidth: 3 },
   resultDistance: { ...typography.body, color: colors.text.secondary, fontWeight: '600' },
   resultDelta: { ...typography.caption, color: colors.text.tertiary, marginTop: 2 },
   resultTime: { ...typography.h3, color: colors.primary },
+  resultTimeHighlighted: { color: colors.text.primary },
+  inputBadge: { backgroundColor: colors.primary, borderRadius: borderRadius.sm, paddingHorizontal: 6, paddingVertical: 1 },
+  inputBadgeText: { ...typography.caption, color: '#FFFFFF', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  timingNote: { ...typography.caption, color: colors.text.tertiary, marginTop: spacing.sm, fontStyle: 'italic', textAlign: 'center' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xl * 3 },
   emptyText: { ...typography.body, color: colors.text.tertiary, marginTop: spacing.lg, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },

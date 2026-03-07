@@ -51,6 +51,7 @@ function RootLayoutNav() {
     const inAthleteInfo = segments[0] === 'athlete-info';
     const inSettings = segments[0] === 'settings';
     const inTrainingLog = segments[0] === 'training-log';
+    const inEvents = segments[0] === 'events';
 
     if (!isAuthenticated && !inAuthGroup && segments[0] !== undefined) {
       // Redirect to welcome screen if not authenticated (skip during transient route states)
@@ -78,7 +79,8 @@ function RootLayoutNav() {
         !inPrograms &&
         !inAthleteInfo &&
         !inSettings &&
-        !inTrainingLog
+        !inTrainingLog &&
+        !inEvents
       ) {
         // Redirect to dashboard if authenticated and onboarding is complete
         router.replace('/(tabs)/dashboard');
@@ -135,6 +137,7 @@ function RootLayoutNav() {
       <Stack.Screen name="athlete-info" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="training-log" options={{ headerShown: false }} />
+      <Stack.Screen name="events" options={{ headerShown: false }} />
     </Stack>
     </>
   );

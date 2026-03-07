@@ -18,9 +18,10 @@ const THEME_LABELS: Record<string, string> = { dark: 'Dark', light: 'Light', sys
 export default function MoreScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
-  const { profile, logout, uploadProfilePicture } = useAuth();
+  const { user, profile, logout, uploadProfilePicture } = useAuth();
   const { themeMode } = useTheme();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const isEmailUser = (user as any)?.authProvider === 'email' || !(user as any)?.authProvider;
 
   const handlePress = (item: string) => {
     Alert.alert('Navigation', `Navigate to ${item}`);
@@ -159,6 +160,12 @@ export default function MoreScreen() {
             <SettingsRow title="Notifications" icon="notifications-outline" onPress={() => router.push('/settings/notifications')} testID="settings.notifications" />
             <View style={styles.divider} />
             <SettingsRow title="Privacy" icon="shield-outline" onPress={() => handlePress('Privacy')} testID="settings.privacy" />
+            {isEmailUser && (
+              <>
+                <View style={styles.divider} />
+                <SettingsRow title="Security" icon="lock-closed-outline" onPress={() => router.push('/settings/security')} testID="settings.security" />
+              </>
+            )}
           </View>
         </View>
 
@@ -178,6 +185,8 @@ export default function MoreScreen() {
             <SettingsRow title="Voice Feedback" icon="volume-high-outline" onPress={() => router.push('/settings/voice-feedback')} testID="settings.voice_feedback" />
             <View style={styles.divider} />
             <SettingsRow title="Athlete Profile" icon="body-outline" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
+            <View style={styles.divider} />
+            <SettingsRow title="Upcoming Events" icon="calendar-outline" onPress={() => router.push('/events')} testID="settings.events" />
           </View>
         </View>
 

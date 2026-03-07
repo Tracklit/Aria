@@ -1,5 +1,5 @@
 import { storage } from './storage';
-import { User, UserProfile, TrainingPlan, Workout } from '../shared/schema';
+import { User, UserProfile, UserPreferences, TrainingPlan, Workout, NutritionPlan, Program, Event, HealthMetric, ConnectedDevice } from '../shared/schema';
 
 const ARIA_API_URL = process.env.ARIA_API_URL || 'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
 const METERS_PER_MILE = 1609.34;
@@ -84,13 +84,50 @@ RESPONSE STYLE:
 - Keep responses conversational and approachable
 - Use markdown formatting for structure when helpful (headers, bullet points, numbered lists)
 - Be concise but thorough - don't overwhelm with information
-- Always end with an actionable suggestion or encouraging note when appropriate`;
+- Always end with an actionable suggestion or encouraging note when appropriate
+
+HEALTH DATA COACHING RULES:
+- If readiness score < 60: Recommend lighter training or active recovery
+- If sleep duration < 6.5 hours: Note sleep deficit and suggest recovery-focused session
+- If HRV trending down compared to baseline: Warn about potential overtraining
+- If resting HR elevated > 5bpm above baseline: Suggest recovery day
+- Always explain WHY using actual data values (e.g., "Your HRV of 28ms is below your typical range...")
+- If no health data is connected, do NOT mention wearables or health metrics`;
+}
+
+export function getCoachingStyleModifier(style?: string | null): string {
+  switch (style) {
+    case 'motivational':
+      return `\n\nCOACHING STYLE: MOTIVATIONAL
+- Be extra encouraging and enthusiastic
+- Celebrate every effort and progress, no matter how small
+- Use motivational language and energy
+- Focus on the positive aspects of training
+- Help the athlete feel empowered and capable`;
+    case 'technical':
+      return `\n\nCOACHING STYLE: TECHNICAL
+- Focus on data-driven analysis and biomechanics
+- Provide detailed technical breakdowns
+- Reference specific metrics, splits, and performance indicators
+- Explain the science behind training recommendations
+- Use precise terminology and quantifiable guidance`;
+    case 'minimal':
+      return `\n\nCOACHING STYLE: MINIMAL
+- Keep responses very concise and direct
+- No unnecessary filler or motivation speeches
+- Just the essential information and actionable advice
+- Bullet points over paragraphs
+- Brief and to-the-point`;
+    default: // 'balanced' or undefined
+      return '';
+  }
 }
 
 // ==================== USER CONTEXT BUILDER ====================
 
 export interface UserContext {
   profile: UserProfile | undefined;
+  preferences: UserPreferences | undefined;
   activePlan: TrainingPlan | undefined;
   recentWorkouts: Workout[];
   todaysPlannedWorkout: any;
@@ -100,29 +137,49 @@ export interface UserContext {
     workoutCount: number;
     avgPace: string | null;
   };
+  activeNutritionPlan: NutritionPlan | undefined;
+  activePrograms: Program[];
+  upcomingEvents: Event[];
+  healthMetrics: HealthMetric | undefined;
+  connectedDevices: ConnectedDevice[];
 }
 
 export async function buildUserContext(userId: number): Promise<UserContext> {
-  const [profile, activePlan, recentWorkouts, todaysPlannedWorkout] = await Promise.all([
+  const [profile, preferences, activePlan, recentWorkouts, todaysPlannedWorkout, nutritionPlans, allPrograms, upcomingEvents, latestHealthMetrics, connectedDevices] = await Promise.all([
     storage.getUserProfile(userId),
+    storage.getUserPreferences(userId),
     storage.getActiveTrainingPlan(userId),
     storage.getRecentWorkouts(userId, 5),
     storage.getTodaysPlannedWorkout(userId),
+    storage.getNutritionPlans(userId),
+    storage.getPrograms(userId),
+    storage.getUpcomingEvents(userId, 3),
+    storage.getLatestHealthMetrics(userId),
+    storage.getConnectedDevices(userId),
   ]);
 
   // Calculate weekly stats
   const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of current week
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0, 0, 0, 0);
 
   const weeklyStats = await storage.getWeeklyStats(userId, weekStart);
 
+  const activeNutritionPlan = nutritionPlans.find(p => p.status === 'active');
+  const activePrograms = allPrograms.filter(p => p.status === 'active');
+
   return {
     profile,
+    preferences,
     activePlan,
     recentWorkouts,
     todaysPlannedWorkout,
     weeklyStats,
+    activeNutritionPlan,
+    activePrograms,
+    upcomingEvents,
+    healthMetrics: latestHealthMetrics,
+    connectedDevices,
   };
 }
 
@@ -132,12 +189,36 @@ export function formatUserContextForAI(context: UserContext): string {
   const paceUnit = units === 'metric' ? 'min/km' : 'min/mi';
 
   if (context.profile) {
+    const p = context.profile;
+    const age = p.dateOfBirth ? Math.floor((Date.now() - new Date(p.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null;
+
     parts.push(`ATHLETE PROFILE:
-- Name: ${context.profile.displayName || 'Athlete'}
-- Sport: ${context.profile.sport || 'Running'}
-- Experience: ${context.profile.experienceLevel || 'Not specified'}
-- Goals: ${context.profile.goalTags?.join(', ') || 'Not specified'}
-- Units: ${units}`);
+- Name: ${p.displayName || 'Athlete'}
+- Sport: ${p.sport || 'Running'}
+- Experience: ${p.experienceLevel || 'Not specified'}
+- Goals: ${p.goalTags?.join(', ') || 'Not specified'}
+- Units: ${units}${age ? `\n- Age: ${age}` : ''}${p.gender ? `\n- Gender: ${p.gender}` : ''}${p.height ? `\n- Height: ${p.height} cm` : ''}${p.weight ? `\n- Weight: ${p.weight} kg` : ''}${p.bodyFatPercentage ? `\n- Body Fat: ${p.bodyFatPercentage}%` : ''}${p.country ? `\n- Country: ${p.country}` : ''}`);
+
+    // Wellness section
+    const wellnessParts: string[] = [];
+    if (p.averageSleepHours) wellnessParts.push(`Sleep: ${p.averageSleepHours}h/night`);
+    if (p.sleepQuality) wellnessParts.push(`Quality: ${p.sleepQuality}`);
+    if (p.currentMood) wellnessParts.push(`Mood: ${p.currentMood}`);
+    if (p.injuryStatus && p.injuryStatus !== 'healthy') wellnessParts.push(`Injury: ${p.injuryStatus}`);
+    if (p.injuryHistory) wellnessParts.push(`History: ${p.injuryHistory}`);
+    if (wellnessParts.length > 0) {
+      parts.push(`\nWELLNESS:\n- ${wellnessParts.join('\n- ')}`);
+    }
+
+    // Training preferences
+    const trainingParts: string[] = [];
+    if (p.activityLevel) trainingParts.push(`Activity Level: ${p.activityLevel}`);
+    if (p.trainingDaysPerWeek) trainingParts.push(`Training Days/Week: ${p.trainingDaysPerWeek}`);
+    if ((p.trainingFocus as string[] | null)?.length) trainingParts.push(`Focus: ${(p.trainingFocus as string[]).join(', ')}`);
+    if (context.preferences?.preferredWorkoutTime) trainingParts.push(`Preferred Time: ${context.preferences.preferredWorkoutTime}`);
+    if (trainingParts.length > 0) {
+      parts.push(`\nTRAINING PREFERENCES:\n- ${trainingParts.join('\n- ')}`);
+    }
   }
 
   if (context.activePlan) {
@@ -195,6 +276,83 @@ export function formatUserContextForAI(context: UserContext): string {
 - Duration: ${Math.round(context.weeklyStats.totalDuration / 60)} min
 - Workouts: ${context.weeklyStats.workoutCount}
 - Avg Pace: ${context.weeklyStats.avgPace || `N/A (${paceUnit})`}`);
+
+  if (context.healthMetrics && context.connectedDevices.length > 0) {
+    const hm = context.healthMetrics;
+    const providers = context.connectedDevices.map(d => d.provider).join(', ');
+    const healthParts: string[] = [`- Connected Devices: ${providers}`];
+
+    if (hm.sleepDurationSeconds != null) {
+      const sleepHours = (hm.sleepDurationSeconds / 3600).toFixed(1);
+      let sleepLine = `- Sleep: ${sleepHours} hours`;
+      if (hm.sleepEfficiency != null) sleepLine += ` (efficiency: ${Math.round(hm.sleepEfficiency * 100)}%)`;
+      if (hm.deepSleepSeconds != null) sleepLine += `, Deep: ${(hm.deepSleepSeconds / 3600).toFixed(1)}h`;
+      if (hm.remSleepSeconds != null) sleepLine += `, REM: ${(hm.remSleepSeconds / 3600).toFixed(1)}h`;
+      healthParts.push(sleepLine);
+    }
+
+    if (hm.restingHeartRate != null || hm.hrvRmssd != null) {
+      const hrParts: string[] = [];
+      if (hm.restingHeartRate != null) hrParts.push(`Resting HR: ${hm.restingHeartRate} bpm`);
+      if (hm.hrvRmssd != null) hrParts.push(`HRV (RMSSD): ${hm.hrvRmssd.toFixed(1)} ms`);
+      healthParts.push(`- ${hrParts.join(' | ')}`);
+    }
+
+    if (hm.readinessScore != null) healthParts.push(`- Readiness Score: ${hm.readinessScore}/100`);
+    if (hm.recoveryScore != null) healthParts.push(`- Recovery Score: ${hm.recoveryScore}/100`);
+    if (hm.stressScore != null) healthParts.push(`- Stress Score: ${hm.stressScore}`);
+    if (hm.bodyBattery != null) healthParts.push(`- Body Battery: ${hm.bodyBattery}`);
+
+    if (hm.steps != null || hm.activeMinutes != null) {
+      const actParts: string[] = [];
+      if (hm.steps != null) actParts.push(`Steps: ${hm.steps.toLocaleString()}`);
+      if (hm.activeMinutes != null) actParts.push(`Active Minutes: ${hm.activeMinutes}`);
+      healthParts.push(`- ${actParts.join(' | ')}`);
+    }
+
+    if (hm.weightKg != null) {
+      let bodyLine = `- Weight: ${hm.weightKg.toFixed(1)} kg`;
+      if (hm.bodyFatPercentage != null) bodyLine += ` | Body Fat: ${hm.bodyFatPercentage.toFixed(1)}%`;
+      healthParts.push(bodyLine);
+    }
+
+    // Training recommendation based on data
+    let recommendation = 'High intensity OK';
+    if ((hm.readinessScore != null && hm.readinessScore < 60) ||
+        (hm.recoveryScore != null && hm.recoveryScore < 60)) {
+      recommendation = 'Recovery day suggested';
+    } else if ((hm.readinessScore != null && hm.readinessScore < 75) ||
+               (hm.sleepDurationSeconds != null && hm.sleepDurationSeconds < 6.5 * 3600)) {
+      recommendation = 'Light training recommended';
+    }
+    healthParts.push(`- Training Recommendation: ${recommendation}`);
+
+    parts.push(`\nWEARABLE HEALTH DATA (${new Date(hm.date).toLocaleDateString()}):\n${healthParts.join('\n')}`);
+  }
+
+  if (context.activeNutritionPlan) {
+    const np = context.activeNutritionPlan;
+    parts.push(`\nACTIVE NUTRITION PLAN:
+- Title: ${np.title}
+- Calories: ${np.calorieTarget || 'Not set'}
+- Macros: P${np.proteinGrams || '?'}g / C${np.carbsGrams || '?'}g / F${np.fatsGrams || '?'}g`);
+  }
+
+  if (context.activePrograms.length > 0) {
+    parts.push(`\nACTIVE PROGRAMS:`);
+    context.activePrograms.forEach((prog) => {
+      parts.push(`- ${prog.title} (${prog.category || 'general'}, week ${prog.activeWeek || 1}/${prog.duration || '?'})`);
+    });
+  }
+
+  if (context.upcomingEvents.length > 0) {
+    parts.push(`\nUPCOMING EVENTS:`);
+    context.upcomingEvents.forEach((evt) => {
+      const daysUntil = Math.ceil((new Date(evt.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const goalStr = evt.goalTime ? `, goal: ${evt.goalTime}s` : '';
+      parts.push(`- ${evt.name} (${evt.eventType}) - ${new Date(evt.date).toLocaleDateString()} (in ${daysUntil} days)${evt.distanceLabel ? `, ${evt.distanceLabel}` : ''}${goalStr}`);
+    });
+  }
 
   return parts.join('\n');
 }
@@ -477,12 +635,16 @@ The "recommendation" field MUST contain a JSON string (escaped) with the trainin
 The "analysis" field should be a brief summary of the program.
 
 Example response format:
-{"analysis": "Created a 4-week sprint power program", "recommendation": "{\\"title\\": \\"Sprint Power Program\\", \\"description\\": \\"A periodized sprint training program\\", \\"category\\": \\"sprint\\", \\"level\\": \\"intermediate\\", \\"duration\\": 4, \\"sessions\\": [{\\"dayNumber\\": 1, \\"title\\": \\"Speed Work\\", \\"description\\": \\"Short sprint repeats\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"${sprintDistanceExample}\\", \\"sets\\": 6, \\"reps\\": \\"6\\", \\"rest\\": 180, \\"notes\\": \\"Full effort\\"}]}, {\\"dayNumber\\": 2, \\"title\\": \\"Recovery\\", \\"description\\": \\"Light jog and stretching\\", \\"isRestDay\\": true, \\"exercises\\": []}]}"}
+{"analysis": "Created a 4-week sprint power program", "recommendation": "{\\"title\\": \\"Sprint Power Program\\", \\"description\\": \\"A periodized sprint training program\\", \\"category\\": \\"sprint\\", \\"level\\": \\"intermediate\\", \\"duration\\": 4, \\"sessions\\": [{\\"weekNumber\\": 1, \\"dayOfWeek\\": 1, \\"dayNumber\\": 1, \\"title\\": \\"Acceleration Work\\", \\"description\\": \\"Opening week acceleration focus\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"${sprintDistanceExample}\\", \\"sets\\": 6, \\"reps\\": \\"1\\", \\"rest\\": 180, \\"notes\\": \\"Full effort\\"}]}, {\\"weekNumber\\": 2, \\"dayOfWeek\\": 1, \\"dayNumber\\": 8, \\"title\\": \\"Max Velocity Progression\\", \\"description\\": \\"Week 2 builds on week 1 with higher intensity\\", \\"isRestDay\\": false, \\"exercises\\": [{\\"name\\": \\"Flying Sprints\\", \\"sets\\": 5, \\"reps\\": \\"1\\", \\"rest\\": 210, \\"notes\\": \\"Long recoveries\\"}]}, {\\"weekNumber\\": 1, \\"dayOfWeek\\": 2, \\"dayNumber\\": 2, \\"title\\": \\"Recovery\\", \\"description\\": \\"Light jog and stretching\\", \\"isRestDay\\": true, \\"exercises\\": []}]}"}
 
 IMPORTANT rules for the JSON inside "recommendation":
 - "reps" must be a string (e.g. "6", "8-10", "1"). "sets" and "rest" must be numbers.
-- Every session MUST have "dayNumber", "title", "isRestDay", and "exercises" fields.
-- Include at least 3-4 sessions per week.
+- Every session MUST have "weekNumber", "dayOfWeek", "dayNumber", "title", "isRestDay", and "exercises" fields.
+- "dayOfWeek" must use 1-7 for Monday-Sunday.
+- "dayNumber" must equal ((weekNumber - 1) * 7) + dayOfWeek.
+- Generate a full multi-week plan. Do NOT return a single 7-day template intended to be repeated.
+- Include exactly ${(input.durationWeeks || 4) * 7} session objects, one for every day of the program, using rest-day sessions when needed.
+- Weeks must progress across the full duration. Week 2+ should not be a verbatim copy of week 1.
 - ${unitInstruction}`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
@@ -492,6 +654,7 @@ ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
 - Include warm-up and cool-down recommendations
 - Balance training load across the week
 - Include rest days
+- Progress the plan across all ${input.durationWeeks || 4} weeks instead of repeating one template week
 - ${unitInstruction}
 - Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
 
@@ -566,8 +729,9 @@ export async function handleChat(userId: number, input: ChatInput): Promise<Chat
   const userContext = await buildUserContext(userId);
   const contextString = formatUserContextForAI(userContext);
 
-  // Build system prompt
-  const systemPrompt = buildAriaSystemPrompt();
+  // Build system prompt with coaching style
+  const coachingStyle = userContext.preferences?.aiCoachingStyle;
+  const systemPrompt = buildAriaSystemPrompt() + getCoachingStyleModifier(coachingStyle);
 
   // Combine user message with context
   const userInputWithContext = `${message}\n\n${contextString}`;
@@ -642,7 +806,8 @@ export async function handleChatStream(userId: number, input: ChatInput, res: im
   // Build context
   const userContext = await buildUserContext(userId);
   const contextString = formatUserContextForAI(userContext);
-  const systemPrompt = buildAriaSystemPrompt();
+  const coachingStyle = userContext.preferences?.aiCoachingStyle;
+  const systemPrompt = buildAriaSystemPrompt() + getCoachingStyleModifier(coachingStyle);
   const userInputWithContext = `${message}\n\n${contextString}`;
 
   // Set SSE headers

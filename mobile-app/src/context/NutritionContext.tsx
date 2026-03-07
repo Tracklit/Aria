@@ -5,6 +5,7 @@ import {
   updateNutritionPlan as apiUpdatePlan,
   deleteNutritionPlan as apiDeletePlan,
   generateNutritionPlan as apiGeneratePlan,
+  activateNutritionPlan as apiActivatePlan,
 } from '../lib/api';
 
 export interface NutritionPlan {
@@ -44,6 +45,7 @@ interface NutritionContextType extends NutritionState {
   deletePlan: (id: number) => Promise<void>;
   generatePlan: (input: any) => Promise<NutritionPlan>;
   setActivePlan: (plan: NutritionPlan | null) => void;
+  activatePlan: (id: number) => Promise<void>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -112,8 +114,17 @@ export const NutritionProvider: React.FC<{ children: ReactNode }> = ({ children 
     setState(prev => ({ ...prev, activePlan: plan }));
   }, []);
 
+  const activatePlan = useCallback(async (id: number) => {
+    const activated = await apiActivatePlan(id) as NutritionPlan;
+    setState(prev => ({
+      ...prev,
+      plans: prev.plans.map(p => p.id === id ? activated : { ...p, status: 'inactive' }),
+      activePlan: activated,
+    }));
+  }, []);
+
   return (
-    <NutritionContext.Provider value={{ ...state, fetchPlans, createPlan, updatePlan, deletePlan, generatePlan, setActivePlan }}>
+    <NutritionContext.Provider value={{ ...state, fetchPlans, createPlan, updatePlan, deletePlan, generatePlan, setActivePlan, activatePlan }}>
       {children}
     </NutritionContext.Provider>
   );

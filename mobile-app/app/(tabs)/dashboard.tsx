@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   RefreshControl,
   TextInput,
@@ -19,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Avatar } from '../../src/components/ui';
 import { useAuth, useDashboard, useWorkout, useSession, useTheme } from '../../src/context';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { getDayLabel, safeParseExercises } from '../../src/utils/formatting';
@@ -207,19 +207,16 @@ export default function DashboardScreen() {
       >
         <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(400)} style={styles.headerRow}>
           <View style={styles.headerText}>
-            <Text style={styles.greeting}>Good Morning, {displayName}</Text>
+            <Text style={styles.greeting}>{greeting || 'Good Morning'}, {displayName}</Text>
             <Text style={styles.subtitle}>{subtitle || "Let's get faster today"}</Text>
           </View>
           <View style={styles.headerRight}>
-            <View style={styles.avatarWrap}>
-              {profile?.photoUrl ? (
-                <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-              ) : (
-                <View style={styles.avatarFallback}>
-                  <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-            </View>
+            <Avatar
+              uri={profile?.photoUrl ?? undefined}
+              size="small"
+              fallbackText={displayName.charAt(0).toUpperCase()}
+              style={styles.avatar}
+            />
             <TouchableOpacity
               testID="dashboard.settings"
               style={styles.settingsButton}
@@ -447,28 +444,13 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   settingsButton: {
     padding: 4,
   },
-  avatarWrap: {},
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: colors.teal,
-  },
-  avatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.teal,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.secondary,
-  },
-  avatarInitial: {
-    color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: '700',
+    overflow: 'hidden',
   },
   chatSection: {
     marginHorizontal: 24,

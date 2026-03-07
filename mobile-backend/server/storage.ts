@@ -16,6 +16,7 @@ import {
   ariaConversations,
   ariaMessages,
   races,
+  events,
   nutritionPlans,
   programs,
   programSessions,
@@ -55,6 +56,11 @@ import {
   InsertProgram,
   ProgramSession,
   InsertProgramSession,
+  Event,
+  InsertEvent,
+  healthMetrics,
+  HealthMetric,
+  InsertHealthMetric,
 } from '../shared/schema';
 
 export interface IStorage {
@@ -163,6 +169,14 @@ export interface IStorage {
   updateRace(id: number, data: Partial<InsertRace>): Promise<Race | undefined>;
   deleteRace(id: number): Promise<void>;
 
+  // Events
+  getEvents(userId: number): Promise<Event[]>;
+  getUpcomingEvents(userId: number, limit?: number): Promise<Event[]>;
+  getEvent(id: number): Promise<Event | undefined>;
+  createEvent(data: InsertEvent): Promise<Event>;
+  updateEvent(id: number, data: Partial<InsertEvent>): Promise<Event | undefined>;
+  deleteEvent(id: number): Promise<void>;
+
   // Nutrition Plans
   getNutritionPlans(userId: number): Promise<NutritionPlan[]>;
   getNutritionPlan(id: number): Promise<NutritionPlan | undefined>;
@@ -184,6 +198,11 @@ export interface IStorage {
   updateProgramSession(id: number, data: Partial<InsertProgramSession>): Promise<ProgramSession | undefined>;
   deleteProgramSession(id: number): Promise<void>;
   deleteSessionsByProgramExcluding(programId: number, keepIds: number[]): Promise<void>;
+
+  // Health Metrics
+  getHealthMetrics(userId: number, startDate: Date, endDate: Date): Promise<HealthMetric[]>;
+  getLatestHealthMetrics(userId: number): Promise<HealthMetric | undefined>;
+  upsertHealthMetrics(data: InsertHealthMetric): Promise<HealthMetric>;
 
   // Analytics helpers
   getWeeklyStats(userId: number, weekStart: Date): Promise<{
@@ -763,6 +782,47 @@ export class DatabaseStorage implements IStorage {
     await db.delete(races).where(eq(races.id, id));
   }
 
+  // ==================== EVENTS ====================
+
+  async getEvents(userId: number): Promise<Event[]> {
+    return db.select().from(events)
+      .where(eq(events.userId, userId))
+      .orderBy(asc(events.date));
+  }
+
+  async getUpcomingEvents(userId: number, limit: number = 10): Promise<Event[]> {
+    const now = new Date();
+    return db.select().from(events)
+      .where(and(
+        eq(events.userId, userId),
+        gte(events.date, now)
+      ))
+      .orderBy(asc(events.date))
+      .limit(limit);
+  }
+
+  async getEvent(id: number): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event;
+  }
+
+  async createEvent(data: InsertEvent): Promise<Event> {
+    const [event] = await db.insert(events).values(data).returning();
+    return event;
+  }
+
+  async updateEvent(id: number, data: Partial<InsertEvent>): Promise<Event | undefined> {
+    const [event] = await db.update(events)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(events.id, id))
+      .returning();
+    return event;
+  }
+
+  async deleteEvent(id: number): Promise<void> {
+    await db.delete(events).where(eq(events.id, id));
+  }
+
   // ==================== ANALYTICS ====================
 
   async getWeeklyStats(userId: number, weekStart: Date): Promise<{
@@ -894,6 +954,47 @@ export class DatabaseStorage implements IStorage {
       await db.delete(programSessions).where(
         and(eq(programSessions.programId, programId), notInArray(programSessions.id, keepIds))
       );
+    }
+  }
+
+  // ==================== HEALTH METRICS ====================
+
+  async getHealthMetrics(userId: number, startDate: Date, endDate: Date): Promise<HealthMetric[]> {
+    return db.select().from(healthMetrics)
+      .where(and(
+        eq(healthMetrics.userId, userId),
+        gte(healthMetrics.date, startDate),
+        lte(healthMetrics.date, endDate)
+      ))
+      .orderBy(desc(healthMetrics.date));
+  }
+
+  async getLatestHealthMetrics(userId: number): Promise<HealthMetric | undefined> {
+    const [metric] = await db.select().from(healthMetrics)
+      .where(eq(healthMetrics.userId, userId))
+      .orderBy(desc(healthMetrics.date))
+      .limit(1);
+    return metric;
+  }
+
+  async upsertHealthMetrics(data: InsertHealthMetric): Promise<HealthMetric> {
+    const existing = await db.select().from(healthMetrics)
+      .where(and(
+        eq(healthMetrics.userId, data.userId),
+        eq(healthMetrics.date, data.date),
+        eq(healthMetrics.provider, data.provider)
+      ))
+      .limit(1);
+
+    if (existing.length > 0) {
+      const [metric] = await db.update(healthMetrics)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(healthMetrics.id, existing[0].id))
+        .returning();
+      return metric;
+    } else {
+      const [metric] = await db.insert(healthMetrics).values(data).returning();
+      return metric;
     }
   }
 }

@@ -4,33 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePrograms, Program } from '../../../src/context/ProgramsContext';
+import { useAuth } from '../../../src/context';
 import { useSession } from '../../../src/context/SessionContext';
 import { getProgram } from '../../../src/lib/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../../src/theme';
 import { ThemeColors } from '../../../src/theme/colors';
-import { getDayLabel, safeParseExercises } from '../../../src/utils/formatting';
-
-interface ParsedSession {
-  dayNumber: number;
-  title: string;
-  description?: string;
-  isRestDay: boolean;
-  exercises: Array<{ name: string; sets?: number; reps?: number | string; rest?: number }>;
-}
-
-function parseAIContent(content: string | null | undefined): ParsedSession[] {
-  if (!content) return [];
-  try {
-    const clean = content.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    const parsed = JSON.parse(clean);
-    if (Array.isArray(parsed)) return parsed;
-    if (parsed.sessions && Array.isArray(parsed.sessions)) return parsed.sessions;
-    return [];
-  } catch {
-    return [];
-  }
-}
+import { getDayLabel } from '../../../src/utils/formatting';
+import { buildProgramDetailState } from '../../../src/utils/programSessions';
+import { impactLight, impactMedium, notificationSuccess } from '../../../src/utils/haptics';
+import type { HydratedProgramSession, ProgramDetailStateResult } from '../../../src/utils/programSessions';
 
 /** Return a clean description string, or null if it's just raw JSON / code fences */
 function cleanDescription(desc: string | null | undefined): string | null {
@@ -45,33 +28,36 @@ export default function ProgramDetailScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { deleteProgram } = usePrograms();
+  const { deleteProgram, toggleProgramStatus, setActiveWeek } = usePrograms();
+  const { hasValidToken, isLoading: isAuthLoading } = useAuth();
   const { startSession } = useSession();
   const [program, setProgram] = useState<Program | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [parsedSessions, setParsedSessions] = useState<ParsedSession[]>([]);
+  const [displaySessions, setDisplaySessions] = useState<HydratedProgramSession[]>([]);
+  const [totalWeeks, setTotalWeeks] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState(1);
 
   useEffect(() => {
+    if (isAuthLoading) return;
+    if (!hasValidToken || !id) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     loadProgram();
-  }, [id]);
+  }, [hasValidToken, id, isAuthLoading]);
 
   const loadProgram = async () => {
     try {
       const data = await getProgram(parseInt(id)) as Program;
       setProgram(data);
-
-      if (!data.sessions || data.sessions.length === 0) {
-        const fromText = parseAIContent(data.textContent);
-        if (fromText.length > 0) {
-          setParsedSessions(fromText);
-        } else {
-          const fromDesc = parseAIContent(data.description);
-          if (fromDesc.length > 0) {
-            setParsedSessions(fromDesc);
-          }
-        }
-      }
+      const detailState: ProgramDetailStateResult = buildProgramDetailState(data);
+      setDisplaySessions(detailState.sessions);
+      setTotalWeeks(detailState.weeks);
+      const startWeek = data.activeWeek || 1;
+      setSelectedWeek(startWeek);
     } catch (error) {
       console.error('Failed to load program:', error);
     } finally {
@@ -97,14 +83,46 @@ export default function ProgramDetailScreen() {
     ]);
   };
 
+  const handleToggleStatus = async () => {
+    if (!program) return;
+    const isArchived = program.status === 'archived';
+    try {
+      await toggleProgramStatus(program.id);
+      setProgram(prev => prev ? { ...prev, status: isArchived ? 'active' : 'archived' } : prev);
+      notificationSuccess();
+    } catch {
+      Alert.alert('Error', 'Failed to update program status');
+    }
+  };
+
+  const handleSetActiveWeek = async (week: number) => {
+    if (!program) return;
+    try {
+      await setActiveWeek(program.id, week);
+      setProgram(prev => prev ? { ...prev, activeWeek: week } : prev);
+      setSelectedWeek(week);
+      impactMedium();
+    } catch {
+      Alert.alert('Error', 'Failed to set active week');
+    }
+  };
+
+  const handleAdvanceWeek = (delta: number) => {
+    const current = program?.activeWeek || selectedWeek;
+    const next = Math.max(1, Math.min(totalWeeks, current + delta));
+    if (next !== current) {
+      handleSetActiveWeek(next);
+    }
+  };
+
   const handleStartSession = () => {
-    const sessions = (program?.sessions && program.sessions.length > 0) ? program.sessions : parsedSessions;
+    const sessions = selectedWeekSessions.length > 0 ? selectedWeekSessions : displaySessions;
     if (!program || !sessions || sessions.length === 0) {
       Alert.alert('No Sessions', 'This program has no sessions to start.');
       return;
     }
 
-    const nonRestSessions = sessions.filter(s => !s.isRestDay && safeParseExercises(s.exercises).length > 0);
+    const nonRestSessions = sessions.filter((session) => !session.isRestDay && session.exercises.length > 0);
     if (nonRestSessions.length === 0) {
       Alert.alert('No Sessions', 'No training sessions found in this program.');
       return;
@@ -112,7 +130,7 @@ export default function ProgramDetailScreen() {
 
     if (nonRestSessions.length === 1) {
       const s = nonRestSessions[0];
-      startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), safeParseExercises(s.exercises));
+      startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), s.exercises);
       return;
     }
 
@@ -122,12 +140,21 @@ export default function ProgramDetailScreen() {
       [
         ...nonRestSessions.map(s => ({
           text: s.title || getDayLabel(s.dayNumber),
-          onPress: () => startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), safeParseExercises(s.exercises)),
+          onPress: () => startSession(program.id, program.title, s.title || getDayLabel(s.dayNumber), s.exercises),
         })),
         { text: 'Cancel', style: 'cancel' as const },
       ]
     );
   };
+
+  const weekNumbers = Array.from({ length: totalWeeks }, (_, index) => index + 1);
+  const selectedWeekSessions = displaySessions.filter((session) => (
+    Math.ceil(session.dayNumber / 7) === selectedWeek
+  ));
+
+  const isActive = program?.status === 'active';
+  const isArchived = program?.status === 'archived';
+  const currentActiveWeek = program?.activeWeek || 1;
 
   if (isLoading || !program) {
     return (
@@ -150,6 +177,13 @@ export default function ProgramDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{program.title}</Text>
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity onPress={handleToggleStatus}>
+            <Ionicons
+              name={isArchived ? 'refresh-outline' : 'archive-outline'}
+              size={22}
+              color={isArchived ? colors.teal : colors.text.secondary}
+            />
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push(`/programs/${id}/edit` as any)}>
             <Ionicons name="create-outline" size={22} color={colors.primary} />
           </TouchableOpacity>
@@ -167,7 +201,20 @@ export default function ProgramDetailScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.gradientHeader}
         >
-          <Text style={styles.gradientTitle}>{program.title}</Text>
+          <View style={styles.gradientTopRow}>
+            <Text style={styles.gradientTitle}>{program.title}</Text>
+            {isActive && (
+              <View style={styles.statusBadgeActive}>
+                <Ionicons name="checkmark-circle" size={12} color="#32D74B" />
+                <Text style={styles.statusBadgeActiveText}>ACTIVE</Text>
+              </View>
+            )}
+            {isArchived && (
+              <View style={styles.statusBadgeArchived}>
+                <Text style={styles.statusBadgeArchivedText}>ARCHIVED</Text>
+              </View>
+            )}
+          </View>
           <View style={styles.infoRow}>
             {program.category && <View style={styles.badge}><Text style={styles.badgeText}>{program.category}</Text></View>}
             {program.level && <View style={styles.badge}><Text style={styles.badgeText}>{program.level}</Text></View>}
@@ -179,19 +226,89 @@ export default function ProgramDetailScreen() {
           </View>
         </LinearGradient>
 
+        {/* Active Week Controls */}
+        {totalWeeks > 1 && (
+          <View style={styles.activeWeekRow}>
+            <TouchableOpacity
+              style={styles.weekArrow}
+              onPress={() => handleAdvanceWeek(-1)}
+              disabled={currentActiveWeek <= 1}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={22}
+                color={currentActiveWeek <= 1 ? colors.text.tertiary : colors.primary}
+              />
+            </TouchableOpacity>
+            <View style={styles.activeWeekCenter}>
+              <Text style={styles.activeWeekLabel}>Active Week</Text>
+              <Text style={styles.activeWeekNumber}>Week {currentActiveWeek}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.weekArrow}
+              onPress={() => handleAdvanceWeek(1)}
+              disabled={currentActiveWeek >= totalWeeks}
+            >
+              <Ionicons
+                name="chevron-forward"
+                size={22}
+                color={currentActiveWeek >= totalWeeks ? colors.text.tertiary : colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Start Session Button */}
-        <TouchableOpacity style={styles.startBtn} onPress={handleStartSession}>
+        <TouchableOpacity style={styles.startBtn} onPress={() => { impactMedium(); handleStartSession(); }}>
           <Ionicons name="play-circle" size={22} color="#fff" />
           <Text style={styles.startBtnText}>Start Session</Text>
         </TouchableOpacity>
 
+        {totalWeeks > 1 && (
+          <View style={styles.weekSection}>
+            <Text style={styles.sectionTitle}>Weeks</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekScroll}>
+              {weekNumbers.map((week) => {
+                const sessionsForWeek = displaySessions.filter((session) => Math.ceil(session.dayNumber / 7) === week);
+                const workoutCount = sessionsForWeek.filter((session) => !session.isRestDay && session.exercises.length > 0).length;
+                const isSelected = selectedWeek === week;
+                const isActiveWeek = currentActiveWeek === week;
+
+                return (
+                  <TouchableOpacity
+                    key={week}
+                    style={[
+                      styles.weekCard,
+                      isSelected && styles.weekCardSelected,
+                      isActiveWeek && !isSelected && styles.weekCardActiveWeek,
+                    ]}
+                    onPress={() => { setSelectedWeek(week); impactLight(); }}
+                  >
+                    <View style={styles.weekCardHeader}>
+                      <Text style={[styles.weekCardTitle, isSelected && styles.weekCardTitleSelected]}>Week {week}</Text>
+                      {isActiveWeek && (
+                        <View style={styles.activeWeekDot} />
+                      )}
+                    </View>
+                    <Text style={[styles.weekCardMeta, isSelected && styles.weekCardMetaSelected]}>
+                      {workoutCount} workout{workoutCount === 1 ? '' : 's'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Sessions */}
         {(() => {
-          const sessions = (program.sessions && program.sessions.length > 0) ? program.sessions : parsedSessions;
+          const sessions = totalWeeks > 1 ? selectedWeekSessions : displaySessions;
           if (!sessions || sessions.length === 0) return null;
           return (
             <View style={styles.sessionsSection}>
-              <Text style={styles.sectionTitle}>Sessions</Text>
+              <Text style={styles.sectionTitle}>
+                {totalWeeks > 1 ? `Week ${selectedWeek}` : 'Sessions'}
+              </Text>
               {sessions.map((session, idx) => {
                 const key = 'id' in session ? (session as any).id : idx;
                 const dayNum = session.dayNumber;
@@ -209,7 +326,7 @@ export default function ProgramDetailScreen() {
                     {expandedDays.has(dayNum) && (
                       <View style={styles.sessionBody}>
                         {session.description && <Text style={styles.sessionDesc}>{session.description}</Text>}
-                        {safeParseExercises(session.exercises).map((ex, i) => (
+                        {session.exercises.map((ex, i) => (
                           <View key={i} style={styles.exerciseRow}>
                             <Text style={styles.exerciseName}>{ex.name}</Text>
                             <Text style={styles.exerciseDetail}>
@@ -239,13 +356,95 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   loadingText: { ...typography.body, color: colors.text.secondary },
   content: { paddingHorizontal: spacing.lg, paddingBottom: 40, gap: spacing.md },
   gradientHeader: { borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.xs },
-  gradientTitle: { ...typography.h2, color: '#FFFFFF', marginBottom: spacing.sm },
+  gradientTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
+  gradientTitle: { ...typography.h2, color: '#FFFFFF', flex: 1, marginRight: spacing.sm },
+  statusBadgeActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(50, 215, 75, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  statusBadgeActiveText: { fontSize: 10, fontWeight: '700', color: '#32D74B', letterSpacing: 0.5 },
+  statusBadgeArchived: {
+    backgroundColor: 'rgba(142, 142, 147, 0.2)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  statusBadgeArchivedText: { fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 0.5 },
   infoRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.sm },
   badge: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.sm },
   badgeText: { ...typography.caption, color: '#FFFFFF', textTransform: 'capitalize' },
   description: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginBottom: spacing.sm },
   statsRow: { flexDirection: 'row', gap: spacing.md },
   stat: { ...typography.caption, color: 'rgba(255,255,255,0.6)' },
+  activeWeekRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  weekArrow: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeWeekCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  activeWeekLabel: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+  },
+  activeWeekNumber: {
+    ...typography.bodyBold,
+    color: colors.teal,
+    fontSize: 18,
+  },
+  weekSection: { gap: spacing.sm },
+  weekScroll: { gap: spacing.sm, paddingRight: spacing.md },
+  weekCard: {
+    minWidth: 110,
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.text.tertiary + '20',
+    gap: 2,
+  },
+  weekCardSelected: {
+    backgroundColor: colors.teal,
+    borderColor: colors.teal,
+  },
+  weekCardActiveWeek: {
+    borderColor: colors.teal,
+    borderWidth: 1.5,
+  },
+  weekCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  weekCardTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
+  weekCardTitleSelected: { color: '#fff' },
+  weekCardMeta: { ...typography.caption, color: colors.text.tertiary },
+  weekCardMetaSelected: { color: 'rgba(255,255,255,0.82)' },
+  activeWeekDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#32D74B',
+  },
   sessionsSection: { gap: spacing.sm },
   sectionTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
   sessionCard: { backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, overflow: 'hidden' },

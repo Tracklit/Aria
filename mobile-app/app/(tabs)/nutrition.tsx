@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext';
 import { NutritionPlanCard } from '../../src/components/features/NutritionPlanCard';
-import { impactLight, impactMedium } from '../../src/utils/haptics';
+import { impactLight, impactMedium, notificationSuccess } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 
@@ -15,7 +15,7 @@ const FILTERS: FilterOption[] = ['All', 'Active', 'Archived'];
 export default function NutritionScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
-  const { plans, isLoading, fetchPlans, deletePlan, updatePlan } = useNutrition();
+  const { plans, isLoading, fetchPlans, deletePlan, updatePlan, activatePlan } = useNutrition();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
   useEffect(() => {
@@ -30,6 +30,28 @@ export default function NutritionScreen() {
     if (activeFilter === 'All') return plans;
     return plans.filter(p => p.status === activeFilter.toLowerCase());
   }, [plans, activeFilter]);
+
+  const handleActivate = async (plan: NutritionPlan) => {
+    if (plan.status === 'active') return;
+    Alert.alert(
+      'Activate Plan',
+      `Set "${plan.title}" as your active nutrition plan?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Activate',
+          onPress: async () => {
+            try {
+              await activatePlan(plan.id);
+              notificationSuccess();
+            } catch {
+              Alert.alert('Error', 'Failed to activate plan');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const renderItem = ({ item }: { item: NutritionPlan }) => (
     <NutritionPlanCard
@@ -46,6 +68,7 @@ export default function NutritionScreen() {
         await updatePlan(item.id, { status: item.status === 'active' ? 'archived' : 'active' });
         impactLight();
       }}
+      onActivate={() => handleActivate(item)}
     />
   );
 
@@ -68,7 +91,7 @@ export default function NutritionScreen() {
           <TouchableOpacity
             key={filter}
             style={[styles.filterChip, activeFilter === filter && styles.filterChipActive]}
-            onPress={() => setActiveFilter(filter)}
+            onPress={() => { setActiveFilter(filter); impactLight(); }}
           >
             <Text style={[styles.filterChipText, activeFilter === filter && styles.filterChipTextActive]}>
               {filter}

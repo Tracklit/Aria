@@ -7,6 +7,7 @@ export { ProgramsProvider, usePrograms } from './ProgramsContext';
 export { SessionProvider, useSession } from './SessionContext';
 export { ThemeProvider, useTheme } from './ThemeContext';
 export type { ThemeMode } from './ThemeContext';
+export { EventsProvider, useEvents } from './EventsContext';
 export { AppProviders } from './AppContext';
 
 // Re-export types
@@ -16,3 +17,4 @@ export type { Message, Conversation } from './ChatContext';
 export type { DashboardCard, DashboardMode } from './DashboardContext';
 export type { NutritionPlan } from './NutritionContext';
 export type { Program, ProgramSession } from './ProgramsContext';
+export type { Event } from './EventsContext';
