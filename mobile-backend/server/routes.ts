@@ -464,10 +464,10 @@ function normalizeGeneratedProgramSessions(
           ...(exercise.notes !== undefined ? { notes: exercise.notes } : {}),
         })),
         isRestDay: value.isRestDay || false,
-      } satisfies NormalizedGeneratedProgramSession;
+      } as NormalizedGeneratedProgramSession;
     })
     .filter((session): session is NormalizedGeneratedProgramSession => session !== null)
-    .sort((left, right) => left.dayNumber - right.dayNumber);
+    .sort((a, b) => a.dayNumber - b.dayNumber);
 
   const deduped = new Map<number, NormalizedGeneratedProgramSession>();
   for (const session of normalized) {
