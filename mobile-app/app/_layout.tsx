@@ -53,8 +53,8 @@ function RootLayoutNav() {
     const inTrainingLog = segments[0] === 'training-log';
     const inEvents = segments[0] === 'events';
 
-    if (!isAuthenticated && !inAuthGroup && segments[0] !== undefined) {
-      // Redirect to welcome screen if not authenticated (skip during transient route states)
+    if (!isAuthenticated && !inAuthGroup) {
+      // Redirect to welcome screen if not authenticated
       router.replace('/auth/welcome');
     } else if (isAuthenticated) {
       if (inAuthGroup) {
