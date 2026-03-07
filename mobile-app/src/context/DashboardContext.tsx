@@ -4,10 +4,14 @@ import {
   generateDashboardInsights,
   getTrainingPatterns,
   getFatigueScore,
+  getTodaysWorkout,
+  getProgressCoachingInsight,
 } from '../lib/api';
+import type { CoachingInsight } from '../lib/api';
 import { aggregateUserContext } from '../lib/contextAggregator';
 import { cache, CacheTTL } from '../lib/cache';
 import { retryWithBackoff, isRetryableError } from '../lib/retry';
+import { calculateStreak } from '../utils/streakCalculator';
 import type {
   AIInsight,
   TrainingPattern,
@@ -34,10 +38,14 @@ interface DashboardState {
   mode: DashboardMode;
   greeting: string;
   subtitle: string;
+  dynamicSubtitle: string;
+  currentStreak: number;
   cards: DashboardCard[];
   insights: AIInsight[];
   patterns: TrainingPattern[];
   fatigueScore: FatigueScore | null;
+  progressInsight: CoachingInsight | null;
+  isProgressInsightLoading: boolean;
   isLoading: boolean;
   isGenerating: boolean;
   error: string | null;
@@ -49,6 +57,8 @@ interface DashboardContextType extends DashboardState {
   refreshDashboard: () => Promise<void>;
   generateAIInsights: (forceRefresh?: boolean) => Promise<void>;
   loadPatterns: () => Promise<void>;
+  loadDynamicSubtitle: () => Promise<void>;
+  loadProgressInsights: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -59,10 +69,14 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     mode: 'general',
     greeting: '',
     subtitle: '',
+    dynamicSubtitle: '',
+    currentStreak: 0,
     cards: [],
     insights: [],
     patterns: [],
     fatigueScore: null,
+    progressInsight: null,
+    isProgressInsightLoading: false,
     isLoading: false,
     isGenerating: false,
     error: null,
@@ -227,6 +241,60 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, []);
 
+  const loadDynamicSubtitle = useCallback(async () => {
+    try {
+      const context = await aggregateUserContext();
+      const hour = new Date().getHours();
+
+      const parts: string[] = [];
+
+      // Time-based prefix
+      if (hour < 12) {
+        parts.push('Rise and grind');
+      } else if (hour < 17) {
+        parts.push('Keep pushing');
+      } else {
+        parts.push('Strong finish today');
+      }
+
+      // Next workout info
+      try {
+        const todaysWorkout = await getTodaysWorkout().catch(() => null);
+        if (todaysWorkout && (todaysWorkout as any)?.title) {
+          parts.push(`${(todaysWorkout as any).title} on deck`);
+        }
+      } catch {
+        // Workout fetch is optional
+      }
+
+      // Next meal info
+      if (context.nextMeal) {
+        parts.push(`${context.nextMeal.meal} coming up`);
+      }
+
+      // Streak info
+      const streak = context.currentStreak;
+      if (streak > 0) {
+        parts.push(`${streak}-day streak`);
+      }
+
+      const dynamicSubtitle = parts.length > 1
+        ? `${parts[0]} — ${parts.slice(1).join(' | ')}`
+        : parts[0] || "Let's get faster today";
+
+      setState((prev) => ({
+        ...prev,
+        dynamicSubtitle,
+        currentStreak: streak,
+      }));
+    } catch {
+      setState((prev) => ({
+        ...prev,
+        dynamicSubtitle: "Let's get faster today",
+      }));
+    }
+  }, []);
+
   const refreshDashboard = useCallback(async () => {
     // Clear cache and force refresh
     cache.delete('dashboard:state');
@@ -234,8 +302,9 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     await Promise.all([
       loadDashboard(true),
       generateAIInsights(true),
+      loadDynamicSubtitle(),
     ]);
-  }, [loadDashboard, generateAIInsights]);
+  }, [loadDashboard, generateAIInsights, loadDynamicSubtitle]);
 
   const loadPatterns = useCallback(async () => {
     try {
@@ -260,6 +329,37 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, []);
 
+  const loadProgressInsights = useCallback(async () => {
+    const CACHE_KEY = 'progress:coaching-insight';
+
+    // Check 30-minute cache first
+    const cached = cache.get<CoachingInsight>(CACHE_KEY);
+    if (cached) {
+      setState((prev) => ({ ...prev, progressInsight: cached, isProgressInsightLoading: false }));
+      return;
+    }
+
+    setState((prev) => ({ ...prev, isProgressInsightLoading: true }));
+
+    try {
+      const context = await aggregateUserContext();
+      const insight = await getProgressCoachingInsight({
+        streak: context.currentStreak,
+        trainingLoad: context.trainingLoad,
+      });
+
+      cache.set(CACHE_KEY, insight, CacheTTL.LONG);
+
+      setState((prev) => ({
+        ...prev,
+        progressInsight: insight,
+        isProgressInsightLoading: false,
+      }));
+    } catch {
+      setState((prev) => ({ ...prev, isProgressInsightLoading: false }));
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
@@ -272,6 +372,8 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
         refreshDashboard,
         generateAIInsights,
         loadPatterns,
+        loadDynamicSubtitle,
+        loadProgressInsights,
         clearError,
       }}
     >

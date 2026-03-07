@@ -443,6 +443,30 @@ export async function generateDashboardInsights(context: any) {
   });
 }
 
+export interface CoachingInsight {
+  type: 'warning' | 'positive' | 'info';
+  summary: string;
+  details: string;
+}
+
+export async function getProgressCoachingInsight(params: {
+  healthMetrics?: {
+    sleepDurationSeconds?: number;
+    sleepEfficiency?: number;
+    hrvRmssd?: number;
+    restingHeartRate?: number;
+    readinessScore?: number;
+    vo2Max?: number;
+  };
+  streak?: number;
+  trainingLoad?: number;
+}): Promise<CoachingInsight> {
+  return apiRequest('/api/dashboard/coaching-insight', {
+    method: 'POST',
+    data: params,
+  });
+}
+
 // Aria AI
 export async function getConversations() {
   return apiRequest('/api/aria/conversations');
@@ -738,6 +762,13 @@ export async function changePassword(currentPassword: string, newPassword: strin
     method: 'POST',
     data: { currentPassword, newPassword },
   });
+}
+
+// Health metrics history
+export async function getHealthMetricsHistory(days: number = 14) {
+  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const endDate = new Date().toISOString();
+  return apiRequest(`/api/integrations/health-metrics?startDate=${startDate}&endDate=${endDate}`);
 }
 
 // Health check

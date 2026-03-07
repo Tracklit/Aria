@@ -298,6 +298,7 @@ export function formatUserContextForAI(context: UserContext): string {
       healthParts.push(`- ${hrParts.join(' | ')}`);
     }
 
+    if ((hm as any).vo2Max != null) healthParts.push(`- VO2 Max: ${(hm as any).vo2Max} ml/kg/min`);
     if (hm.readinessScore != null) healthParts.push(`- Readiness Score: ${hm.readinessScore}/100`);
     if (hm.recoveryScore != null) healthParts.push(`- Recovery Score: ${hm.recoveryScore}/100`);
     if (hm.stressScore != null) healthParts.push(`- Stress Score: ${hm.stressScore}`);
@@ -355,6 +356,94 @@ export function formatUserContextForAI(context: UserContext): string {
   }
 
   return parts.join('\n');
+}
+
+// ==================== COACHING INSIGHT GENERATOR ====================
+
+export interface CoachingInsight {
+  type: 'warning' | 'positive' | 'info';
+  summary: string;
+  details: string;
+}
+
+export function generateCoachingInsightFromHealth(healthMetrics: {
+  sleepDurationSeconds?: number;
+  sleepEfficiency?: number;
+  hrvRmssd?: number;
+  restingHeartRate?: number;
+  readinessScore?: number;
+  vo2Max?: number;
+}, streak: number, trainingLoad: number): CoachingInsight {
+  // Check for high training load first
+  if (trainingLoad > 800) {
+    return {
+      type: 'warning',
+      summary: 'High training load detected',
+      details: `Your training load of ${trainingLoad} is elevated. Consider scheduling a recovery day to avoid overtraining and reduce injury risk.`,
+    };
+  }
+
+  // Check sleep quality
+  if (healthMetrics.sleepDurationSeconds != null) {
+    const sleepHours = healthMetrics.sleepDurationSeconds / 3600;
+    if (sleepHours < 6) {
+      return {
+        type: 'warning',
+        summary: 'Poor sleep recovery',
+        details: `You only got ${sleepHours.toFixed(1)} hours of sleep. Consider a lighter session today and prioritize rest tonight for better recovery.`,
+      };
+    }
+  }
+
+  if (healthMetrics.sleepEfficiency != null && healthMetrics.sleepEfficiency < 70) {
+    return {
+      type: 'warning',
+      summary: 'Low sleep efficiency',
+      details: `Your sleep efficiency was ${Math.round(healthMetrics.sleepEfficiency)}%. Poor sleep quality impacts recovery. Consider reducing screen time before bed.`,
+    };
+  }
+
+  // Check readiness
+  if (healthMetrics.readinessScore != null && healthMetrics.readinessScore < 50) {
+    return {
+      type: 'warning',
+      summary: 'Low readiness score',
+      details: `Your readiness score is ${healthMetrics.readinessScore}/100. Your body needs more recovery. An easy walk or stretching session is recommended today.`,
+    };
+  }
+
+  // Check for elevated resting HR (proxy for fatigue)
+  if (healthMetrics.restingHeartRate != null && healthMetrics.restingHeartRate > 75) {
+    return {
+      type: 'warning',
+      summary: 'Elevated resting heart rate',
+      details: `Your resting heart rate of ${healthMetrics.restingHeartRate} bpm is elevated. This can indicate fatigue, stress, or illness. Listen to your body today.`,
+    };
+  }
+
+  // Positive: great streak with good readiness
+  if (streak >= 7 && healthMetrics.readinessScore != null && healthMetrics.readinessScore >= 80) {
+    return {
+      type: 'positive',
+      summary: 'Great consistency!',
+      details: `${streak}-day training streak with a readiness score of ${healthMetrics.readinessScore}/100. You are in excellent form -- keep up the momentum!`,
+    };
+  }
+
+  if (streak >= 7) {
+    return {
+      type: 'positive',
+      summary: `${streak}-day streak!`,
+      details: `You have been training consistently for ${streak} days. Consistency is the key to improvement. Keep it going!`,
+    };
+  }
+
+  // Default info
+  return {
+    type: 'info',
+    summary: 'Ready to train',
+    details: 'Your metrics look normal. Stay hydrated, warm up properly, and make the most of today\'s session.',
+  };
 }
 
 // ==================== RESPONSE CLEANING ====================

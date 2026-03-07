@@ -63,6 +63,7 @@ export interface HealthMetricsPayload {
   steps?: number;
   activeMinutes?: number;
   caloriesBurned?: number;
+  vo2Max?: number;
 }
 
 // ==================== HealthKit Permissions ====================
@@ -80,6 +81,7 @@ const HEALTHKIT_PERMISSIONS = {
       'BodyFatPercentage',
       'Workout',
       'OxygenSaturation',
+      'Vo2Max',
     ],
     write: ['Workout'],
   },
@@ -371,6 +373,20 @@ export async function aggregateHealthData(date: Date): Promise<HealthMetricsPayl
   // Body metrics
   if (body.weight) payload.weightKg = Math.round(body.weight * 10) / 10;
   if (body.bodyFat) payload.bodyFatPercentage = Math.round(body.bodyFat * 10) / 10;
+
+  // VO2 Max - read most recent sample
+  try {
+    const hk = getHealthKit();
+    if (hk && hk.getVo2MaxSamples) {
+      const vo2Results = await promisify<any[]>(
+        hk.getVo2MaxSamples.bind(hk),
+        { startDate: dayStart.toISOString(), endDate: dayEnd.toISOString(), limit: 1, ascending: false }
+      );
+      if (Array.isArray(vo2Results) && vo2Results.length > 0) {
+        payload.vo2Max = Math.round(vo2Results[0].value * 10) / 10;
+      }
+    }
+  } catch { /* VO2 Max may not be available on all devices */ }
 
   return payload;
 }

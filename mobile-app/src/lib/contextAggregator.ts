@@ -20,8 +20,11 @@ import {
   getRaces,
   getWeeklyAnalytics,
   getConversationMessages,
+  getNutritionPlans,
 } from './api';
 import { cache, CacheTTL } from './cache';
+import { calculateStreak } from '../utils/streakCalculator';
+import { getNextMeal } from '../utils/mealSchedule';
 import type {
   UserProfile,
   Workout,
@@ -54,6 +57,12 @@ export interface AggregatedContext {
 
   /** Training load score (calculated from recent workouts) */
   trainingLoad: number;
+
+  /** Active nutrition plan (if any) */
+  activeNutritionPlan: any | null;
+
+  /** Next upcoming meal from active nutrition plan */
+  nextMeal: { meal: string; foods: string[]; calories: number; macros: { protein: number; carbs: number; fats: number }; timeWindow: string } | null;
 
   /** Timestamp when context was aggregated */
   aggregatedAt: Date;
@@ -107,52 +116,6 @@ function calculateTrainingLoad(workouts: Workout[]): number {
 }
 
 /**
- * Calculate current workout streak
- *
- * Counts consecutive days with completed workouts.
- * Breaks if more than 1 day gap between workouts.
- *
- * @param workouts All completed workouts (sorted by date desc)
- * @returns Current streak count (days)
- */
-function calculateStreak(workouts: Workout[]): number {
-  if (!workouts || workouts.length === 0) return 0;
-
-  // Get completed workouts sorted by date (most recent first)
-  const completed = workouts
-    .filter((w) => w.completedDate && w.status === 'completed')
-    .sort((a, b) =>
-      new Date(b.completedDate!).getTime() - new Date(a.completedDate!).getTime()
-    );
-
-  if (completed.length === 0) return 0;
-
-  let streak = 0;
-  let currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0); // Start of today
-
-  for (const workout of completed) {
-    const workoutDate = new Date(workout.completedDate!);
-    workoutDate.setHours(0, 0, 0, 0);
-
-    const daysDiff = Math.floor(
-      (currentDate.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    // Allow today or yesterday
-    if (daysDiff === 0 || daysDiff === 1) {
-      streak++;
-      currentDate = workoutDate;
-    } else if (daysDiff > 1) {
-      // Gap detected, streak broken
-      break;
-    }
-  }
-
-  return streak;
-}
-
-/**
  * Aggregate user context from multiple data sources
  *
  * Fetches data in parallel for performance, then combines
@@ -182,7 +145,7 @@ export async function aggregateUserContext(
 
   try {
     // Fetch all data sources in parallel
-    const [user, workouts, races, weeklyStats, chatMessages] = await Promise.all([
+    const [user, workouts, races, weeklyStats, chatMessages, nutritionPlans] = await Promise.all([
       getCurrentUser(),
       getWorkouts(20).catch(() => []), // Fetch more for streak calculation
       getRaces().catch(() => []),
@@ -190,6 +153,7 @@ export async function aggregateUserContext(
       conversationId
         ? getConversationMessages(conversationId).then((msgs) => msgs.slice(-10))
         : Promise.resolve([]),
+      getNutritionPlans().catch(() => []),
     ]);
 
     // Filter upcoming races (next 90 days)
@@ -209,6 +173,12 @@ export async function aggregateUserContext(
     const trainingLoad = calculateTrainingLoad(workouts);
     const currentStreak = calculateStreak(workouts);
 
+    // Find active nutrition plan and next meal
+    const plansArray = Array.isArray(nutritionPlans) ? nutritionPlans : (nutritionPlans as any)?.plans || [];
+    const activeNutritionPlan = plansArray.find((p: any) => p.status === 'active') || plansArray[0] || null;
+    const mealSuggestions = activeNutritionPlan?.meals || activeNutritionPlan?.mealSuggestions || [];
+    const nextMeal = getNextMeal(mealSuggestions);
+
     const context: AggregatedContext = {
       profile: user.profile,
       recentWorkouts,
@@ -222,6 +192,8 @@ export async function aggregateUserContext(
       chatHistory: chatMessages,
       currentStreak,
       trainingLoad,
+      activeNutritionPlan,
+      nextMeal,
       aggregatedAt: new Date(),
     };
 

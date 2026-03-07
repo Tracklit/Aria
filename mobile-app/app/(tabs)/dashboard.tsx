@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  TextInput,
   FlatList,
   Dimensions,
   NativeSyntheticEvent,
@@ -17,13 +16,21 @@ import Animated, { FadeInDown, FadeInUp, useReducedMotion } from 'react-native-r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Avatar } from '../../src/components/ui';
-import { useAuth, useDashboard, useWorkout, useSession, useTheme, useHealth } from '../../src/context';
-import { impactLight, selectionChanged } from '../../src/utils/haptics';
+import { useAuth, useDashboard, useWorkout, useSession, useTheme, useHealth, useNutrition } from '../../src/context';
+import { impactLight } from '../../src/utils/haptics';
 import { getDayLabel, safeParseExercises } from '../../src/utils/formatting';
+import { getNextMeal } from '../../src/utils/mealSchedule';
+import { getStreakBadge } from '../../src/utils/streakDisplay';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import {
+  HeroHeader,
+  WorkoutHeroCard,
+  NextMealCard,
+  LatestStatsRow,
+  StreakBadge,
+  AskAriaSection,
+} from '../../src/components/dashboard';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 48;
@@ -82,17 +89,21 @@ export default function DashboardScreen() {
   const {
     greeting: _apiGreeting,
     subtitle,
+    dynamicSubtitle,
+    currentStreak,
     cards,
     insights,
     fatigueScore,
     isLoading,
     loadDashboard,
     loadPatterns,
+    loadDynamicSubtitle,
     refreshDashboard,
   } = useDashboard();
 
   const { healthMetrics, readiness, getReadinessScore, connectedDevices } = useHealth();
   const hasHealthData = connectedDevices.length > 0;
+  const { activePlan: activeNutritionPlan } = useNutrition();
 
   // Always use local time-based greeting instead of API response
   const greeting = useMemo(() => {
@@ -119,35 +130,32 @@ export default function DashboardScreen() {
     loadPatterns();
     loadTodaysWorkout();
     loadTodaysWorkouts();
+    loadDynamicSubtitle();
     if (hasHealthData) {
       getReadinessScore();
     }
-  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, hasHealthData, getReadinessScore]);
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, loadDynamicSubtitle, hasHealthData, getReadinessScore]);
 
   const displayName = useMemo(
     () => getDisplayName(profile?.displayName, greeting),
     [profile?.displayName, greeting]
   );
 
-  const [chatInput, setChatInput] = useState('');
-
-  const navigateToChat = (message?: string) => {
-    const text = message || chatInput;
-    if (text.trim()) {
-      router.push({ pathname: '/(tabs)/chat', params: { prefill: text.trim() } });
-    } else {
-      router.push('/(tabs)/chat');
-    }
-    setChatInput('');
-  };
-
-  const suggestionChips = [
-    'What should I train today?',
-    'Analyze my last sprint',
-    'Help me warm up',
-  ];
-
   const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  const nextMeal = useMemo(() => {
+    const suggestions = activeNutritionPlan?.mealSuggestions;
+    return suggestions ? getNextMeal(suggestions) : null;
+  }, [activeNutritionPlan]);
+
+  const streakBadge = useMemo(() => getStreakBadge(currentStreak), [currentStreak]);
+
+  const sleepHours = useMemo<number | null>(() => {
+    if (healthMetrics?.sleepDurationSeconds && healthMetrics.sleepDurationSeconds > 0) {
+      return healthMetrics.sleepDurationSeconds / 3600;
+    }
+    return null;
+  }, [healthMetrics?.sleepDurationSeconds]);
 
   const workoutCards: WorkoutCardItem[] = useMemo(() => {
     const GRADIENT_PALETTE = effectiveTheme === 'dark' ? DARK_GRADIENT_PALETTE : LIGHT_GRADIENT_PALETTE;
@@ -204,6 +212,28 @@ export default function DashboardScreen() {
     setActiveCardIndex(index);
   }, []);
 
+  const handleStartWorkout = useCallback((item: WorkoutCardItem) => {
+    impactLight();
+    if (item.kind === 'program' && item.programId && item.exercises) {
+      startSession(
+        item.programId,
+        item.programTitle || 'Program',
+        item.sessionTitle || 'Session',
+        safeParseExercises(item.exercises),
+      );
+    } else {
+      router.push({
+        pathname: '/workout/log-workout',
+        params: {
+          plannedWorkoutId: item.plannedWorkoutId?.toString() ?? '',
+          workoutTitle: item.title ?? 'Sprint Session',
+        },
+      });
+    }
+  }, [startSession]);
+
+  const displaySubtitle = dynamicSubtitle || subtitle || "Let's get faster today";
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -219,68 +249,91 @@ export default function DashboardScreen() {
           />
         }
       >
-        <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(400)} style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <Text style={styles.greeting}>{greeting || 'Good Morning'}, {displayName}</Text>
-            <Text style={styles.subtitle}>{subtitle || "Let's get faster today"}</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <Avatar
-              uri={profile?.photoUrl ?? undefined}
-              size="small"
-              fallbackText={displayName.charAt(0).toUpperCase()}
-              style={styles.avatar}
-            />
-            <TouchableOpacity
-              testID="dashboard.settings"
-              style={styles.settingsButton}
-              onPress={() => router.push('/(tabs)/more')}
-            >
-              <Ionicons name="settings-outline" size={22} color={colors.text.secondary} />
-            </TouchableOpacity>
-          </View>
+        {/* 1. Hero Header */}
+        <Animated.View entering={reducedMotion ? undefined : FadeInDown.duration(400)}>
+          <HeroHeader
+            greeting={greeting}
+            displayName={displayName}
+            subtitle={displaySubtitle}
+            photoUrl={profile?.photoUrl ?? undefined}
+            onSettingsPress={() => router.push('/(tabs)/more')}
+          />
         </Animated.View>
 
-        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.chatSection}>
-          <View style={styles.chatHeader}>
-            <Ionicons name="sparkles" size={16} color={colors.primary} />
-            <Text style={styles.chatLabel}>Ask Aria</Text>
-          </View>
-          <View style={styles.chipsWrap}>
-            {suggestionChips.map((chip) => (
-              <TouchableOpacity
-                key={chip}
-                testID={`dashboard.chip.${chip.replace(/[^a-zA-Z0-9]+/g, '_')}`}
-                style={styles.chip}
-                onPress={() => { selectionChanged(); navigateToChat(chip); }}
-              >
-                <Text style={styles.chipText}>{chip}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.chatInputRow}>
-            <TouchableOpacity
-              testID="dashboard.mic"
-              style={styles.micButton}
-              onPress={() => router.push('/(tabs)/chat')}
-            >
-              <Ionicons name="mic" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-            <TextInput
-              testID="dashboard.chat_input"
-              style={styles.chatInput}
-              placeholder="Ask Aria anything..."
-              placeholderTextColor={colors.text.tertiary}
-              value={chatInput}
-              onChangeText={setChatInput}
-              onSubmitEditing={() => navigateToChat()}
-              returnKeyType="send"
-            />
-          </View>
+        {/* 2. Workout Cards Carousel */}
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(500).delay(50)}>
+          <FlatList
+            data={workoutCards}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={CARD_WIDTH + CARD_GAP}
+            decelerationRate="fast"
+            contentContainerStyle={styles.carouselContent}
+            onScroll={onCarouselScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => (
+              <View style={{ width: CARD_WIDTH, marginRight: CARD_GAP }}>
+                <WorkoutHeroCard
+                  testID={`dashboard.start_workout.${item.id}`}
+                  badge={item.badge}
+                  title={item.title}
+                  description={item.description}
+                  gradient={item.gradient}
+                  isEmpty={item.kind === 'empty'}
+                  onStart={() => handleStartWorkout(item)}
+                />
+              </View>
+            )}
+          />
+          {workoutCards.length > 1 && (
+            <View style={styles.dotsRow}>
+              {workoutCards.map((item, idx) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.dot,
+                    idx === activeCardIndex ? styles.dotActive : styles.dotInactive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </Animated.View>
 
+        {/* 3. Next Meal */}
+        {nextMeal && (
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(100)}>
+            <NextMealCard
+              meal={nextMeal.meal}
+              foods={nextMeal.foods}
+              calories={nextMeal.calories}
+              macros={nextMeal.macros}
+              timeWindow={nextMeal.timeWindow}
+              onPress={() => router.push('/(tabs)/nutrition')}
+            />
+          </Animated.View>
+        )}
+
+        {/* 4. Latest Stats */}
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(150)}>
+          <LatestStatsRow
+            weeklyMiles={0}
+            latestPace={'--:--'}
+            sleepHours={sleepHours}
+          />
+        </Animated.View>
+
+        {/* 5. Streak Badge */}
+        {streakBadge && (
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(200)}>
+            <StreakBadge streak={currentStreak} badge={streakBadge} />
+          </Animated.View>
+        )}
+
+        {/* Fatigue Warning */}
         {fatigueScore?.riskLevel === 'high' && (
-          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.warningCard}>
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(200)} style={styles.warningCard}>
             <View style={styles.warningHeader}>
               <Ionicons name="warning-outline" size={20} color={colors.red} />
               <Text style={styles.warningTitle}>High Fatigue Detected</Text>
@@ -299,80 +352,11 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(500).delay(100)}>
-          <FlatList
-            data={workoutCards}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={CARD_WIDTH + CARD_GAP}
-            decelerationRate="fast"
-            contentContainerStyle={styles.carouselContent}
-            onScroll={onCarouselScroll}
-            scrollEventThrottle={16}
-            renderItem={({ item }) => (
-              <LinearGradient
-                colors={item.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.workoutCard}
-              >
-                <View style={styles.badgeWrap}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
-                </View>
-                <Text style={styles.workoutTitle}>{item.title}</Text>
-                <Text style={styles.workoutSubtitle}>{item.description}</Text>
-                {item.kind !== 'empty' && (
-                  <TouchableOpacity
-                    testID={`dashboard.start_workout.${item.id}`}
-                    style={styles.workoutButton}
-                    onPress={() => {
-                      impactLight();
-                      if (item.kind === 'program' && item.programId && item.exercises) {
-                        startSession(
-                          item.programId,
-                          item.programTitle || 'Program',
-                          item.sessionTitle || 'Session',
-                          safeParseExercises(item.exercises),
-                        );
-                      } else {
-                        router.push({
-                          pathname: '/workout/log-workout',
-                          params: {
-                            plannedWorkoutId: item.plannedWorkoutId?.toString() ?? '',
-                            workoutTitle: item.title ?? 'Sprint Session',
-                          },
-                        });
-                      }
-                    }}
-                  >
-                    <Text style={styles.workoutButtonText}>Start Workout</Text>
-                  </TouchableOpacity>
-                )}
-              </LinearGradient>
-            )}
-          />
-          {workoutCards.length > 1 && (
-            <View style={styles.dotsRow}>
-              {workoutCards.map((item, idx) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.dot,
-                    idx === activeCardIndex ? styles.dotActive : styles.dotInactive,
-                  ]}
-                />
-              ))}
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Health Widgets */}
+        {/* 6. Health & Recovery */}
         {hasHealthData && (readiness?.score != null || healthMetrics?.sleepDurationSeconds || healthMetrics?.hrvRmssd || healthMetrics?.restingHeartRate) && (
-          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(150)} style={styles.healthSection}>
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(250)} style={styles.healthSection}>
             <Text style={styles.sectionTitle}>Health & Recovery</Text>
             <View style={styles.healthCardsRow}>
-              {/* Readiness Card */}
               {readiness?.score != null && (
                 <View style={[styles.healthCard, styles.healthCardWide]}>
                   <View style={styles.healthCardHeader}>
@@ -394,7 +378,6 @@ export default function DashboardScreen() {
                 </View>
               )}
 
-              {/* Sleep Card */}
               {healthMetrics?.sleepDurationSeconds != null && healthMetrics.sleepDurationSeconds > 0 && (
                 <View style={styles.healthCard}>
                   <View style={styles.healthCardHeader}>
@@ -431,7 +414,6 @@ export default function DashboardScreen() {
                 </View>
               )}
 
-              {/* Recovery Card */}
               {(healthMetrics?.hrvRmssd != null || healthMetrics?.restingHeartRate != null) && (
                 <View style={styles.healthCard}>
                   <View style={styles.healthCardHeader}>
@@ -463,7 +445,8 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.section}>
+        {/* 7. AI Insights */}
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(300)} style={styles.section}>
           <Text style={styles.sectionTitle}>AI Insights</Text>
           {isLoading && insights.length === 0 ? (
             <View style={styles.loadingState}>
@@ -487,7 +470,7 @@ export default function DashboardScreen() {
               const accent = insightColors[idx % insightColors.length];
               const icon = insightIcons[idx % insightIcons.length];
               return (
-              <Animated.View key={String(insight.id)} entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(200 + idx * 80)}>
+              <Animated.View key={String(insight.id)} entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(350 + idx * 80)}>
               <TouchableOpacity
                 testID={`dashboard.insight.${insight.id}`}
                 style={[styles.insightCard, { borderLeftColor: accent, backgroundColor: `${accent}14` }]}
@@ -507,6 +490,11 @@ export default function DashboardScreen() {
             })
           )}
         </Animated.View>
+
+        {/* 8. Ask Aria */}
+        <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(400)}>
+          <AskAriaSection />
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -523,102 +511,29 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   content: {
     paddingBottom: 130,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  carouselContent: {
     paddingHorizontal: 24,
-    marginTop: 16,
-    marginBottom: 24,
   },
-  headerText: {
-    flex: 1,
-    marginRight: 12,
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.teal,
-  },
-  headerRight: {
+  dotsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  settingsButton: {
-    padding: 4,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.teal,
-    overflow: 'hidden',
-  },
-  chatSection: {
-    marginHorizontal: 24,
-    marginBottom: spacing.lg,
-    backgroundColor: colors.background.cardSolid,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    paddingTop: spacing.lg,
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: spacing.md,
-  },
-  chatLabel: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  chipsWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  chipText: {
-    color: colors.text.secondary,
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  chatInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  micButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 6,
   },
-  chatInput: {
-    flex: 1,
-    backgroundColor: colors.background.secondary,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: colors.text.primary,
-    fontSize: 15,
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    width: 18,
+    borderRadius: 4,
+  },
+  dotInactive: {
+    backgroundColor: colors.text.tertiary,
+    opacity: 0.4,
   },
   warningCard: {
     marginHorizontal: 24,
@@ -627,7 +542,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: 'rgba(255,69,58,0.45)',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 18,
+    marginTop: 16,
   },
   warningHeader: {
     flexDirection: 'row',
@@ -656,72 +571,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: 6,
     fontWeight: '600',
   },
-  carouselContent: {
-    paddingHorizontal: 24,
-  },
-  workoutCard: {
-    width: CARD_WIDTH,
-    marginRight: CARD_GAP,
-    borderRadius: 20,
-    padding: 20,
-  },
-  badgeWrap: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginBottom: 8,
-  },
-  badgeText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
-    width: 18,
-    borderRadius: 4,
-  },
-  dotInactive: {
-    backgroundColor: colors.text.tertiary,
-    opacity: 0.4,
-  },
-  workoutTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  workoutSubtitle: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 16,
-    marginBottom: 18,
-  },
-  workoutButton: {
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  workoutButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
   section: {
     marginTop: 24,
     paddingHorizontal: 24,
@@ -735,14 +584,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   loadingState: {
     paddingVertical: 20,
     alignItems: 'center',
-  },
-  workoutLabel: {
-    color: colors.text.tertiary,
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 1,
-    marginBottom: 4,
   },
   insightCard: {
     backgroundColor: 'rgba(0,230,118,0.08)',

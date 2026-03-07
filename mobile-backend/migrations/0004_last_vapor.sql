@@ -1,0 +1,1 @@
+ALTER TABLE "health_metrics" ADD COLUMN "vo2_max" real;

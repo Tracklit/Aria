@@ -154,6 +154,9 @@ export const healthMetrics = pgTable('health_metrics', {
   stressScore: integer('stress_score'),
   bodyBattery: integer('body_battery'),
 
+  // Cardio Fitness
+  vo2Max: real('vo2_max'),
+
   // Body
   weightKg: real('weight_kg'),
   bodyFatPercentage: real('body_fat_percentage'),

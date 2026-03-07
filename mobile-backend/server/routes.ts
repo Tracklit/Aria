@@ -27,6 +27,7 @@ import {
   generateProgram,
   NutritionPlanInput,
   ProgramGenerationInput,
+  generateCoachingInsightFromHealth,
 } from './aria-ai';
 import { uploadFileToBlob, deleteBlob, generateBlobSasUrl, readBlobAsBuffer } from './azure-storage';
 import { parseDocument } from './document-parser';
@@ -310,6 +311,7 @@ const appleHealthMetricSchema = z.object({
   steps: z.number().optional(),
   activeMinutes: z.number().optional(),
   caloriesBurned: z.number().optional(),
+  vo2Max: z.number().optional(),
 });
 
 const appleHealthSyncSchema = z.object({
@@ -1552,6 +1554,38 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // Coaching insight based on health metrics (rules-based, no AI call)
+  app.post('/api/dashboard/coaching-insight', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const body = z.object({
+        healthMetrics: z.object({
+          sleepDurationSeconds: z.number().optional(),
+          sleepEfficiency: z.number().optional(),
+          hrvRmssd: z.number().optional(),
+          restingHeartRate: z.number().optional(),
+          readinessScore: z.number().optional(),
+          vo2Max: z.number().optional(),
+        }).optional(),
+        streak: z.number().optional(),
+        trainingLoad: z.number().optional(),
+      }).parse(req.body);
+
+      const insight = generateCoachingInsightFromHealth(
+        body.healthMetrics || {},
+        body.streak || 0,
+        body.trainingLoad || 0,
+      );
+
+      res.json(insight);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ error: 'Invalid input', details: error.errors });
+      }
+      console.error('Coaching insight error:', error);
+      res.status(500).json({ error: 'Failed to generate coaching insight' });
+    }
+  });
+
 
   // ==================== ARIA AI ROUTES ====================
 
@@ -2451,6 +2485,7 @@ Competition - Meet / race day,,,,,,
           steps: metric.steps,
           activeMinutes: metric.activeMinutes,
           caloriesBurned: metric.caloriesBurned,
+          vo2Max: metric.vo2Max,
         });
         upsertedMetrics.push(upserted);
       }
