@@ -210,6 +210,44 @@ export default function ProviderDetailScreen() {
           </View>
         </View>
 
+        {/* Garmin Apple Health Bridge Info */}
+        {provider === 'garmin' && !connected && (
+          <>
+            <View style={styles.card}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
+                <Ionicons name="information-circle" size={20} color={colors.teal} style={{ marginRight: spacing.xs }} />
+                <Text style={[styles.permissionTitle, { color: colors.teal }]}>Garmin syncs through Apple Health</Text>
+              </View>
+              <Text style={[styles.explanationDescription, { lineHeight: 20, fontSize: 13 }]}>
+                Open the Garmin Connect app, go to Settings {'>'} Health {'>'} Apple Health, and enable all data sharing. Then connect Apple Health here in Aria to see your Garmin data.
+              </Text>
+              <TouchableOpacity
+                style={[styles.syncButton, { marginTop: spacing.md, alignSelf: 'flex-start' }]}
+                onPress={() => {
+                  impactLight();
+                  router.replace('/settings/integrations/apple_health' as any);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="heart-outline" size={16} color={colors.teal} />
+                <Text style={styles.syncButtonText}>Connect Apple Health Instead</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Garmin connected note */}
+        {provider === 'garmin' && connected && (
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.teal} style={{ marginRight: spacing.xs }} />
+              <Text style={[styles.permissionTitle, { color: colors.teal, flex: 1 }]}>
+                Garmin data syncs automatically through Apple Health
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Connect / Disconnect Button */}
         {!connected ? (
           <TouchableOpacity
@@ -223,7 +261,7 @@ export default function ProviderDetailScreen() {
             ) : (
               <>
                 <Ionicons name="link-outline" size={20} color="#fff" />
-                <Text style={styles.connectButtonText}>Connect {meta.name}</Text>
+                <Text style={styles.connectButtonText}>{provider === 'garmin' ? 'Mark Garmin as Connected' : `Connect ${meta.name}`}</Text>
               </>
             )}
           </TouchableOpacity>

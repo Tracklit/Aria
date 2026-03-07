@@ -23,7 +23,7 @@ try {
         return BackgroundFetch!.BackgroundFetchResult.NoData;
       }
 
-      const devices = await apiRequest<any[]>('/api/integrations');
+      const devices: any[] = await apiRequest('/api/integrations');
       if (!devices || devices.length === 0) {
         return BackgroundFetch!.BackgroundFetchResult.NoData;
       }

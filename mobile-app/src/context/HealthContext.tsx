@@ -11,7 +11,6 @@ import { apiRequest } from '../lib/api';
 import { cacheHealthMetrics, getCachedHealthMetrics } from '../lib/healthDataCache';
 import * as AppleHealth from '../services/appleHealth';
 import { connectStrava } from '../services/stravaAuth';
-import { connectGarmin } from '../services/garminAuth';
 import { registerBackgroundSync, unregisterBackgroundSync } from '../services/backgroundSync';
 import { useAuth } from './AuthContext';
 
@@ -151,11 +150,13 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
 
         if (provider === 'garmin') {
-          const success = await connectGarmin();
-          if (success) {
-            await refreshDevices();
-          }
-          return {};
+          // Garmin data flows through Apple Health — just create a placeholder record
+          const device = await apiRequest<ConnectedDevice>(
+            '/api/integrations/connect',
+            { method: 'POST', data: { provider: 'garmin' } }
+          );
+          await refreshDevices();
+          return { device };
         }
 
         return {};
