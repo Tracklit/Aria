@@ -28,7 +28,7 @@ import {
   NutritionPlanInput,
   ProgramGenerationInput,
 } from './aria-ai';
-import { uploadFileToBlob, deleteBlob, generateBlobSasUrl } from './azure-storage';
+import { uploadFileToBlob, deleteBlob, generateBlobSasUrl, readBlobAsBuffer } from './azure-storage';
 import { parseDocument } from './document-parser';
 import {
   getStravaAuthUrl,
@@ -685,9 +685,17 @@ export function registerRoutes(app: Express): void {
         storage.getUserProfile(req.userId!),
         storage.getUserPreferences(req.userId!),
       ]);
-      // Generate SAS URL for profile photo if stored as a blob URL
+      // Generate accessible URL for profile photo
       if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
-        profile.photoUrl = await generateBlobSasUrl(profile.photoUrl);
+        const sasUrl = await generateBlobSasUrl(profile.photoUrl);
+        // If SAS generation failed (no sig= in URL), use proxy endpoint
+        if (!sasUrl.includes('skoid=')) {
+          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+          const host = req.headers['x-forwarded-host'] || req.headers.host;
+          profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
+        } else {
+          profile.photoUrl = sasUrl;
+        }
       }
       res.json({
         user: req.user,
@@ -730,9 +738,16 @@ export function registerRoutes(app: Express): void {
           : storage.getUserPreferences(req.userId!),
       ]);
 
-      // Generate SAS URL for profile photo if stored as a blob URL
+      // Generate accessible URL for profile photo
       if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
-        profile.photoUrl = await generateBlobSasUrl(profile.photoUrl);
+        const sasUrl = await generateBlobSasUrl(profile.photoUrl);
+        if (!sasUrl.includes('skoid=')) {
+          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+          const host = req.headers['x-forwarded-host'] || req.headers.host;
+          profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
+        } else {
+          profile.photoUrl = sasUrl;
+        }
       }
 
       res.json({ profile, preferences });
@@ -781,16 +796,19 @@ export function registerRoutes(app: Express): void {
       phase = 'sas_generation';
       try {
         const sasUrl = await generateBlobSasUrl(blobUrl);
-        res.json({ profileImageUrl: sasUrl, photoUrl: sasUrl, success: true });
+        let photoUrl = sasUrl;
+        if (!sasUrl.includes('skoid=')) {
+          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+          const host = req.headers['x-forwarded-host'] || req.headers.host;
+          photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+        }
+        res.json({ profileImageUrl: photoUrl, photoUrl, success: true });
       } catch (sasError: any) {
-        console.warn('SAS generation failed after successful upload:', {
-          phase,
-          errorCode: sasError?.code || sasError?.details?.errorCode,
-          userId: req.userId,
-          mimeType: req.file.mimetype,
-          message: sasError?.message,
-        });
-        res.json({ profileImageUrl: blobUrl, photoUrl: blobUrl, success: true });
+        console.warn('SAS generation failed after successful upload:', sasError?.message?.substring(0, 200));
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        const proxyUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+        res.json({ profileImageUrl: proxyUrl, photoUrl: proxyUrl, success: true });
       }
     } catch (error: any) {
       console.error('Photo upload error:', {
@@ -801,6 +819,26 @@ export function registerRoutes(app: Express): void {
         message: error?.message,
       });
       res.status(500).json({ error: 'Failed to upload profile image' });
+    }
+  });
+
+  // Proxy endpoint to serve blob images through the backend (avoids SAS issues)
+  app.get('/api/blob-proxy', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const blobUrl = req.query.url as string;
+      if (!blobUrl || !blobUrl.includes('blob.core.windows.net')) {
+        return res.status(400).json({ error: 'Invalid blob URL' });
+      }
+      const result = await readBlobAsBuffer(blobUrl);
+      if (!result) {
+        return res.status(404).json({ error: 'Blob not found' });
+      }
+      res.setHeader('Content-Type', result.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(result.buffer);
+    } catch (error: any) {
+      console.error('Blob proxy error:', error?.message?.substring(0, 200));
+      res.status(500).json({ error: 'Failed to read blob' });
     }
   });
 

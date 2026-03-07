@@ -92,7 +92,7 @@ export async function uploadFileToBlob(
 
       // Some identities can upload blobs but cannot manage containers.
       // Only attempt container creation when Azure explicitly reports it missing.
-      await containerClient.create({ access: 'blob' });
+      await containerClient.create();
       await blockBlobClient.upload(buffer, buffer.length, {
         blobHTTPHeaders: { blobContentType: mimeType },
       });
@@ -159,11 +159,15 @@ export async function generateBlobSasUrl(
       account
     );
     return `${blobUrl}?${sas.toString()}`;
-  } catch (e) {
-    // Fallback: try connection string shared key
+  } catch (delegationError: any) {
+    console.warn('User delegation key SAS failed:', {
+      code: delegationError?.code,
+      message: delegationError?.message?.substring(0, 200),
+    });
+
+    // Fallback: use connection string shared key for SAS generation
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     if (connectionString) {
-      // Extract account name and key from connection string
       const accountNameMatch = connectionString.match(/AccountName=([^;]+)/);
       const accountKeyMatch = connectionString.match(/AccountKey=([^;]+)/);
       if (accountNameMatch && accountKeyMatch) {
@@ -175,16 +179,66 @@ export async function generateBlobSasUrl(
             permissions: BlobSASPermissions.parse('r'),
             startsOn,
             expiresOn,
-            protocol: SASProtocol.Https,
+            protocol: SASProtocol.HttpsAndHttp,
           },
           sharedKey
         );
         return `${blobUrl}?${sas.toString()}`;
       }
     }
-    console.warn('Failed to generate SAS URL, returning raw blob URL:', e);
+
+    // Fallback: return a proxy URL that serves the blob through the backend
+    const backendBaseUrl = process.env.BACKEND_BASE_URL || '';
+    if (backendBaseUrl) {
+      return `${backendBaseUrl}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+    }
+    console.warn('Cannot generate SAS URL and no BACKEND_BASE_URL set, returning raw blob URL for:', blobName);
     return blobUrl;
   }
+}
+
+/**
+ * Read a blob's content using managed identity (data plane).
+ * Returns the buffer and content type for proxying through the backend.
+ */
+export async function readBlobAsBuffer(
+  blobUrl: string
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const url = new URL(blobUrl);
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  if (pathParts.length < 2) return null;
+
+  const container = pathParts[0];
+  const blob = pathParts.slice(1).join('/');
+
+  const clients = getBlobServiceClientCandidates();
+  let lastError: any;
+
+  for (let i = 0; i < clients.length; i += 1) {
+    try {
+      const containerClient = clients[i].getContainerClient(container);
+      const blobClient = containerClient.getBlobClient(blob);
+      const downloadResponse = await blobClient.download(0);
+      const chunks: Buffer[] = [];
+      for await (const chunk of downloadResponse.readableStreamBody as NodeJS.ReadableStream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      return {
+        buffer: Buffer.concat(chunks),
+        contentType: downloadResponse.contentType || 'application/octet-stream',
+      };
+    } catch (error: any) {
+      lastError = error;
+      const hasRetryCandidate = i < clients.length - 1;
+      if (!hasRetryCandidate || !isAuthFailure(error)) {
+        console.warn('readBlobAsBuffer failed:', error?.message?.substring(0, 200));
+        return null;
+      }
+    }
+  }
+
+  console.warn('readBlobAsBuffer all candidates failed:', lastError?.message?.substring(0, 200));
+  return null;
 }
 
 export async function deleteBlob(blobName: string): Promise<void> {

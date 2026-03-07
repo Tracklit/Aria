@@ -104,10 +104,34 @@
 - **Test coverage added**: Type/syntax validation only — `mobile-app` `npm run test:types` and `mobile-backend` `npm run build:server`.
 - **Deployment/runtime caveat**: No schema or deployment changes required for this code path, but blob upload still depends on the existing `profile-images` container and valid Azure Blob permissions for the backend identity/credentials.
 
-## 14. Dashboard Hardcoded "Good Morning" Greeting (2026-03-07)
-- **Symptom**: Dashboard always showed "Good Morning" regardless of time of day
-- **Root cause**: Line 210 of `dashboard.tsx` hardcoded `"Good Morning, {displayName}"` instead of using the `greeting` variable from `useDashboard()` which already computes time-based greetings
-- **Exact fix**: Changed to `{greeting || 'Good Morning'}, {displayName}` in `dashboard.tsx`
-- **Prevention guardrail**: No durable learning identified — simple variable reference fix
+## 14. Dashboard Greeting Not Time-Based (2026-03-07)
+- **Symptom**: Dashboard showed "Welcome back" instead of time-appropriate greeting (Good Morning/Afternoon/Evening)
+- **Root cause**: The `greeting` from `useDashboard()` came from the aria-api which returned "Welcome back". The dashboard also previously hardcoded "Good Morning".
+- **Exact fix**: Added local `useMemo` in `dashboard.tsx` that computes greeting from `new Date().getHours()` — returns "Good Morning" (before 12), "Good Afternoon" (12-17), or "Good Evening" (after 17). Renamed the API greeting to `_apiGreeting` to avoid shadowing.
+- **Prevention guardrail**: Time-based UI should be computed client-side, not depend on API responses
 - **Test coverage added**: None
-- **Deployment/runtime caveat**: None
+- **Deployment/runtime caveat**: Client-only change, no deployment needed
+
+## 15. expo-notifications / expo-device Crash in Dev Build (2026-03-07)
+- **Symptom**: App crashed on launch with "Cannot find native module 'ExpoPushTokenManager'" and "Cannot find native module 'ExpoDevice'"
+- **Root cause**: `notifications.ts` imported `expo-notifications` and `expo-device` at module scope. When native modules aren't compiled into the dev build, the import throws and crashes the app.
+- **Exact fix**: Wrapped both imports in try-catch `require()` blocks in `mobile-app/src/services/notifications.ts`. All exported functions check for null before using the modules.
+- **Prevention guardrail**: Always use try-catch require() for optional native modules that may not be available in all build configurations
+- **Test coverage added**: None
+- **Deployment/runtime caveat**: None — graceful degradation when modules unavailable
+
+## 16. Profile Photo SAS URL Returns 403 (2026-03-07)
+- **Symptom**: Profile photos stored in Azure Blob returned HTTP 403 when app tried to display them via SAS URL
+- **Root cause**: Storage account `stkvnx2h6p44qw4` had `publicNetworkAccess: Disabled`, blocking all data-plane operations including SAS-authenticated requests and `getUserDelegationKey`. Shared key auth was also disabled by org policy (`allowSharedKeyAccess: false`).
+- **Exact fix**: (1) Enabled public network access on storage account. (2) Added `/api/blob-proxy` endpoint in `routes.ts` that reads blobs server-side via managed identity and serves them through the backend. (3) In profile photo URL generation (GET/PATCH `/api/user`, photo upload response), detect when delegation SAS fails by checking for `skoid=` marker — falls back to proxy URL `{host}/api/blob-proxy?url={encodedBlobUrl}`. (4) Added `readBlobAsBuffer()` in `azure-storage.ts` for the proxy.
+- **Prevention guardrail**: Blob proxy provides a reliable fallback when direct SAS access is blocked by network/auth policies. Profile photo URLs should always go through the SAS-or-proxy pattern.
+- **Test coverage added**: Maestro E2E verified profile photo displays on dashboard and More tab
+- **Deployment/runtime caveat**: Backend must be redeployed. Managed identity needs Storage Blob Data Contributor role.
+
+## 17. Keyboard Covers Bottom Input Fields (2026-03-07)
+- **Symptom**: On edit profile, athlete info, create nutrition, and create event screens, the keyboard covered input fields at the bottom of the screen making them invisible while typing
+- **Root cause**: These screens used plain `ScrollView` without any keyboard avoidance wrapper
+- **Exact fix**: Wrapped `ScrollView` with `KeyboardAvoidingView` (behavior `'padding'` on iOS, `'height'` on Android, `keyboardVerticalOffset: 100` on iOS) in `profile.tsx`, `athlete-info.tsx`, `nutrition/create.tsx`, and `events/create.tsx`
+- **Prevention guardrail**: Any screen with text inputs should include `KeyboardAvoidingView` wrapping the scrollable content
+- **Test coverage added**: None
+- **Deployment/runtime caveat**: Client-only change, no deployment needed

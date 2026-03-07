@@ -7,19 +7,21 @@ import {
   Spinner,
 } from '@gluestack-ui/themed';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getLocalProfileImageUri } from '../../lib/profileImageCache';
 import { useColors } from '../../theme';
 
 interface AvatarProps {
   uri?: string;
-  size?: 'small' | 'medium' | 'large';
+  localUri?: string;
+  size?: 'small' | 'medium' | 'large' | number;
   showGradientRing?: boolean;
   fallbackText?: string;
   style?: ViewStyle;
 }
 
 const SIZES = {
-  small: 48,
-  medium: 80,
+  small: 40,
+  medium: 60,
   large: 120,
 };
 
@@ -27,6 +29,7 @@ const RING_WIDTH = 2;
 
 export const Avatar: React.FC<AvatarProps> = ({
   uri,
+  localUri,
   size = 'medium',
   showGradientRing = false,
   fallbackText,
@@ -35,27 +38,39 @@ export const Avatar: React.FC<AvatarProps> = ({
   const colors = useColors();
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const retryCount = useRef(0);
-  const [effectiveUri, setEffectiveUri] = useState(uri);
+  const attemptedLocalFallback = useRef(false);
+  const [effectiveUri, setEffectiveUri] = useState(uri || localUri);
 
   useEffect(() => {
     setHasError(false);
-    retryCount.current = 0;
-    setEffectiveUri(uri);
-  }, [uri]);
+    setIsLoading(false);
+    attemptedLocalFallback.current = false;
+    setEffectiveUri(uri || localUri);
+  }, [uri, localUri]);
 
   const handleError = useCallback(() => {
     setIsLoading(false);
-    if (retryCount.current < 2 && uri) {
-      retryCount.current += 1;
-      const separator = uri.includes('?') ? '&' : '?';
-      setEffectiveUri(`${uri}${separator}t=${Date.now()}`);
-    } else {
+    if (attemptedLocalFallback.current) {
       setHasError(true);
+      return;
     }
-  }, [uri]);
 
-  const avatarSize = SIZES[size];
+    attemptedLocalFallback.current = true;
+
+    const swapToLocalImage = async () => {
+      const fallbackUri = localUri ?? await getLocalProfileImageUri();
+      if (fallbackUri && fallbackUri !== effectiveUri) {
+        setEffectiveUri(fallbackUri);
+        return;
+      }
+
+      setHasError(true);
+    };
+
+    void swapToLocalImage();
+  }, [effectiveUri, localUri]);
+
+  const avatarSize = typeof size === 'number' ? size : SIZES[size];
   const containerSize = showGradientRing ? avatarSize + RING_WIDTH * 4 : avatarSize;
 
   const showPlaceholder = !effectiveUri || hasError;

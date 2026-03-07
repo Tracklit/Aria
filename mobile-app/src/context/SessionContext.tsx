@@ -161,7 +161,19 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [clearRestTimer]);
 
   const completeSet = useCallback((exerciseIndex: number, setIndex: number) => {
+    if (!activeSession) return;
+
     impactMedium();
+    clearRestTimer();
+
+    const currentExercise = activeSession.exercises[exerciseIndex];
+    const currentCompletedSets = currentExercise?.completedSets ?? [];
+    const isMarkingComplete = !currentCompletedSets[setIndex];
+    const nextCompletedSets = currentCompletedSets.map((completed, index) =>
+      index === setIndex ? !completed : completed
+    );
+    const hasRemainingSets = nextCompletedSets.some((completed) => !completed);
+    const restTime = currentExercise ? (currentExercise.actualRest ?? currentExercise.rest) : undefined;
 
     setActiveSession(prev => {
       if (!prev) return null;
@@ -182,19 +194,10 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       return { ...prev, exercises };
     });
 
-    // Check if all sets are done and start rest timer (reads fresh state via timeout)
-    setTimeout(() => {
-      setActiveSession(current => {
-        if (!current) return null;
-        const ex = current.exercises[exerciseIndex];
-        const restTime = ex?.actualRest ?? ex?.rest;
-        if (ex && ex.completedSets.every(Boolean) && restTime && restTime > 0) {
-          startRestTimer(restTime);
-        }
-        return current; // no state change
-      });
-    }, 50);
-  }, [startRestTimer]);
+    if (isMarkingComplete && hasRemainingSets && restTime && restTime > 0) {
+      startRestTimer(restTime);
+    }
+  }, [activeSession, clearRestTimer, startRestTimer]);
 
   const updateExerciseValues = useCallback((exerciseIndex: number, values: { sets?: number; reps?: number | string; rest?: number }) => {
     setActiveSession(prev => {

@@ -5,12 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Avatar } from '../../src/components/ui';
 import { useAuth, useWorkout } from '../../src/context';
 import { useThemedStyles, useColors } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
@@ -29,7 +29,7 @@ export default function PlanScreen() {
     loadTrainingPlans();
   }, [loadTrainingPlans]);
 
-  const displayName = profile?.displayName || 'Alex';
+  const displayName = profile?.displayName || 'Athlete';
   const schedule = plannedWorkouts.slice(0, 7);
 
   if (isLoading) {
@@ -47,13 +47,12 @@ export default function PlanScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text testID="plan.title" style={styles.title}>Plan</Text>
-          {profile?.photoUrl ? (
-            <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarInitial}>{displayName.charAt(0).toUpperCase()}</Text>
-            </View>
-          )}
+          <Avatar
+            uri={profile?.photoUrl ?? undefined}
+            size="medium"
+            fallbackText={displayName.charAt(0).toUpperCase()}
+            style={styles.avatar}
+          />
         </View>
 
         <Text style={styles.planFor}>TRAINING PLAN FOR {displayName.toUpperCase()}</Text>
@@ -155,21 +154,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 30,
     borderColor: colors.primary,
     borderWidth: 2,
-  },
-  avatarFallback: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderColor: colors.primary,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.secondary,
-  },
-  avatarInitial: {
-    color: colors.text.primary,
-    fontWeight: '700',
-    fontSize: 24,
+    overflow: 'hidden',
   },
   planFor: {
     marginTop: 12,

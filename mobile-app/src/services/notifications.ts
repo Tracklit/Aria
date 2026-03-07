@@ -1,21 +1,37 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { registerPushToken } from '../lib/api';
 
+let Notifications: typeof import('expo-notifications') | null = null;
+let Device: typeof import('expo-device') | null = null;
+
+try {
+  Notifications = require('expo-notifications');
+} catch {
+  console.warn('[Notifications] expo-notifications native module not available');
+}
+
+try {
+  Device = require('expo-device');
+} catch {
+  console.warn('[Notifications] expo-device native module not available');
+}
+
 // Configure how notifications appear when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function registerForPushNotifications(): Promise<string | null> {
-  if (!Device.isDevice) {
+  if (!Notifications) return null;
+  if (Device && !Device.isDevice) {
     console.log('[Notifications] Must use physical device for push notifications');
     return null;
   }
@@ -55,6 +71,8 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 export function setupNotificationListeners() {
+  if (!Notifications) return () => {};
+
   // Handle notification received while app is in foreground
   const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
     console.log('[Notifications] Received:', notification.request.content.title);
@@ -76,9 +94,10 @@ export function setupNotificationListeners() {
 export async function scheduleLocalNotification(
   title: string,
   body: string,
-  trigger: Notifications.NotificationTriggerInput,
+  trigger: any,
   data?: Record<string, unknown>
 ): Promise<string> {
+  if (!Notifications) return '';
   return Notifications.scheduleNotificationAsync({
     content: { title, body, data, sound: 'default' },
     trigger,
@@ -86,5 +105,6 @@ export async function scheduleLocalNotification(
 }
 
 export async function cancelAllScheduledNotifications(): Promise<void> {
+  if (!Notifications) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
 }

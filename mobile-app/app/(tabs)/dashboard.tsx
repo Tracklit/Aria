@@ -80,7 +80,7 @@ export default function DashboardScreen() {
   const { startWorkoutSession, todaysWorkout, todaysWorkouts, todaysProgramSessions, loadTodaysWorkout, loadTodaysWorkouts } = useWorkout();
   const { startSession } = useSession();
   const {
-    greeting,
+    greeting: _apiGreeting,
     subtitle,
     cards,
     insights,
@@ -93,6 +93,14 @@ export default function DashboardScreen() {
 
   const { healthMetrics, readiness, getReadinessScore, connectedDevices } = useHealth();
   const hasHealthData = connectedDevices.length > 0;
+
+  // Always use local time-based greeting instead of API response
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }, []);
 
   const [refreshing, setRefreshing] = useState(false);
 

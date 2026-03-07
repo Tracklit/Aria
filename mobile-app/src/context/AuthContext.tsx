@@ -27,12 +27,19 @@ import {
 import {
   clearAuthStorage,
   debugAuthStorage,
+  getRefreshToken,
+  getStoredProfile,
   getStoredUser,
   getToken,
+  setStoredProfile,
   setStoredUser,
   setToken,
   setRefreshToken,
 } from '../lib/tokenStorage';
+import {
+  getLocalProfileImageUri,
+  saveProfileImageLocally,
+} from '../lib/profileImageCache';
 import { registerForPushNotifications } from '../services/notifications';
 
 // Demo mode storage key
@@ -202,6 +209,20 @@ const createDefaultProfile = (user?: User | null): UserProfile => ({
   onboardingCompleted: true,
 });
 
+const hydrateProfileWithLocalPhoto = (
+  profile: UserProfile | null,
+  localPhotoUri: string | null
+): UserProfile | null => {
+  if (!profile || !localPhotoUri) {
+    return profile;
+  }
+
+  return {
+    ...profile,
+    photoUrl: localPhotoUri,
+  };
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -219,9 +240,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const fetchUser = useCallback(async (): Promise<boolean> => {
     try {
-      const token = await getToken();
+      const [token, refreshToken] = await Promise.all([
+        getToken(),
+        getRefreshToken(),
+      ]);
 
-      if (!token) {
+      if (!token && !refreshToken) {
         const storedUser = await getStoredUser<User>();
         if (storedUser && storedUser.id === 'guest') {
           setState((prev) => ({
@@ -268,7 +292,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           sprinthiaPrompts: resolvedUser?.sprinthiaPrompts,
         });
       }
-      await setStoredUser(resolvedUser);
+      await Promise.all([
+        setStoredUser(resolvedUser),
+        setStoredProfile(resolvedProfile),
+      ]);
+      if (resolvedProfile.photoUrl) {
+        saveProfileImageLocally(resolvedProfile.photoUrl).catch((cacheError) => {
+          console.warn('[Auth] Failed to refresh local profile image cache:', cacheError);
+        });
+      }
       lastFetchedAt.current = Date.now();
 
       // Register for push notifications (non-blocking)
@@ -301,7 +333,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     debugAuthStorage();
-    fetchUser();
+
+    let isActive = true;
+
+    const bootstrapAuth = async () => {
+      const [token, storedUser, storedProfile, localProfileImageUri] = await Promise.all([
+        getToken(),
+        getStoredUser<User>(),
+        getStoredProfile<UserProfile>(),
+        getLocalProfileImageUri(),
+      ]);
+
+      if (
+        isActive &&
+        token &&
+        (storedUser || storedProfile)
+      ) {
+        const cachedProfile = storedProfile ?? createDefaultProfile(storedUser);
+        setState((prev) => ({
+          ...prev,
+          user: storedUser ?? prev.user,
+          profile: hydrateProfileWithLocalPhoto(cachedProfile, localProfileImageUri),
+          isAuthenticated: true,
+          isLoading: true,
+          isDemoMode: false,
+          hasValidToken: true,
+        }));
+      }
+
+      await fetchUser();
+    };
+
+    bootstrapAuth();
+
+    return () => {
+      isActive = false;
+    };
   }, [fetchUser]);
 
   // Refresh user data when app comes to foreground (if stale >1 hour)
@@ -479,9 +546,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [state.isDemoMode]);
 
   const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
+    const baseProfile = state.profile ?? createDefaultProfile(state.user);
+
     if (state.isDemoMode) {
       // Update profile locally in demo mode
-      const newProfile = { ...state.profile, ...data } as UserProfile;
+      const newProfile = { ...baseProfile, ...data } as UserProfile;
       await AsyncStorage.setItem(DEMO_PROFILE_KEY, JSON.stringify(newProfile));
       setState((prev) => ({
         ...prev,
@@ -495,10 +564,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         profile?: UserProfile;
         preferences?: UserPreferences;
       };
+      const nextProfile = response.profile ?? ({ ...baseProfile, ...data } as UserProfile);
       setState((prev) => ({
         ...prev,
-        profile: response.profile ?? prev.profile,
+        profile: nextProfile,
       }));
+      await setStoredProfile(nextProfile);
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -506,7 +577,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
       throw error;
     }
-  }, [state.isDemoMode, state.profile]);
+  }, [state.isDemoMode, state.profile, state.user]);
 
   const updatePreferences = useCallback(async (data: Partial<UserPreferences>) => {
     try {
@@ -528,9 +599,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const uploadProfilePicture = useCallback(async (imageUri: string) => {
+    const baseProfile = state.profile ?? createDefaultProfile(state.user);
+
     if (state.isDemoMode) {
       // In demo mode, just update locally with the local URI
-      const newProfile = { ...state.profile, photoUrl: imageUri } as UserProfile;
+      const newProfile = { ...baseProfile, photoUrl: imageUri } as UserProfile;
       await AsyncStorage.setItem(DEMO_PROFILE_KEY, JSON.stringify(newProfile));
       setState((prev) => ({
         ...prev,
@@ -540,14 +613,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     try {
-      const response = await apiUploadProfilePicture(imageUri);
+      const localPhotoUri = await saveProfileImageLocally(imageUri);
+      const optimisticProfile = { ...baseProfile, photoUrl: localPhotoUri } as UserProfile;
+      setState((prev) => ({
+        ...prev,
+        profile: optimisticProfile,
+      }));
+      await setStoredProfile(optimisticProfile);
 
-      // Update profile with new photo URL from Azure Blob
-      const newProfile = { ...state.profile, photoUrl: response.profileImageUrl } as UserProfile;
+      const response = await apiUploadProfilePicture(imageUri);
+      const syncedPhotoUrl = response.photoUrl ?? response.profileImageUrl;
+      const newProfile = { ...optimisticProfile, photoUrl: syncedPhotoUrl } as UserProfile;
       setState((prev) => ({
         ...prev,
         profile: newProfile,
       }));
+      await setStoredProfile(newProfile);
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -555,12 +636,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
       throw error;
     }
-  }, [state.isDemoMode, state.profile]);
+  }, [state.isDemoMode, state.profile, state.user]);
 
   const completeOnboarding = useCallback(async () => {
+    const baseProfile = state.profile ?? createDefaultProfile(state.user);
+
     if (state.isDemoMode) {
       // Complete onboarding locally in demo mode
-      const newProfile = { ...state.profile, onboardingCompleted: true } as UserProfile;
+      const newProfile = { ...baseProfile, onboardingCompleted: true } as UserProfile;
       await AsyncStorage.setItem(DEMO_PROFILE_KEY, JSON.stringify(newProfile));
       setState((prev) => ({
         ...prev,
@@ -571,10 +654,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       const response = await apiCompleteOnboarding() as { profile?: UserProfile };
+      const nextProfile = response.profile ?? ({
+        ...baseProfile,
+        onboardingCompleted: true,
+      } as UserProfile);
       setState((prev) => ({
         ...prev,
-        profile: response.profile ?? prev.profile,
+        profile: nextProfile,
       }));
+      await setStoredProfile(nextProfile);
     } catch (error: any) {
       setState((prev) => ({
         ...prev,
@@ -582,7 +670,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
       throw error;
     }
-  }, [state.isDemoMode, state.profile]);
+  }, [state.isDemoMode, state.profile, state.user]);
 
   const refreshUser = useCallback(async () => {
     try {

@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { clearLocalProfileImage } from './profileImageCache';
 
 const TOKEN_KEY = '@aria_auth_token';
 const USER_KEY = '@aria_user';
+const PROFILE_KEY = '@aria_profile';
 const REFRESH_TOKEN_KEY = 'aria_refresh_token';
 
 const DEBUG_TOKEN = __DEV__;
@@ -90,24 +92,46 @@ export const setStoredUser = async (user: unknown): Promise<void> => {
   }
 };
 
+export const getStoredProfile = async <T = unknown>(): Promise<T | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(PROFILE_KEY);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch (error) {
+    console.error('[TOKEN] Error getting stored profile:', error);
+    return null;
+  }
+};
+
+export const setStoredProfile = async (profile: unknown): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+  } catch (error) {
+    console.error('[TOKEN] Error saving stored profile:', error);
+  }
+};
+
 export const clearAuthStorage = async (): Promise<void> => {
   await Promise.all([
     AsyncStorage.removeItem(TOKEN_KEY),
     AsyncStorage.removeItem(USER_KEY),
+    AsyncStorage.removeItem(PROFILE_KEY),
     clearRefreshToken(),
+    clearLocalProfileImage(),
   ]);
 };
 
 export const debugAuthStorage = async (): Promise<void> => {
   if (!DEBUG_TOKEN) return;
-  const [token, user, refreshToken] = await Promise.all([
+  const [token, user, profile, refreshToken] = await Promise.all([
     AsyncStorage.getItem(TOKEN_KEY),
     AsyncStorage.getItem(USER_KEY),
+    AsyncStorage.getItem(PROFILE_KEY),
     getRefreshToken(),
   ]);
   console.log('[TOKEN] debug storage', {
     hasToken: !!token,
     hasRefreshToken: !!refreshToken,
     user: user ? JSON.parse(user) : null,
+    profile: profile ? JSON.parse(profile) : null,
   });
 };

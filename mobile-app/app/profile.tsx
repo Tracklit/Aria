@@ -8,6 +8,8 @@ import {
   Alert,
   Platform,
   Modal,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -94,7 +96,12 @@ export default function ProfileScreen() {
         <View style={{ width: 20 }} />
       </View>
 
-      <View style={styles.content}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+      <ScrollView contentContainerStyle={styles.content}>
         <Text testID="profile.title" style={styles.title}>Set up your profile</Text>
         <Text style={styles.subtitle}>
           Tell us about yourself to personalize the experience.
@@ -224,7 +231,8 @@ export default function ProfileScreen() {
         >
           <Text style={styles.saveText}>{isSaving ? 'Saving...' : 'Continue'}</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -248,6 +256,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   title: {
     color: colors.text.primary,
