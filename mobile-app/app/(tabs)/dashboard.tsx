@@ -19,7 +19,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar } from '../../src/components/ui';
-import { useAuth, useDashboard, useWorkout, useSession, useTheme } from '../../src/context';
+import { useAuth, useDashboard, useWorkout, useSession, useTheme, useHealth } from '../../src/context';
 import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { getDayLabel, safeParseExercises } from '../../src/utils/formatting';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
@@ -91,24 +91,30 @@ export default function DashboardScreen() {
     refreshDashboard,
   } = useDashboard();
 
+  const { healthMetrics, readiness, getReadinessScore, connectedDevices } = useHealth();
+  const hasHealthData = connectedDevices.length > 0;
+
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshDashboard();
+      await Promise.all([refreshDashboard(), hasHealthData ? getReadinessScore() : Promise.resolve()]);
     } finally {
       setRefreshing(false);
       impactLight();
     }
-  }, [refreshDashboard]);
+  }, [refreshDashboard, getReadinessScore, hasHealthData]);
 
   useEffect(() => {
     loadDashboard();
     loadPatterns();
     loadTodaysWorkout();
     loadTodaysWorkouts();
-  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts]);
+    if (hasHealthData) {
+      getReadinessScore();
+    }
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, hasHealthData, getReadinessScore]);
 
   const displayName = useMemo(
     () => getDisplayName(profile?.displayName, greeting),
@@ -352,6 +358,102 @@ export default function DashboardScreen() {
             </View>
           )}
         </Animated.View>
+
+        {/* Health Widgets */}
+        {hasHealthData && (readiness?.score != null || healthMetrics?.sleepDurationSeconds || healthMetrics?.hrvRmssd || healthMetrics?.restingHeartRate) && (
+          <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(150)} style={styles.healthSection}>
+            <Text style={styles.sectionTitle}>Health & Recovery</Text>
+            <View style={styles.healthCardsRow}>
+              {/* Readiness Card */}
+              {readiness?.score != null && (
+                <View style={[styles.healthCard, styles.healthCardWide]}>
+                  <View style={styles.healthCardHeader}>
+                    <Ionicons name="shield-checkmark" size={16} color={readiness.score >= 80 ? colors.green : readiness.score >= 60 ? colors.yellow : colors.red} />
+                    <Text style={styles.healthCardLabel}>Readiness</Text>
+                  </View>
+                  <Text style={[styles.healthCardValue, { color: readiness.score >= 80 ? colors.green : readiness.score >= 60 ? colors.yellow : colors.red }]}>
+                    {readiness.score}
+                  </Text>
+                  <Text style={styles.healthCardUnit}>/100</Text>
+                  <Text style={styles.healthCardCaption}>
+                    {readiness.score >= 80 ? 'Ready for high intensity' : readiness.score >= 60 ? 'Moderate training OK' : 'Focus on recovery'}
+                  </Text>
+                  {readiness.factors && readiness.factors.length > 0 && (
+                    <Text style={styles.healthFactors}>
+                      {readiness.factors.slice(0, 2).join(' | ')}
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* Sleep Card */}
+              {healthMetrics?.sleepDurationSeconds != null && healthMetrics.sleepDurationSeconds > 0 && (
+                <View style={styles.healthCard}>
+                  <View style={styles.healthCardHeader}>
+                    <Ionicons name="moon" size={16} color={colors.primaryMuted} />
+                    <Text style={styles.healthCardLabel}>Sleep</Text>
+                  </View>
+                  <Text style={styles.healthCardValue}>
+                    {Math.floor(healthMetrics.sleepDurationSeconds / 3600)}h {Math.round((healthMetrics.sleepDurationSeconds % 3600) / 60)}m
+                  </Text>
+                  {healthMetrics.sleepEfficiency != null && (
+                    <Text style={styles.healthCardCaption}>
+                      {healthMetrics.sleepEfficiency}% efficiency
+                    </Text>
+                  )}
+                  <View style={styles.sleepBar}>
+                    {healthMetrics.deepSleepSeconds != null && healthMetrics.sleepDurationSeconds > 0 && (
+                      <View style={[styles.sleepSegment, { flex: healthMetrics.deepSleepSeconds / healthMetrics.sleepDurationSeconds, backgroundColor: '#5C6BC0' }]} />
+                    )}
+                    {healthMetrics.remSleepSeconds != null && healthMetrics.sleepDurationSeconds > 0 && (
+                      <View style={[styles.sleepSegment, { flex: healthMetrics.remSleepSeconds / healthMetrics.sleepDurationSeconds, backgroundColor: colors.primaryMuted }]} />
+                    )}
+                    <View style={[styles.sleepSegment, { flex: 1, backgroundColor: colors.background.secondary }]} />
+                  </View>
+                  <View style={styles.sleepLegend}>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: '#5C6BC0' }]} />
+                      <Text style={styles.legendText}>Deep</Text>
+                    </View>
+                    <View style={styles.legendItem}>
+                      <View style={[styles.legendDot, { backgroundColor: colors.primaryMuted }]} />
+                      <Text style={styles.legendText}>REM</Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Recovery Card */}
+              {(healthMetrics?.hrvRmssd != null || healthMetrics?.restingHeartRate != null) && (
+                <View style={styles.healthCard}>
+                  <View style={styles.healthCardHeader}>
+                    <Ionicons name="pulse" size={16} color={colors.teal} />
+                    <Text style={styles.healthCardLabel}>Recovery</Text>
+                  </View>
+                  {healthMetrics?.hrvRmssd != null && (
+                    <View style={styles.recoveryMetric}>
+                      <Text style={styles.recoveryLabel}>HRV</Text>
+                      <Text style={styles.healthCardValue}>{healthMetrics.hrvRmssd.toFixed(0)}</Text>
+                      <Text style={styles.healthCardUnit}>ms</Text>
+                    </View>
+                  )}
+                  {healthMetrics?.restingHeartRate != null && (
+                    <View style={styles.recoveryMetric}>
+                      <Text style={styles.recoveryLabel}>Resting HR</Text>
+                      <Text style={styles.healthCardValue}>{healthMetrics.restingHeartRate}</Text>
+                      <Text style={styles.healthCardUnit}>bpm</Text>
+                    </View>
+                  )}
+                  {healthMetrics?.steps != null && healthMetrics.steps > 0 && (
+                    <Text style={styles.healthCardCaption}>
+                      {healthMetrics.steps.toLocaleString()} steps today
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          </Animated.View>
+        )}
 
         <Animated.View entering={reducedMotion ? undefined : FadeInUp.duration(400).delay(50)} style={styles.section}>
           <Text style={styles.sectionTitle}>AI Insights</Text>
@@ -663,5 +765,92 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '600',
     marginTop: 6,
     fontSize: 13,
+  },
+  healthSection: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+  },
+  healthCardsRow: {
+    gap: 12,
+  },
+  healthCard: {
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  healthCardWide: {},
+  healthCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  healthCardLabel: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  healthCardValue: {
+    color: colors.text.primary,
+    fontSize: 32,
+    fontWeight: '700',
+    lineHeight: 36,
+  },
+  healthCardUnit: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: -4,
+  },
+  healthCardCaption: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    marginTop: 4,
+  },
+  healthFactors: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    marginTop: 6,
+  },
+  sleepBar: {
+    flexDirection: 'row',
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: 8,
+  },
+  sleepSegment: {
+    height: 6,
+  },
+  sleepLegend: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 6,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  legendText: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+  },
+  recoveryMetric: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 4,
+  },
+  recoveryLabel: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    fontWeight: '500',
+    width: 80,
   },
 });

@@ -194,11 +194,7 @@ export default function MoreScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionHeader}>INTEGRATIONS</Text>
           <View style={styles.group}>
-            <SettingsRow title="Apple Health" icon="heart-outline" onPress={() => handlePress('Apple Health')} testID="settings.apple_health" />
-            <View style={styles.divider} />
-            <SettingsRow title="Garmin" icon="watch-outline" onPress={() => handlePress('Garmin')} testID="settings.garmin" />
-            <View style={styles.divider} />
-            <SettingsRow title="Strava" icon="bicycle-outline" onPress={() => handlePress('Strava')} testID="settings.strava" />
+            <SettingsRow title="Health Integrations" icon="fitness-outline" subtitle="Apple Health, Strava, Garmin" onPress={() => router.push('/settings/integrations')} testID="settings.integrations" />
           </View>
         </View>
 

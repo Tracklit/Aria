@@ -8,6 +8,7 @@ export { SessionProvider, useSession } from './SessionContext';
 export { ThemeProvider, useTheme } from './ThemeContext';
 export type { ThemeMode } from './ThemeContext';
 export { EventsProvider, useEvents } from './EventsContext';
+export { HealthProvider, useHealth } from './HealthContext';
 export { AppProviders } from './AppContext';
 
 // Re-export types
@@ -18,3 +19,4 @@ export type { DashboardCard, DashboardMode } from './DashboardContext';
 export type { NutritionPlan } from './NutritionContext';
 export type { Program, ProgramSession } from './ProgramsContext';
 export type { Event } from './EventsContext';
+export type { IntegrationProvider, ConnectedDevice, ReadinessData } from './HealthContext';
