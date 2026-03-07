@@ -449,20 +449,46 @@ export class DatabaseStorage implements IStorage {
 
     const results: Array<ProgramSession & { programTitle: string; programId: number }> = [];
 
+    // Current day of week: 1=Monday .. 7=Sunday
+    const now = new Date();
+    const jsDow = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+    const dayOfWeek = jsDow === 0 ? 7 : jsDow; // convert to 1=Mon .. 7=Sun
+
     for (const program of userPrograms) {
-      const daysSinceCreated = Math.floor(
-        (Date.now() - new Date(program.createdAt!).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      const currentDay = daysSinceCreated + 1;
+      const activeWeek = program.activeWeek ?? 1;
+      const currentDayNumber = ((activeWeek - 1) * 7) + dayOfWeek;
 
       const sessions = await db.select().from(programSessions)
         .where(and(
           eq(programSessions.programId, program.id),
-          eq(programSessions.dayNumber, currentDay)
+          eq(programSessions.dayNumber, currentDayNumber)
         ));
 
-      for (const session of sessions) {
-        results.push({ ...session, programTitle: program.title, programId: program.id });
+      if (sessions.length > 0) {
+        for (const session of sessions) {
+          results.push({ ...session, programTitle: program.title, programId: program.id });
+        }
+      } else {
+        // No session for today — check if program has any sessions at all
+        const allSessions = await db.select().from(programSessions)
+          .where(eq(programSessions.programId, program.id));
+
+        if (allSessions.length === 0) {
+          // Program has no sessions — show a placeholder so the dashboard isn't empty
+          results.push({
+            id: -program.id, // negative id as placeholder marker
+            programId: program.id,
+            dayNumber: currentDayNumber,
+            title: program.title,
+            description: 'No sessions configured — tap to edit program',
+            exercises: [],
+            isRestDay: false,
+            isCompleted: false,
+            createdAt: program.createdAt!,
+            updatedAt: program.updatedAt!,
+            programTitle: program.title,
+          } as ProgramSession & { programTitle: string; programId: number });
+        }
       }
     }
 
