@@ -429,6 +429,21 @@ export const ariaMessages = pgTable('aria_messages', {
   conversationCreatedIdx: index('aria_messages_conversation_created_idx').on(table.conversationId, table.createdAt),
 }));
 
+// ==================== CHAT ATTACHMENTS ====================
+
+export const chatAttachments = pgTable('chat_attachments', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  size: integer('size').notNull(),
+  data: text('data').notNull(), // base64-encoded file bytes
+  textContent: text('text_content'), // extracted text for AI context (CSVs, PDFs, TXT)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userCreatedIdx: index('chat_attachments_user_created_idx').on(table.userId, table.createdAt),
+}));
+
 // ==================== RACES & CALENDAR ====================
 
 export const races = pgTable('races', {
@@ -838,6 +853,9 @@ export type InsertProgramSession = typeof programSessions.$inferInsert;
 
 export type Event = typeof events.$inferSelect;
 export type InsertEvent = typeof events.$inferInsert;
+
+export type ChatAttachment = typeof chatAttachments.$inferSelect;
+export type InsertChatAttachment = typeof chatAttachments.$inferInsert;
 
 export type HealthMetric = typeof healthMetrics.$inferSelect;
 export type InsertHealthMetric = typeof healthMetrics.$inferInsert;

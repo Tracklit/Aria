@@ -41,6 +41,9 @@ import {
   syncStravaActivities,
 } from './strava';
 import multer from 'multer';
+import { db } from './db';
+import { chatAttachments } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 
 // ==================== VALIDATION SCHEMAS ====================
 
@@ -1702,6 +1705,26 @@ export function registerRoutes(app: Express): void {
 
   // ==================== CHAT ATTACHMENT UPLOAD ====================
 
+  // Serve chat attachment from DB — no auth needed for display in chat bubbles
+  app.get('/api/aria/chat/attachment/:id', async (req: Request, res: Response) => {
+    try {
+      const attachmentId = parseInt(req.params.id, 10);
+      if (!attachmentId) return res.status(400).json({ error: 'Invalid attachment ID' });
+
+      const [attachment] = await db.select().from(chatAttachments).where(eq(chatAttachments.id, attachmentId));
+      if (!attachment) return res.status(404).json({ error: 'Attachment not found' });
+
+      const buffer = Buffer.from(attachment.data, 'base64');
+      res.setHeader('Content-Type', attachment.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.filename}"`);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Serve attachment error:', error?.message?.substring(0, 200));
+      res.status(500).json({ error: 'Failed to serve attachment' });
+    }
+  });
+
   app.post('/api/aria/chat/attachment', authMiddleware, chatAttachmentUpload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.file) {
@@ -1713,30 +1736,7 @@ export function registerRoutes(app: Express): void {
       const isTextBased = ['text/csv', 'text/plain'].includes(file.mimetype);
       const isPdf = file.mimetype === 'application/pdf';
 
-      // Upload to Azure blob storage
-      const { url: blobUrl } = await uploadFileToBlob(
-        file.buffer,
-        file.originalname,
-        file.mimetype,
-        'chat-attachments',
-      );
-
-      // Generate accessible URL
-      let accessibleUrl: string;
-      try {
-        accessibleUrl = await generateBlobSasUrl(blobUrl);
-        if (!accessibleUrl.includes('skoid=')) {
-          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-          const host = req.headers['x-forwarded-host'] || req.headers.host;
-          accessibleUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
-        }
-      } catch {
-        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-        const host = req.headers['x-forwarded-host'] || req.headers.host;
-        accessibleUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
-      }
-
-      // Extract text content for text-based files
+      // Extract text content for AI context
       let textContent: string | undefined;
       if (isTextBased) {
         textContent = file.buffer.toString('utf-8').slice(0, 10000);
@@ -1749,8 +1749,24 @@ export function registerRoutes(app: Express): void {
         }
       }
 
+      // Store in DB — no Azure Blob dependency
+      const base64 = file.buffer.toString('base64');
+      const [attachment] = await db.insert(chatAttachments).values({
+        userId: req.userId!,
+        filename: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        data: base64,
+        textContent: textContent || null,
+      }).returning();
+
+      // Build permanent URL served by our backend
+      const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const url = `${proto}://${host}/api/aria/chat/attachment/${attachment.id}`;
+
       const result: Record<string, any> = {
-        url: accessibleUrl,
+        url,
         type: isImage ? 'image' : isPdf ? 'pdf' : isTextBased ? 'text' : 'document',
         filename: file.originalname,
         size: file.size,
