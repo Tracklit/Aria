@@ -158,6 +158,24 @@ Read `ARIA-DEV-API-OPS.md` before touching deployment. Key rules:
 - **Production dependency**: TrackLit prod backend (`app-tracklit-prod-tnrusd`) calls aria-dev-api for Sprinthia AI chat — downtime breaks prod for all users
 - **ACR password**: `DOCKER_REGISTRY_SERVER_PASSWORD` must be set or container pull fails
 
+## Azure Blob Storage — DO NOT USE for new features
+
+The storage account `stkvnx2h6p44qw4` has `publicNetworkAccess` periodically **disabled by `MCAPSGov-AutomationApp`** (Microsoft MCAPS governance automation). This blocks ALL data plane operations — uploads, downloads, SAS URLs, and even managed identity access — causing 500 errors.
+
+**Rule: Store user-uploaded files in PostgreSQL (base64 in a `text` column), not Azure Blob Storage.** Serve via a dedicated backend endpoint (e.g. `/api/user/photo/:userId`). This pattern is already used for:
+- Profile photos → `user_profiles.photoData` → `GET /api/user/photo/:userId`
+- Chat attachments → `chat_attachments.data` → `GET /api/aria/chat/attachment/:id`
+
+**Still on Blob Storage (legacy, will break when policy flips):**
+- Program file uploads (`POST /api/programs/upload`) — stores URL in `programs.programFileUrl`
+- Legacy profile photo URLs (old blob URLs) — fallback SAS/proxy in GET /api/user
+
+**If a feature needs file storage**, use this pattern:
+1. Add a `data text` (base64) + `mime_type varchar` column to the relevant table
+2. Store `buffer.toString('base64')` on upload
+3. Add a `GET /api/<resource>/:id` endpoint that decodes and serves with proper Content-Type
+4. Return the endpoint URL (permanent, never expires) instead of a blob/SAS URL
+
 ## Gotchas
 
 - **JWT secret must match** between aria-api and mobile-backend `.env` files
