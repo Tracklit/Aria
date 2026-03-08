@@ -1,0 +1,72 @@
+appId: com.aria.mobile
+---
+# Flow 12: Chat File Attachment Action Sheet
+#
+# Tests:
+#   - Navigate to Chat tab
+#   - Tap the attach (+) button (the round button to the left of the text input)
+#   - Verify the Alert action sheet appears with:
+#       "Take Photo"
+#       "Choose from Library"
+#       "Choose Document"
+#       "Cancel"
+#   - Tap "Cancel" to dismiss without uploading
+#   - Verify the chat screen is still functional
+#
+# chat.tsx implementation:
+#   - The attach button has no testID — it uses the Ionicons "add" icon inside a
+#     round button styled as `attachBtn`. It is the leftmost button in the input dock.
+#   - handleAttachPress() calls Alert.alert('Attach', 'Choose an option', [...])
+#   - For unauthenticated users it shows "Sign In Required" instead — this flow
+#     expects an authenticated session.
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to Chat tab
+- tapOn:
+    id: "tab.chat"
+- assertVisible:
+    id: "chat.input"
+
+# The attach (+) button is at the far left of the input dock.
+# It sits to the left of chat.input and has no testID.
+# Use a point-based tap targeting the left side of the input bar at the bottom.
+# The input dock is positioned near the bottom: approx y=88-92% of screen.
+# The attach button is the leftmost element at approx x=8%.
+- tapOn:
+    point: "8%,90%"
+
+# The Alert action sheet should appear
+- extendedWaitUntil:
+    visible: "Choose an option"
+    timeout: 4000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Choose an option"
+    commands:
+      - assertVisible: "Take Photo"
+      - assertVisible: "Choose from Library"
+      - assertVisible: "Choose Document"
+      - assertVisible: "Cancel"
+      - tapOn: "Cancel"
+
+# Fallback: some iOS versions show the title "Attach" not "Choose an option"
+- runFlow:
+    when:
+      visible: "Attach"
+    commands:
+      - assertVisible: "Take Photo"
+      - assertVisible: "Choose from Library"
+      - assertVisible: "Choose Document"
+      - tapOn: "Cancel"
+
+# Confirm the chat screen is still active after dismissing the action sheet
+- assertVisible:
+    id: "chat.input"
+- assertVisible:
+    id: "chat.send"

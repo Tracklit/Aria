@@ -1,0 +1,66 @@
+appId: com.aria.mobile
+---
+# Shared login flow — included by other flows via runFlow
+# Handles the case where the app may show the welcome screen or already be logged in.
+# After this flow completes the dashboard tab is visible and the user is authenticated.
+
+# If already on the dashboard, nothing to do
+- runFlow:
+    when:
+      visible:
+        id: "tab.home"
+    commands:
+      - tapOn:
+          id: "tab.home"
+
+# If the welcome screen is showing, navigate to login
+- runFlow:
+    when:
+      visible:
+        id: "welcome.login"
+    commands:
+      - tapOn:
+          id: "welcome.login"
+      - assertVisible: "Welcome Back"
+      - tapOn:
+          text: "Email"
+          optional: true
+      - tapOn:
+          id: "Email"
+          optional: true
+      - tapOn:
+          text: "Email"
+          optional: true
+      # Use point tap on email field (placeholder text target)
+      - tapOn: "Email"
+      - inputText: "ianrowe12@gmail.com"
+      - tapOn: "Password"
+      - inputText: "AriaTest2026"
+      - tapOn: "Sign In"
+      - extendedWaitUntil:
+          visible:
+            id: "tab.home"
+          timeout: 15000
+
+# Safety: if get_started is shown instead
+- runFlow:
+    when:
+      visible:
+        id: "welcome.get_started"
+    commands:
+      - tapOn:
+          id: "welcome.login"
+          optional: true
+      - runFlow:
+          when:
+            visible: "Welcome Back"
+          commands:
+            - tapOn: "Email"
+            - inputText: "ianrowe12@gmail.com"
+            - tapOn: "Password"
+            - inputText: "AriaTest2026"
+            - tapOn: "Sign In"
+            - extendedWaitUntil:
+                visible:
+                  id: "tab.home"
+                timeout: 15000

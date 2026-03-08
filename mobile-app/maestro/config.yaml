@@ -1,0 +1,63 @@
+appId: com.aria.mobile
+---
+# Aria Mobile App - Maestro E2E Test Suite
+#
+# Prerequisites:
+#   - iOS Simulator running with the Aria app installed
+#   - Test account seeded: ianrowe12@gmail.com / AriaTest2026
+#   - maestro installed: brew install mobile-dev-inc/tap/maestro
+#   - ~/.maestro/bin in PATH
+#
+# Run a single flow:
+#   maestro test mobile-app/maestro/flows/01_login.yaml
+#
+# Run all flows in sequence:
+#   maestro test mobile-app/maestro/
+#
+# Run the full orchestrated suite (requires prior login state):
+#   maestro test mobile-app/maestro/master.yaml
+#
+# Tab testIDs (from (tabs)/_layout.tsx):
+#   tab.home         - Dashboard
+#   tab.chat         - Chat
+#   tab.programs     - Programs
+#   tab.nutrition    - Nutrition
+#   tab.tools        - Tools
+#   tab.more         - More / Settings
+#
+# Auth screen testIDs:
+#   welcome.get_started
+#   welcome.login
+#   auth.login.back
+#
+# Settings screen testIDs (more.tsx):
+#   settings.title
+#   settings.change_photo
+#   settings.edit_profile_header
+#   settings.edit_profile
+#   settings.logout
+#   settings.events
+#   settings.nutrition_log
+#   settings.athlete_profile
+#
+# Profile screen testIDs (profile.tsx):
+#   profile.back
+#   profile.header
+#   profile.title
+#   profile.name
+#   profile.email
+#   profile.country
+#   profile.dob
+#   profile.save
+#
+# Chat screen testIDs (chat.tsx):
+#   chat.menu
+#   chat.new_conversation
+#   chat.input
+#   chat.send
+#   chat.error_banner
+#   chat.suggestion.<text_with_underscores>
+#
+# Dashboard testIDs (dashboard.tsx):
+#   dashboard.start_workout.<item-id>   - WorkoutHeroCard start button
+#   dashboard.insight.<id>              - AI insight cards

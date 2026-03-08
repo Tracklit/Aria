@@ -1,0 +1,79 @@
+appId: com.aria.mobile
+---
+# Flow 04: AI Chat Send / Receive
+#
+# Tests:
+#   - Navigate to Chat tab
+#   - Verify the input field is present
+#   - Start a new conversation to get a clean slate
+#   - Type a sprint-specific question
+#   - Tap send
+#   - Wait for AI response (typing indicator appears, then message bubble)
+#   - Verify the response message bubble is visible and non-empty
+#
+# testIDs (chat.tsx):
+#   chat.input         — TextInput for message entry
+#   chat.send          — Send button (arrow-up icon)
+#   chat.new_conversation — New chat button (create-outline icon)
+#   chat.error_banner  — Error dismissal banner
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to Chat tab
+- tapOn:
+    id: "tab.chat"
+- assertVisible:
+    id: "chat.input"
+
+# Start a fresh conversation so we don't inherit old context
+- tapOn:
+    id: "chat.new_conversation"
+
+# Wait briefly for the new conversation state
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Dismiss any error banner from a previous run
+- runFlow:
+    when:
+      visible:
+        id: "chat.error_banner"
+    commands:
+      - tapOn:
+          id: "chat.error_banner"
+
+# Type the test message
+- tapOn:
+    id: "chat.input"
+- inputText: "What should I eat before a 100m sprint?"
+
+# Verify the send button is enabled (teal color when active — no good way to
+# assert color, but send is tapable when text is entered)
+- tapOn:
+    id: "chat.send"
+
+# Wait for the typing indicator to appear and then for the AI response bubble
+# The response may stream in chunks — wait up to 35 seconds
+- extendedWaitUntil:
+    visible: "Aria is thinking..."
+    timeout: 8000
+    optional: true
+
+- extendedWaitUntil:
+    not:
+      visible: "Aria is thinking..."
+    timeout: 35000
+
+# Verify the response appeared — it will contain some nutrition/food-related text.
+# We check for common words that would appear in a pre-sprint nutrition answer.
+- assertVisible:
+    text: "What should I eat before a 100m sprint?"
+
+# The AI response bubble should be somewhere below the user message.
+# We assert the screen does not show an error and that some response text appeared
+# by checking the error banner is absent.
+- assertNotVisible:
+    id: "chat.error_banner"

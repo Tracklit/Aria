@@ -1,0 +1,83 @@
+appId: com.aria.mobile
+---
+# Flow 05: Chat Copy Message (Long Press)
+#
+# Tests:
+#   - Navigate to Chat tab
+#   - Send a message and wait for the AI response
+#   - Long press on the AI response bubble
+#   - Verify the Alert action sheet appears with a "Copy" option
+#   - Tap "Copy"
+#   - Verify the action sheet dismisses (app does not crash)
+#
+# Implementation notes:
+#   - MessageBubble.tsx uses Alert.alert with buttons ["Copy", (optionally "Edit"), "Cancel"]
+#     on long press (Pressable onLongPress -> handleLongPress).
+#   - The AI bubble is the first message after the user message in the scroll view.
+#   - Maestro's longPressOn command triggers long press by element or coordinate.
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to Chat tab
+- tapOn:
+    id: "tab.chat"
+- assertVisible:
+    id: "chat.input"
+
+# Start a new conversation
+- tapOn:
+    id: "chat.new_conversation"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Dismiss any error banner
+- runFlow:
+    when:
+      visible:
+        id: "chat.error_banner"
+    commands:
+      - tapOn:
+          id: "chat.error_banner"
+
+# Send a short message to get a quick AI response
+- tapOn:
+    id: "chat.input"
+- inputText: "Give me one tip for a sprinter."
+- tapOn:
+    id: "chat.send"
+
+# Wait for the AI to finish responding
+- extendedWaitUntil:
+    not:
+      visible: "Aria is thinking..."
+    timeout: 35000
+
+# Also wait for the streaming cursor to disappear (streaming appends a block char)
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# At this point the AI response bubble is on screen.
+# Scroll slightly to ensure it is fully visible.
+- scroll
+
+# Long press on the AI response — it will be positioned roughly in the lower
+# half of the message area. We use a point-based long press since the bubble
+# has no testID.
+- longPressOn:
+    point: "50%,55%"
+
+# The Alert action sheet should appear with the "Copy" button
+- extendedWaitUntil:
+    visible: "Copy"
+    timeout: 4000
+- assertVisible: "Copy"
+
+# Tap Copy
+- tapOn: "Copy"
+
+# Action sheet dismisses — confirm app is still showing the chat screen
+- assertVisible:
+    id: "chat.input"

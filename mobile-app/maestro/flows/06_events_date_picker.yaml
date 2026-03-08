@@ -1,0 +1,70 @@
+appId: com.aria.mobile
+---
+# Flow 06: Events Date Picker (Light + Dark Mode Readability)
+#
+# Tests:
+#   - Navigate to More -> Upcoming Events
+#   - Tap the create event button
+#   - Verify the event form loads (header "New Event")
+#   - Tap the Date field to open the date picker
+#   - Verify the date picker appears (DateTimePicker in iOS spinner mode)
+#   - Verify the date picker is not invisible (text is readable — assert some
+#     date-related text or the "Done" button is visible)
+#   - Dismiss the picker and confirm we return to the form
+#
+# Screen labels (events/create.tsx):
+#   - Header: "New Event"
+#   - Date field label: "Date"
+#   - Date field shows formatted date text, e.g. "Sunday, January 1, 2026"
+#   - Done button text: "Done" (iOS only, shown when showDatePicker = true)
+#   - Save button: "Create Event"
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to More tab
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+
+# Tap "Upcoming Events"
+- tapOn:
+    id: "settings.events"
+
+# The events list screen loads (events/index.tsx)
+- extendedWaitUntil:
+    visible: "Events"
+    timeout: 8000
+
+# Tap the create button — it is a FAB (+ button) at the bottom right
+- tapOn:
+    point: "90%,85%"
+
+# Verify the create form header
+- extendedWaitUntil:
+    visible: "New Event"
+    timeout: 5000
+- assertVisible: "New Event"
+
+# The Date field shows the current date as a button
+# Tap it to open the iOS date picker spinner
+- tapOn: "Date"
+
+# Wait for the date picker to appear
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 5000
+
+# Verify the "Done" button is visible — this confirms the date picker rendered
+# and its controls are accessible (not invisible/black-on-black)
+- assertVisible: "Done"
+
+# Tap Done to dismiss the picker
+- tapOn: "Done"
+
+# Confirm we're back on the form with the date field still showing a date string
+- assertVisible: "New Event"
+- assertVisible: "Date"

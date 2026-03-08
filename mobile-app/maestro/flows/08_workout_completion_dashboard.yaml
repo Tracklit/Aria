@@ -1,0 +1,79 @@
+appId: com.aria.mobile
+---
+# Flow 08: Workout Completion on Dashboard
+#
+# Tests:
+#   - Launch app, land on Dashboard
+#   - Verify the workout card carousel is visible
+#   - If workout cards exist (non-rest-day), verify "Start Session" button is visible
+#   - If a workout was previously completed, verify the "Completed" state is shown
+#   - Tap "Start Session" on the first non-completed card (if any) to confirm navigation works
+#   - Navigate back to Dashboard
+#
+# testIDs (WorkoutHeroCard.tsx):
+#   dashboard.start_workout.<item-id>  — the Start Session / Completed button
+#     item-id patterns:
+#       planned-<N>   for training plan workouts
+#       program-<N>   for program sessions
+#       empty         for rest-day placeholder
+#
+# Text labels:
+#   "Start Session"   — button text when workout is pending
+#   "Completed"       — button text when workout.isCompleted = true
+#   "REST DAY"        — badge text when no workouts are scheduled
+#   "COMPLETED"       — badge text on the completed card
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Ensure we are on the Dashboard tab
+- tapOn:
+    id: "tab.home"
+
+# Wait for dashboard content to load
+- extendedWaitUntil:
+    visible: "Good"
+    timeout: 10000
+
+# Check if there are any workout cards with "Start Session"
+- runFlow:
+    when:
+      visible: "Start Session"
+    commands:
+      # Workout card with pending state is visible — verify it
+      - assertVisible: "Start Session"
+      # Tap to start the session and verify navigation to log-workout or session screen
+      - tapOn: "Start Session"
+      - extendedWaitUntil:
+          visible: "Back"
+          timeout: 6000
+          optional: true
+      # Navigate back to dashboard
+      - tapOn:
+          id: "tab.home"
+          optional: true
+      - tapOn:
+          text: "Back"
+          optional: true
+
+# Check if a completed workout badge is shown
+- runFlow:
+    when:
+      visible: "COMPLETED"
+    commands:
+      - assertVisible: "COMPLETED"
+      - assertVisible: "Completed"
+
+# Check for rest day
+- runFlow:
+    when:
+      visible: "REST DAY"
+    commands:
+      - assertVisible: "REST DAY"
+      - assertVisible: "No Workouts Planned"
+
+# Final assertion: we are still on the dashboard
+- assertVisible:
+    id: "tab.home"

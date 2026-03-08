@@ -1,0 +1,89 @@
+appId: com.aria.mobile
+---
+# Flow 03: Nutrition AI Adjust
+#
+# Tests:
+#   - Navigate to Nutrition tab
+#   - Tap the first nutrition plan card
+#   - Tap the Edit (pencil) button in the header
+#   - Find the "Ask AI to Adjust" section (only visible when isEditing = true)
+#   - Enter adjustment instructions
+#   - Tap "Generate Adjusted Plan"
+#   - Wait for AI response
+#   - Verify redirected to the new plan detail screen
+#
+# Screen labels (nutrition/[id].tsx):
+#   - Edit button: pencil-outline icon (no testID — tap by position in header)
+#   - "Ask AI to Adjust" section title
+#   - Placeholder: "e.g. More protein, reduce carbs, add vegan options..."
+#   - Button text: "Generate Adjusted Plan"
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to Nutrition tab
+- tapOn:
+    id: "tab.nutrition"
+- extendedWaitUntil:
+    visible: "Nutrition"
+    timeout: 8000
+
+# Verify at least one plan exists; if not, skip gracefully
+- runFlow:
+    when:
+      visible: "No Nutrition Plans"
+    commands:
+      # No plans exist — create one first then retry the test manually
+      - assertTrue:
+          condition: "false"
+          message: "No nutrition plans found. Run flow 02 first to seed a plan."
+
+# Tap the first plan card to open detail view
+# NutritionPlanCard has an onPress that routes to /nutrition/:id
+# The plan card contains the plan title — we tap the first item in the list
+- tapOn:
+    index: 0
+    text: "Active"
+    optional: true
+
+# Fallback: tap by scrolling and tapping first card area
+- runFlow:
+    when:
+      not:
+        visible: "Macro Breakdown"
+    commands:
+      - tapOn:
+          point: "50%,35%"
+
+- extendedWaitUntil:
+    visible: "Macro Breakdown"
+    timeout: 8000
+
+# Tap the pencil (Edit) icon in the top-right of the header
+# The header has: back button, title, pencil icon, trash icon
+# Pencil is the second icon from the right — use point-based tap
+- tapOn:
+    point: "82%,8%"
+
+# Verify the "Ask AI to Adjust" section appears (only shown when isEditing = true)
+- extendedWaitUntil:
+    visible: "Ask AI to Adjust"
+    timeout: 5000
+- assertVisible: "Ask AI to Adjust"
+
+# Enter adjustment instructions
+- tapOn: "e.g. More protein, reduce carbs, add vegan options..."
+- inputText: "More protein, less carbs. Focus on sprint athlete macros."
+
+# Tap "Generate Adjusted Plan" button
+- tapOn: "Generate Adjusted Plan"
+
+# Wait for AI generation — can take 15-40 seconds
+- extendedWaitUntil:
+    visible: "Macro Breakdown"
+    timeout: 45000
+
+# Verify new plan detail screen loaded successfully
+- assertVisible: "Macro Breakdown"

@@ -1,0 +1,44 @@
+appId: com.aria.mobile
+---
+# Aria E2E Master Suite
+#
+# Runs all test flows in dependency order. Login is handled within each individual
+# flow so they can also be run independently.
+#
+# Run full suite:
+#   maestro test mobile-app/maestro/master.yaml
+#
+# Run single flow:
+#   maestro test mobile-app/maestro/flows/04_chat_send_receive.yaml
+
+- launchApp:
+    clearState: false
+
+# Establish authenticated session (all subsequent flows reuse it)
+- runFlow: flows/00_login.yaml
+
+# Settings / Profile
+- runFlow: flows/01_profile_photo_upload.yaml
+
+# Nutrition
+- runFlow: flows/02_nutrition_plan_create_ai.yaml
+- runFlow: flows/03_nutrition_ai_adjust.yaml
+
+# Chat
+- runFlow: flows/04_chat_send_receive.yaml
+- runFlow: flows/05_chat_copy_message.yaml
+- runFlow: flows/12_chat_file_attachment.yaml
+
+# Events
+- runFlow: flows/06_events_date_picker.yaml
+- runFlow: flows/11_event_sub_events.yaml
+
+# Profile
+- runFlow: flows/07_country_picker.yaml
+
+# Dashboard
+- runFlow: flows/08_workout_completion_dashboard.yaml
+- runFlow: flows/09_meal_complete_skip.yaml
+
+# Logs
+- runFlow: flows/10_nutrition_log_screen.yaml

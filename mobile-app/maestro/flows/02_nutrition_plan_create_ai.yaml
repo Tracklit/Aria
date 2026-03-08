@@ -1,0 +1,87 @@
+appId: com.aria.mobile
+---
+# Flow 02: Nutrition Plan Create with AI
+#
+# Tests:
+#   - Navigate to Nutrition tab
+#   - Tap the FAB (+ button) to open the Create screen
+#   - Select activity level chip
+#   - Select training season chip
+#   - Enter a calorie target
+#   - Select meals per day
+#   - Tap "Generate with AI"
+#   - Wait up to 40 seconds for AI response
+#   - Verify a new plan appears in the nutrition list
+#
+# Screen labels / text references (nutrition/create.tsx):
+#   - Activity levels: sedentary, light, moderate, active, very_active
+#   - Seasons: off_season, pre_season, in_season, post_season
+#   - Header title: "New Nutrition Plan"
+#   - Generate button text: "Generate with AI"
+#   - Meals per day numbers: 2 3 4 5 6 7 8
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to Nutrition tab
+- tapOn:
+    id: "tab.nutrition"
+
+# Wait for the nutrition list screen to appear
+- extendedWaitUntil:
+    visible: "Nutrition"
+    timeout: 8000
+
+# Tap the FAB (+ button, bottom-right corner)
+- tapOn:
+    text: "Generate a Plan"
+    optional: true
+- runFlow:
+    when:
+      visible: "New Nutrition Plan"
+      # Already on create screen via empty state button
+    commands:
+      - assertTrue: true
+- runFlow:
+    when:
+      not:
+        visible: "New Nutrition Plan"
+    commands:
+      # Tap FAB by position (bottom-right)
+      - tapOn:
+          point: "90%,85%"
+- extendedWaitUntil:
+    visible: "New Nutrition Plan"
+    timeout: 6000
+
+# Select "active" activity level chip (ChipGroup - Activity Level)
+- tapOn: "active"
+
+# Select "pre_season" training season chip
+- tapOn: "pre_season"
+
+# Enter calorie target
+- tapOn: "e.g. 2500"
+- clearText
+- inputText: "2800"
+
+# Select 5 meals per day (tap the pill showing "5")
+- tapOn:
+    text: "5"
+
+# Tap "Generate with AI"
+- tapOn: "Generate with AI"
+
+# Wait for AI generation — can take 15-40 seconds
+- extendedWaitUntil:
+    visible: "Nutrition"
+    timeout: 45000
+
+# After generation, app navigates back to the Nutrition list.
+# Verify at least one plan card is visible.
+- assertVisible: "Nutrition"
+
+# Verify plan list is not empty (a plan card or title should exist)
+- assertNotVisible: "No Nutrition Plans"

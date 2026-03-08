@@ -1,0 +1,88 @@
+appId: com.aria.mobile
+---
+# Flow 07: Country Picker Selection
+#
+# Tests:
+#   - Navigate to More -> Edit Profile
+#   - Find and tap the Country field (testID: profile.country)
+#   - Verify the CountryPicker modal appears with title "Select Country"
+#   - Type "Jam" in the search field
+#   - Verify "Jamaica" appears in the filtered list
+#   - Tap "Jamaica"
+#   - Verify the modal closes and "Jamaica" appears as the selected country
+#
+# testIDs (profile.tsx):
+#   profile.country  — TouchableOpacity that opens the picker
+#   profile.save     — Save/Continue button
+#
+# CountryPicker modal (CountryPicker.tsx):
+#   - Modal title: "Select Country"
+#   - Search placeholder: "Search countries..."
+#   - Each row is a TouchableOpacity with the country name text
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to More tab -> Edit Profile
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+
+- tapOn:
+    id: "settings.edit_profile"
+
+# Verify the profile screen loaded
+- extendedWaitUntil:
+    visible:
+      id: "profile.title"
+    timeout: 6000
+- assertVisible:
+    id: "profile.title"
+
+# Scroll down to find the Country field (it may be below the fold)
+- scrollUntilVisible:
+    element:
+      id: "profile.country"
+    direction: DOWN
+    timeout: 5000
+
+# Tap the Country field to open the picker modal
+- tapOn:
+    id: "profile.country"
+
+# Verify the picker modal appeared
+- extendedWaitUntil:
+    visible: "Select Country"
+    timeout: 4000
+- assertVisible: "Select Country"
+- assertVisible: "Search countries..."
+
+# Type "Jam" to filter the list
+- tapOn: "Search countries..."
+- inputText: "Jam"
+
+# Wait for the filtered list to update
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Jamaica should appear in the results
+- assertVisible: "Jamaica"
+
+# Tap Jamaica
+- tapOn: "Jamaica"
+
+# Modal closes automatically after selection (CountryPicker.tsx handleSelect calls onClose)
+- extendedWaitUntil:
+    not:
+      visible: "Select Country"
+    timeout: 4000
+
+# Verify Jamaica is now shown as the selected country value in the profile form
+- assertVisible: "Jamaica"
+
+# Navigate back without saving to avoid mutating test data
+- tapOn:
+    id: "profile.back"

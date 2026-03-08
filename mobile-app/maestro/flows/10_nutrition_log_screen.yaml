@@ -1,0 +1,86 @@
+appId: com.aria.mobile
+---
+# Flow 10: Nutrition Log Screen
+#
+# Tests:
+#   - Navigate to More tab
+#   - Tap "Nutrition Log" row
+#   - Verify the Nutrition Log screen appears with the "Nutrition Log" title
+#   - Verify either log entries or the empty state are shown
+#   - Navigate back to More tab
+#
+# testID for the row: settings.nutrition_log (more.tsx line 191)
+#
+# Nutrition Log screen (nutrition-log.tsx):
+#   - Screen title text: "Nutrition Log"
+#   - Empty state title: "No nutrition logs yet"
+#   - Empty state body: "Complete or skip meals from the dashboard to start logging."
+#   - Log entry shows meal name, time, status ("Completed" / "Skipped"), calories
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to More tab
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+
+# Scroll down to the Training section which contains the Nutrition Log row
+- scrollUntilVisible:
+    element:
+      id: "settings.nutrition_log"
+    direction: DOWN
+    timeout: 5000
+
+# Tap Nutrition Log
+- tapOn:
+    id: "settings.nutrition_log"
+
+# Wait for the Nutrition Log screen to load
+- extendedWaitUntil:
+    visible: "Nutrition Log"
+    timeout: 8000
+- assertVisible: "Nutrition Log"
+
+# Verify the screen shows content — either log entries or the empty state
+- runFlow:
+    when:
+      visible: "No nutrition logs yet"
+    commands:
+      # Empty state is correct behavior — just verify the guidance text
+      - assertVisible: "No nutrition logs yet"
+      - assertVisible: "Complete or skip meals from the dashboard to start logging."
+
+- runFlow:
+    when:
+      not:
+        visible: "No nutrition logs yet"
+    commands:
+      # Log entries exist — verify at least one shows status text
+      - runFlow:
+          when:
+            visible: "Completed"
+          commands:
+            - assertVisible: "Completed"
+      - runFlow:
+          when:
+            visible: "Skipped"
+          commands:
+            - assertVisible: "Skipped"
+
+# Navigate back to More tab
+- tapOn:
+    text: "Back"
+    optional: true
+- tapOn:
+    id: "tab.more"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "settings.title"
+    timeout: 6000
+- assertVisible:
+    id: "settings.title"

@@ -1,0 +1,80 @@
+appId: com.aria.mobile
+---
+# Flow 09: Meal Complete / Skip
+#
+# Tests:
+#   - Launch app on Dashboard
+#   - Find the Next Meal card (only shown when an active nutrition plan exists)
+#   - Tap the "Done" (checkmark) button to mark the meal as completed
+#   - Verify the meal shows "Completed" status
+#   - OR if no plan is active, verify the card is absent and skip gracefully
+#
+# NextMealCard.tsx button labels:
+#   "Done"  — complete action button (checkmark-circle-outline icon + "Done" text)
+#   "Skip"  — skip action button (close-circle-outline icon + "Skip" text)
+#
+# After tapping Done:
+#   - loggedStatus becomes 'completed'
+#   - The icon changes to checkmark-circle (green)
+#   - The timeWindow text changes to "Completed"
+#   - The action buttons disappear
+#
+# The card is only rendered when activeNutritionPlan has mealSuggestions and
+# getNextMeal() returns a non-null result (dashboard.tsx line 172-175).
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Ensure we are on the Dashboard tab
+- tapOn:
+    id: "tab.home"
+
+# Wait for dashboard to load
+- extendedWaitUntil:
+    visible: "Good"
+    timeout: 10000
+
+# Pull to refresh to ensure we have the latest meal state
+- scroll:
+    direction: DOWN
+    speed: 50
+    startY: "20%"
+    endY: "70%"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# Check if the Next Meal card is visible
+- runFlow:
+    when:
+      visible: "Done"
+    commands:
+      # Meal card with action buttons is visible — tap Done to complete it
+      - tapOn: "Done"
+      # Wait for the optimistic update
+      - waitForAnimationToEnd:
+          timeout: 2000
+      # The "Done" and "Skip" buttons should now be hidden
+      - assertNotVisible: "Done"
+      # The card should show "Completed" status text
+      - assertVisible: "Completed"
+
+# Alternate: if the meal is already logged (no action buttons) just verify status
+- runFlow:
+    when:
+      visible: "Completed"
+    commands:
+      - assertVisible: "Completed"
+
+- runFlow:
+    when:
+      visible: "Skipped"
+    commands:
+      - assertVisible: "Skipped"
+
+# If no Next Meal card is shown at all (no active plan), the test passes trivially.
+# Just verify the dashboard loaded correctly.
+- assertVisible:
+    id: "tab.home"

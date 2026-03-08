@@ -1,0 +1,111 @@
+appId: com.aria.mobile
+---
+# Flow 11: Event Sub-Events
+#
+# Tests:
+#   - Navigate to More -> Upcoming Events
+#   - Tap the create (+) FAB
+#   - Enter an event name
+#   - Select "Competition" or "Meet" event type (these enable the Sub-Events section)
+#   - Verify the "Sub-Events" section label appears
+#   - Tap "Add Sub-Event"
+#   - Verify a sub-event card appears
+#   - Enter sub-event name "100m Dash"
+#   - Select the "100m" distance preset chip
+#   - Enter goal time "10.85"
+#   - Tap "Create Event" to save
+#   - Verify navigation back to the events list
+#
+# events/create.tsx references:
+#   SUPPORTS_SUB_EVENTS = ['competition', 'meet']
+#   Sub-Events section label: "Sub-Events"
+#   Add button text: "Add Sub-Event"
+#   Sub-event field labels: "Event Name", "Distance", "Goal Time (seconds)", "Notes"
+#   Distance presets: '60m', '100m', '200m', '400m', '800m', '1500m', ...
+#   Save button: "Create Event"
+
+- launchApp:
+    clearState: false
+
+- runFlow: flows/00_login.yaml
+
+# Navigate to More tab -> Upcoming Events
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+
+- scrollUntilVisible:
+    element:
+      id: "settings.events"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "settings.events"
+
+# Events list screen
+- extendedWaitUntil:
+    visible: "Events"
+    timeout: 8000
+
+# Tap the FAB (+ button, bottom right)
+- tapOn:
+    point: "90%,85%"
+
+# Verify create form loaded
+- extendedWaitUntil:
+    visible: "New Event"
+    timeout: 5000
+- assertVisible: "New Event"
+
+# Enter event name
+- tapOn: "e.g. State Championship 100m"
+- inputText: "Regional Track Meet"
+
+# Dismiss keyboard
+- tapOn: "Event Type"
+
+# Select "Competition" event type chip
+- tapOn: "Competition"
+
+# The Sub-Events section should now be visible (showSubEventsSection = true)
+- extendedWaitUntil:
+    visible: "Sub-Events"
+    timeout: 3000
+- assertVisible: "Sub-Events"
+
+# Tap "Add Sub-Event"
+- tapOn: "Add Sub-Event"
+
+# A sub-event card appears with index #1
+- assertVisible: "#1"
+
+# Fill in the sub-event name
+- tapOn: "e.g. 100m Final"
+- inputText: "100m Dash"
+
+# Select the 100m distance preset chip
+- tapOn: "100m"
+
+# Enter goal time
+- tapOn: "e.g. 10.85"
+- inputText: "10.85"
+
+# Scroll down to the Save button
+- scrollUntilVisible:
+    element:
+      text: "Create Event"
+    direction: DOWN
+    timeout: 5000
+
+# Save the event
+- tapOn: "Create Event"
+
+# Verify navigation back to events list
+- extendedWaitUntil:
+    visible: "Events"
+    timeout: 8000
+- assertVisible: "Events"
+
+# The new event should appear in the list
+- assertVisible: "Regional Track Meet"
