@@ -15,11 +15,22 @@ export interface StartGunSettings {
   randomRange: number;
 }
 
+export type OverlayLineType = 'none' | 'center' | 'thirds' | 'quarter' | 'custom';
+export type OverlayLineStyle = 'dashed' | 'solid';
+export type OverlayLineColor = 'red' | 'white' | 'yellow' | 'cyan';
+
 export interface PhotoFinishSettings {
   defaultSpeed: 0.25 | 0.5 | 1;
   frameStep: number;
   autoPauseOnScrub: boolean;
   showMilliseconds: boolean;
+  overlayLine: OverlayLineType;
+  overlayLineStyle: OverlayLineStyle;
+  overlayLineColor: OverlayLineColor;
+  /** Custom line position as percentage (0-100), used when overlayLine is 'custom' */
+  customLinePosition: number;
+  /** Constrain playback to keyframe range when both are set */
+  constrainToKeyframes: boolean;
 }
 
 export interface StopwatchSettings {
@@ -55,6 +66,11 @@ export const DEFAULT_PHOTO_FINISH: PhotoFinishSettings = {
   frameStep: 1 / 30,
   autoPauseOnScrub: true,
   showMilliseconds: true,
+  overlayLine: 'center',
+  overlayLineStyle: 'dashed',
+  overlayLineColor: 'red',
+  customLinePosition: 50,
+  constrainToKeyframes: true,
 };
 
 export const DEFAULT_STOPWATCH: StopwatchSettings = {

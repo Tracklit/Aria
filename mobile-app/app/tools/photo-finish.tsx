@@ -12,12 +12,30 @@ import { impactLight, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 import { useToolSettings } from '../../src/hooks/useToolSettings';
-import { PhotoFinishSettings, DEFAULT_PHOTO_FINISH } from '../../src/types/toolSettings';
+import { PhotoFinishSettings, DEFAULT_PHOTO_FINISH, OverlayLineType, OverlayLineStyle, OverlayLineColor } from '../../src/types/toolSettings';
 import { ToolSettingsModal } from '../../src/components/tools/ToolSettingsModal';
 import { SettingsToggleRow } from '../../src/components/tools/SettingsToggleRow';
 import { SettingsChipRow } from '../../src/components/tools/SettingsChipRow';
 
 const SPEED_OPTIONS = [0.25, 0.5, 1] as const;
+
+const LINE_COLORS: Record<OverlayLineColor, string> = {
+  red: 'rgba(255, 59, 48, 0.8)',
+  white: 'rgba(255, 255, 255, 0.8)',
+  yellow: 'rgba(255, 214, 10, 0.8)',
+  cyan: 'rgba(0, 229, 255, 0.8)',
+};
+
+/** Returns array of line positions (0-100%) for a given overlay type */
+function getLinePositions(type: OverlayLineType, customPos: number): number[] {
+  switch (type) {
+    case 'center': return [50];
+    case 'thirds': return [33.33, 66.67];
+    case 'quarter': return [25, 50, 75];
+    case 'custom': return [customPos];
+    default: return [];
+  }
+}
 
 function formatTimestamp(seconds: number, showMs: boolean): string {
   const mins = Math.floor(seconds / 60);
@@ -46,7 +64,6 @@ export default function PhotoFinishScreen() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [startKeyframe, setStartKeyframe] = useState<number | null>(null);
   const [endKeyframe, setEndKeyframe] = useState<number | null>(null);
-  const [showCenterLine, setShowCenterLine] = useState(true);
 
   useEffect(() => {
     if (loaded) {
@@ -198,8 +215,15 @@ export default function PhotoFinishScreen() {
     if (!player) return;
     selectionChanged();
     player.pause();
-    player.seekBy(direction * settings.frameStep);
-  }, [player, settings.frameStep]);
+    const step = direction * settings.frameStep;
+    const minTime = (settings.constrainToKeyframes && startKeyframe !== null && endKeyframe !== null && endKeyframe > startKeyframe)
+      ? startKeyframe : 0;
+    const maxTime = (settings.constrainToKeyframes && startKeyframe !== null && endKeyframe !== null && endKeyframe > startKeyframe)
+      ? endKeyframe : (player.duration || duration);
+    const newTime = Math.max(minTime, Math.min(maxTime, player.currentTime + step));
+    player.currentTime = newTime;
+    setCurrentTime(newTime);
+  }, [player, settings.frameStep, settings.constrainToKeyframes, startKeyframe, endKeyframe, duration]);
 
   const changeSpeed = useCallback((newSpeed: number) => {
     if (!player) return;
@@ -249,8 +273,22 @@ export default function PhotoFinishScreen() {
           <View style={styles.videoContainer}>
             <View style={styles.videoWrapper}>
               <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
-              {showCenterLine && (
-                <View style={styles.centerLine} pointerEvents="none" />
+              {settings.overlayLine !== 'none' && (
+                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {getLinePositions(settings.overlayLine, settings.customLinePosition).map((pos, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.overlayLine,
+                        {
+                          left: `${pos}%`,
+                          borderLeftColor: LINE_COLORS[settings.overlayLineColor],
+                          borderStyle: settings.overlayLineStyle,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
               )}
               {isLoading && (
                 <View style={styles.loadingOverlay}>
@@ -299,18 +337,39 @@ export default function PhotoFinishScreen() {
 
             {/* Timeline Scrubber */}
             <View style={styles.sliderContainer}>
-              <Slider
-                style={styles.slider}
-                minimumValue={0}
-                maximumValue={duration || 1}
-                value={currentTime}
-                onValueChange={onSliderValueChange}
-                onSlidingStart={onSlidingStart}
-                onSlidingComplete={onSlidingComplete}
-                minimumTrackTintColor={colors.primary}
-                maximumTrackTintColor={colors.text.tertiary}
-                thumbTintColor={colors.primary}
-              />
+              {settings.constrainToKeyframes && startKeyframe !== null && endKeyframe !== null && endKeyframe > startKeyframe ? (
+                <View>
+                  <Slider
+                    style={styles.slider}
+                    minimumValue={startKeyframe}
+                    maximumValue={endKeyframe}
+                    value={Math.max(startKeyframe, Math.min(endKeyframe, currentTime))}
+                    onValueChange={onSliderValueChange}
+                    onSlidingStart={onSlidingStart}
+                    onSlidingComplete={onSlidingComplete}
+                    minimumTrackTintColor={colors.primary}
+                    maximumTrackTintColor={colors.text.tertiary}
+                    thumbTintColor={colors.primary}
+                  />
+                  <View style={styles.constrainedLabel}>
+                    <Ionicons name="lock-closed" size={10} color={colors.text.tertiary} />
+                    <Text style={[styles.constrainedText, { color: colors.text.tertiary }]}>Constrained to keyframes</Text>
+                  </View>
+                </View>
+              ) : (
+                <Slider
+                  style={styles.slider}
+                  minimumValue={0}
+                  maximumValue={duration || 1}
+                  value={currentTime}
+                  onValueChange={onSliderValueChange}
+                  onSlidingStart={onSlidingStart}
+                  onSlidingComplete={onSlidingComplete}
+                  minimumTrackTintColor={colors.primary}
+                  maximumTrackTintColor={colors.text.tertiary}
+                  thumbTintColor={colors.primary}
+                />
+              )}
             </View>
 
             {/* Playback Controls */}
@@ -445,11 +504,64 @@ export default function PhotoFinishScreen() {
           value={settings.showMilliseconds}
           onValueChange={(val) => update({ showMilliseconds: val })}
         />
+        <SettingsChipRow
+          label="Overlay Lines"
+          options={[
+            { label: 'None', value: 'none' as OverlayLineType },
+            { label: 'Center', value: 'center' as OverlayLineType },
+            { label: 'Thirds', value: 'thirds' as OverlayLineType },
+            { label: 'Quarters', value: 'quarter' as OverlayLineType },
+            { label: 'Custom', value: 'custom' as OverlayLineType },
+          ]}
+          selected={settings.overlayLine}
+          onSelect={(val) => update({ overlayLine: val as OverlayLineType })}
+        />
+        {settings.overlayLine !== 'none' && (
+          <>
+            <SettingsChipRow
+              label="Line Style"
+              options={[
+                { label: 'Dashed', value: 'dashed' as OverlayLineStyle },
+                { label: 'Solid', value: 'solid' as OverlayLineStyle },
+              ]}
+              selected={settings.overlayLineStyle}
+              onSelect={(val) => update({ overlayLineStyle: val as OverlayLineStyle })}
+            />
+            <SettingsChipRow
+              label="Line Color"
+              options={[
+                { label: 'Red', value: 'red' as OverlayLineColor },
+                { label: 'White', value: 'white' as OverlayLineColor },
+                { label: 'Yellow', value: 'yellow' as OverlayLineColor },
+                { label: 'Cyan', value: 'cyan' as OverlayLineColor },
+              ]}
+              selected={settings.overlayLineColor}
+              onSelect={(val) => update({ overlayLineColor: val as OverlayLineColor })}
+            />
+          </>
+        )}
+        {settings.overlayLine === 'custom' && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <Text style={{ color: colors.text.primary, fontWeight: '600', marginBottom: 8 }}>
+              Line Position: {settings.customLinePosition}%
+            </Text>
+            <Slider
+              minimumValue={5}
+              maximumValue={95}
+              step={1}
+              value={settings.customLinePosition}
+              onSlidingComplete={(val) => update({ customLinePosition: val })}
+              minimumTrackTintColor={colors.primary}
+              maximumTrackTintColor={colors.text.tertiary}
+              thumbTintColor={colors.primary}
+            />
+          </View>
+        )}
         <SettingsToggleRow
-          label="Center Line"
-          description="Show dashed vertical line overlay"
-          value={showCenterLine}
-          onValueChange={setShowCenterLine}
+          label="Constrain to Keyframes"
+          description="Lock slider and playback to keyframe range"
+          value={settings.constrainToKeyframes}
+          onValueChange={(val) => update({ constrainToKeyframes: val })}
         />
       </ToolSettingsModal>
     </SafeAreaView>
@@ -552,15 +664,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   speedTextActive: {
     color: colors.background.primary,
   },
-  centerLine: {
-    position: 'absolute',
+  overlayLine: {
+    position: 'absolute' as const,
     top: 0,
     bottom: 0,
-    left: '50%',
-    width: 2,
+    width: 0,
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(255, 59, 48, 0.7)',
-    borderStyle: 'dashed',
+  },
+  constrainedLabel: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 4,
+    marginTop: -4,
+  },
+  constrainedText: {
+    fontSize: 10,
+    fontWeight: '500' as const,
   },
   keyframeRow: {
     flexDirection: 'row',
