@@ -7,6 +7,7 @@ import {
   sendChatMessage,
   sendChatMessageStream,
   ChatResponse,
+  ChatAttachmentInfo,
 } from '../lib/api';
 import { getToken } from '../lib/tokenStorage';
 import { ToastManager } from '../components/Toast';
@@ -18,6 +19,7 @@ export interface Message {
   timestamp: Date;
   sender: 'ai' | 'user';
   animate?: boolean;
+  attachments?: ChatAttachmentInfo[];
 }
 
 export interface Conversation {
@@ -45,7 +47,7 @@ interface ChatContextType extends ChatState {
   loadConversations: () => Promise<void>;
   selectConversation: (id: number) => Promise<void>;
   startNewConversation: () => void;
-  sendMessage: (text: string, useStreaming?: boolean) => Promise<void>;
+  sendMessage: (text: string, useStreaming?: boolean, attachments?: ChatAttachmentInfo[]) => Promise<void>;
   deleteCurrentConversation: () => Promise<void>;
   clearError: () => void;
 }
@@ -180,7 +182,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [state.currentConversationId, loadConversations]);
 
-  const sendMessage = useCallback(async (text: string, useStreaming = false) => {
+  const sendMessage = useCallback(async (text: string, useStreaming = false, attachments?: ChatAttachmentInfo[]) => {
     const token = await getToken();
     if (!token) {
       setState((prev) => ({
@@ -196,6 +198,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       text,
       timestamp: new Date(),
       sender: 'user',
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     };
 
     setState((prev) => ({
@@ -210,6 +213,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const chatInput = {
       message: text,
       conversationId: state.currentConversationId || undefined,
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     };
 
     if (__DEV__) {

@@ -11,15 +11,19 @@ import {
   ActivityIndicator,
   Animated,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useChat, useAuth } from '../../src/context';
 import { MessageBubble } from '../../src/components/features';
-import { transcribeVoiceAudio } from '../../src/lib/api';
+import { ChatAttachmentInfo, ActionButton } from '../../src/components/features/MessageBubble';
+import { transcribeVoiceAudio, uploadChatAttachment } from '../../src/lib/api';
 import { impactLight, impactMedium, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
@@ -32,6 +36,7 @@ const SUGGESTIONS = [
 export default function ChatScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
+  const router = useRouter();
   const {
     messages,
     streamingMessage,
@@ -53,8 +58,11 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<ChatAttachmentInfo[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
+  const inputRef = useRef<TextInput>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const tabBarHeight = useBottomTabBarHeight();
 
@@ -188,6 +196,125 @@ export default function ChatScreen() {
     stopPulse,
   ]);
 
+  // ==================== Attachment handling ====================
+
+  const handleAttachPress = useCallback(() => {
+    if (!hasValidToken) {
+      Alert.alert('Sign In Required', 'Please sign in to attach files.');
+      return;
+    }
+
+    Alert.alert('Attach', 'Choose an option', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Required', 'Camera access is needed to take photos.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+            allowsEditing: false,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadAttachment(result.assets[0].uri, result.assets[0].fileName || 'photo.jpg');
+          }
+        },
+      },
+      {
+        text: 'Choose from Library',
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.8,
+            allowsEditing: false,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadAttachment(result.assets[0].uri, result.assets[0].fileName || 'image.jpg');
+          }
+        },
+      },
+      {
+        text: 'Choose Document',
+        onPress: async () => {
+          const result = await DocumentPicker.getDocumentAsync({
+            type: ['application/pdf', 'text/csv', 'text/plain'],
+            copyToCacheDirectory: true,
+          });
+          if (!result.canceled && result.assets[0]) {
+            await uploadAttachment(result.assets[0].uri, result.assets[0].name || 'document');
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [hasValidToken]);
+
+  const uploadAttachment = useCallback(async (uri: string, filename: string) => {
+    setIsUploading(true);
+    try {
+      const result = await uploadChatAttachment(uri, filename);
+      setPendingAttachments((prev) => [...prev, result]);
+    } catch (err) {
+      console.error('Attachment upload failed:', err);
+      Alert.alert('Upload Failed', 'Could not upload the file. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const removePendingAttachment = useCallback((index: number) => {
+    setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // ==================== Edit message handler ====================
+
+  const handleEditMessage = useCallback((text: string) => {
+    setInputText(text);
+    inputRef.current?.focus();
+  }, []);
+
+  // ==================== Action button handler ====================
+
+  const handleAction = useCallback((action: ActionButton) => {
+    switch (action.action) {
+      case 'create_training_plan':
+        router.push('/plan/create' as any);
+        break;
+      case 'create_nutrition_plan':
+        router.push('/nutrition/create' as any);
+        break;
+      case 'create_event':
+        router.push('/events/create' as any);
+        break;
+      case 'view_workout':
+        router.push('/workout/log-workout' as any);
+        break;
+      case 'start_session':
+        router.push('/workout/log-workout' as any);
+        break;
+      default:
+        console.warn('Unknown action:', action.action);
+    }
+  }, [router]);
+
+  // ==================== Send with attachments ====================
+
+  const handleSend = useCallback(async () => {
+    const value = inputText.trim();
+    if (!value && pendingAttachments.length === 0) return;
+    impactLight();
+
+    const attachments = [...pendingAttachments];
+    const messageText = value || (attachments.length > 0 ? `[Attached ${attachments.length} file(s)]` : '');
+
+    setInputText('');
+    setPendingAttachments([]);
+    await sendMessage(messageText, true, attachments);
+  }, [inputText, pendingAttachments, sendMessage]);
+
   useEffect(() => {
     return () => {
       const cleanup = async () => {
@@ -224,7 +351,7 @@ export default function ChatScreen() {
     return () => clearTimeout(timeout);
   }, [messages, streamingMessage, isSending]);
 
-  const canSend = inputText.trim().length > 0 && !isSending && !isTranscribing && !isRecording && hasValidToken;
+  const canSend = (inputText.trim().length > 0 || pendingAttachments.length > 0) && !isSending && !isTranscribing && !isRecording && !isUploading && hasValidToken;
 
   const renderedMessages = useMemo(() => {
     if (messages.length === 0 && !streamingMessage) return null;
@@ -232,14 +359,22 @@ export default function ChatScreen() {
     return (
       <>
         {messages.map((message) => (
-          <MessageBubble key={message.id} text={message.text} sender={message.sender} animate={message.animate} />
+          <MessageBubble
+            key={message.id}
+            text={message.text}
+            sender={message.sender}
+            animate={message.animate}
+            attachments={(message as any).attachments}
+            onEdit={message.sender === 'user' ? handleEditMessage : undefined}
+            onAction={message.sender === 'ai' ? handleAction : undefined}
+          />
         ))}
         {isStreaming && streamingMessage ? (
-          <MessageBubble text={`${streamingMessage}▊`} sender="ai" streaming />
+          <MessageBubble text={`${streamingMessage}\u2582`} sender="ai" streaming />
         ) : null}
       </>
     );
-  }, [messages, streamingMessage, isStreaming]);
+  }, [messages, streamingMessage, isStreaming, handleEditMessage, handleAction]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -376,11 +511,50 @@ export default function ChatScreen() {
           ) : null}
         </ScrollView>
 
+        {/* Pending attachments preview */}
+        {pendingAttachments.length > 0 ? (
+          <View style={styles.pendingAttachments}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {pendingAttachments.map((att, index) => (
+                <View key={index} style={styles.pendingAttItem}>
+                  {att.type === 'image' ? (
+                    <Image source={{ uri: att.url }} style={styles.pendingAttThumb} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.pendingAttFileIcon}>
+                      <Ionicons
+                        name={att.type === 'pdf' ? 'document-text' : 'document-outline'}
+                        size={20}
+                        color={colors.teal}
+                      />
+                    </View>
+                  )}
+                  <Text style={styles.pendingAttName} numberOfLines={1}>{att.filename}</Text>
+                  <TouchableOpacity
+                    style={styles.pendingAttRemove}
+                    onPress={() => removePendingAttachment(index)}
+                  >
+                    <Ionicons name="close-circle" size={18} color={colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
+
         <View style={[styles.inputDock, { paddingBottom: tabBarHeight }]}>
-          <TouchableOpacity style={styles.attachBtn}>
-            <Ionicons name="add" size={24} color={colors.text.primary} />
+          <TouchableOpacity
+            style={[styles.attachBtn, isUploading && { opacity: 0.5 }]}
+            onPress={handleAttachPress}
+            disabled={isUploading || isSending}
+          >
+            {isUploading ? (
+              <ActivityIndicator size="small" color={colors.text.primary} />
+            ) : (
+              <Ionicons name="add" size={24} color={colors.text.primary} />
+            )}
           </TouchableOpacity>
           <TextInput
+            ref={inputRef}
             testID="chat.input"
             style={styles.input}
             placeholder={isTranscribing ? 'Transcribing voice...' : 'Type a message'}
@@ -415,13 +589,7 @@ export default function ChatScreen() {
             testID="chat.send"
             style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
             disabled={!canSend}
-            onPress={async () => {
-              const value = inputText.trim();
-              if (!value) return;
-              impactLight();
-              setInputText('');
-              await sendMessage(value, true);
-            }}
+            onPress={handleSend}
           >
             {isSending ? (
               <ActivityIndicator color={colors.text.primary} size="small" />
@@ -600,6 +768,44 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   typingText: {
     color: colors.text.secondary,
     fontSize: 12,
+  },
+  // Pending attachments preview
+  pendingAttachments: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.background.secondary,
+    backgroundColor: colors.background.primary,
+  },
+  pendingAttItem: {
+    width: 80,
+    alignItems: 'center',
+  },
+  pendingAttThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: colors.background.secondary,
+  },
+  pendingAttFileIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: colors.background.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingAttName: {
+    color: colors.text.secondary,
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: 'center',
+    width: 72,
+  },
+  pendingAttRemove: {
+    position: 'absolute',
+    top: -4,
+    right: 4,
   },
   inputDock: {
     borderTopWidth: 1,
