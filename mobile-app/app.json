@@ -29,11 +29,10 @@
         "NSSpeechRecognitionUsageDescription": "Aria uses speech recognition to let you talk to your AI coach hands-free.",
         "NSHealthShareUsageDescription": "Aria reads your health data (heart rate, sleep, workouts, steps) to personalize training insights and recovery recommendations.",
         "NSHealthUpdateUsageDescription": "Aria saves workout data to Apple Health so all your training is in one place.",
-        "UIBackgroundModes": ["fetch", "processing"]
+        "UIBackgroundModes": ["fetch"]
       },
       "entitlements": {
-        "com.apple.developer.healthkit": true,
-        "com.apple.developer.healthkit.access": ["health-records"]
+        "com.apple.developer.healthkit": true
       }
     },
     "android": {
