@@ -151,3 +151,11 @@
 - **Prevention guardrail**: All outbound fetch calls to aria-api now have explicit timeouts. The `safeQuery` wrapper in `buildUserContext` ensures individual storage query failures degrade gracefully. The 504 status code in the route handler distinguishes timeout errors from other failures.
 - **Test coverage added**: TypeScript type check passes for both mobile-backend and mobile-app. End-to-end chat test verified working after fix.
 - **Deployment/runtime caveat**: Mobile-backend must be redeployed with `--revision-suffix` to pick up the timeout and safeQuery changes. If aria-api hangs again, restarting its container revision (`az containerapp revision restart`) resolves it.
+
+## 20. Profile Photo Upload 500 — Storage Account publicNetworkAccess Disabled (2026-03-08)
+- **Symptom**: POST /api/user/public-profile returns 500 with `{"error":"Failed to upload profile image"}`. Managed identity upload fails with `AuthorizationFailure`, fallback connection string fails with `KeyBasedAuthenticationNotPermitted`.
+- **Root cause**: Storage account `stkvnx2h6p44qw4` had `publicNetworkAccess: Disabled`, which blocks ALL data plane requests including from managed identity within Azure. This was previously fixed (AGENTS.md #16 notes) but got re-disabled — likely by an Azure policy or another admin action.
+- **Exact fix**: `az storage account update --name stkvnx2h6p44qw4 --resource-group rg-tracklit-dev --public-network-access Enabled`
+- **Prevention guardrail**: Monitor storage account settings. Consider adding a health check that tests blob upload capability, or an Azure Policy assignment that enforces `publicNetworkAccess: Enabled`.
+- **Test coverage added**: Tested end-to-end upload via curl to production endpoint — returns 200 with valid SAS URL.
+- **Deployment/runtime caveat**: No code changes needed. This is an infrastructure setting. If photo uploads break again, first check `az storage account show --name stkvnx2h6p44qw4 --resource-group rg-tracklit-dev --query publicNetworkAccess`.
