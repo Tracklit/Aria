@@ -800,7 +800,7 @@ export async function generateNutritionPlan(userId: number, input: NutritionPlan
   const units = resolveUnitSystem(input.preferredUnits, userContext.profile?.units);
   const unitInstruction = getUnitInstruction(units);
 
-  const mealsCount = input.mealsPerDay || 5;
+  const mealsCount = input.mealsPerDay || (input.notes?.match(/(\d+)\s*meals?/i)?.[1] ? parseInt(input.notes.match(/(\d+)\s*meals?/i)![1], 10) : 5);
   const scheduleLines: string[] = [];
   if (input.wakeTime) scheduleLines.push(`- Wake Time: ${input.wakeTime}`);
   if (input.sleepTime) scheduleLines.push(`- Sleep Time: ${input.sleepTime}`);
@@ -851,7 +851,8 @@ ADDITIONAL INSTRUCTIONS FOR NUTRITION PLAN:
 - Ensure macros support athletic performance and recovery
 - ${unitInstruction}
 - Return ONLY a flat JSON object with title, description, calorieTarget, proteinGrams, carbsGrams, fatsGrams, and mealSuggestions fields
-- Do NOT wrap in markdown code fences or add any text outside the JSON`;
+- Do NOT wrap in markdown code fences or add any text outside the JSON
+- CRITICAL: If the user's notes request a specific number of meals, meal types, or other changes, ALWAYS follow their instructions exactly — override the default meal count and any other defaults accordingly`;
 
   try {
     // Use callAriaAPIFullContent to get the raw AI text content, bypassing the

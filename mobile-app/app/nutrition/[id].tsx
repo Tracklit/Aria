@@ -101,11 +101,20 @@ export default function NutritionPlanDetail() {
     }
     setIsAdjusting(true);
     try {
+      // Parse if user explicitly requested a meal count (e.g. "3 meals", "only 2 meals")
+      const mealCountMatch = aiInstructions.match(/(\d+)\s*meals?/i);
+      const requestedMeals = mealCountMatch ? parseInt(mealCountMatch[1], 10) : undefined;
+
       const newPlan = await generatePlan({
         activityLevel: plan.activityLevel || 'moderate',
         season: plan.season || 'in_season',
         calorieTarget: plan.calorieTarget || undefined,
-        notes: `Adjust the following existing plan: "${plan.title}" (${plan.calorieTarget} kcal, P:${plan.proteinGrams}g C:${plan.carbsGrams}g F:${plan.fatsGrams}g). User instructions: ${aiInstructions}`,
+        mealsPerDay: requestedMeals || (plan as any).mealsPerDay || undefined,
+        wakeTime: (plan as any).wakeTime || undefined,
+        sleepTime: (plan as any).sleepTime || undefined,
+        lunchTime: (plan as any).lunchTime || undefined,
+        trainingTime: (plan as any).trainingTime || undefined,
+        notes: `Adjust the following existing plan: "${plan.title}" (${plan.calorieTarget} kcal, P:${plan.proteinGrams}g C:${plan.carbsGrams}g F:${plan.fatsGrams}g, ${plan.mealSuggestions?.length || '?'} meals). User instructions: ${aiInstructions}. IMPORTANT: Follow the user's instructions exactly — they take priority over all defaults.`,
       });
       setAiInstructions('');
       setIsEditing(false);
