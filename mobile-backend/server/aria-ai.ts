@@ -1198,3 +1198,157 @@ export async function generateDashboardContent(
 
   return { greeting, subtitle, cards };
 }
+
+// ==================== AI INSIGHTS GENERATION ====================
+
+export interface AIInsight {
+  id: string;
+  type: 'encouragement' | 'recommendation' | 'warning' | 'achievement';
+  title: string;
+  message: string;
+  confidence: number;
+  priority: number;
+  actionable: boolean;
+  suggestedAction?: string;
+}
+
+export async function generateAIDashboardInsights(userId: number): Promise<AIInsight[]> {
+  const userContext = await buildUserContext(userId);
+  const contextString = formatUserContextForAI(userContext);
+
+  const insightRequest = `Based on my full athlete context below, generate 2-3 highly personalized AI coaching insights.
+
+Each insight should be specific and actionable, referencing actual data points from my profile, recent workouts, health metrics, nutrition, upcoming events, and training status. Do NOT generate generic advice.
+
+Examples of good insights:
+- "Your HRV dropped 15% this week (from 45ms to 38ms). Combined with only 5.8h sleep, consider a recovery-focused session today."
+- "You're 3 weeks out from the 100m dash. Your recent 60m splits show 7.2s avg — on pace for sub-12.0. Key focus: acceleration work."
+- "Your protein intake at 120g/day is below the 1.6g/kg target for your 80kg weight. Consider adding a post-workout shake."
+
+Return ONLY a JSON array of insights, each with these fields:
+- id: unique string
+- type: "encouragement" | "recommendation" | "warning" | "achievement"
+- title: short title (3-5 words)
+- message: detailed insight (1-2 sentences, reference specific numbers/data)
+- confidence: number 0-1
+- priority: number 1-5 (1=highest)
+- actionable: boolean
+- suggestedAction: optional action label like "View Recovery Plan" or "Adjust Nutrition"
+
+ATHLETE CONTEXT:
+${contextString}`;
+
+  const systemPrompt = buildAriaSystemPrompt() + `
+
+ADDITIONAL INSTRUCTIONS FOR INSIGHTS:
+- Generate exactly 2-3 insights
+- Each insight MUST reference specific data from the athlete context (numbers, dates, metrics)
+- Prioritize: health warnings > training recommendations > achievements > encouragement
+- Be specific, not generic — use the actual data provided
+- Return ONLY a valid JSON array, no other text`;
+
+  try {
+    const rawResponse = await callAriaAPI({
+      user_id: userId.toString(),
+      user_input: insightRequest,
+      system_prompt: systemPrompt,
+      conversation_history: [],
+    });
+
+    // Parse the JSON array from the response
+    const jsonMatch = rawResponse.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const insights = JSON.parse(jsonMatch[0]) as AIInsight[];
+      return insights.slice(0, 3);
+    }
+
+    // If we can't parse, return a context-aware fallback
+    return buildFallbackInsights(userContext);
+  } catch (error) {
+    console.error('AI insights generation failed:', error);
+    return buildFallbackInsights(userContext);
+  }
+}
+
+function buildFallbackInsights(context: UserContext): AIInsight[] {
+  const insights: AIInsight[] = [];
+
+  // Health-based insight
+  if (context.healthMetrics) {
+    const hm = context.healthMetrics;
+    if (hm.sleepDurationSeconds != null && hm.sleepDurationSeconds > 0) {
+      const sleepHours = (hm.sleepDurationSeconds / 3600).toFixed(1);
+      const isLow = hm.sleepDurationSeconds < 7 * 3600;
+      insights.push({
+        id: 'sleep-insight',
+        type: isLow ? 'warning' : 'positive' as any,
+        title: isLow ? 'Sleep Below Target' : 'Good Sleep Recovery',
+        message: isLow
+          ? `You got ${sleepHours}h of sleep last night, below the 7-8h target for optimal recovery. Consider an easier session today.`
+          : `Great recovery with ${sleepHours}h of sleep${hm.sleepEfficiency ? ` at ${Math.round(hm.sleepEfficiency * 100)}% efficiency` : ''}. You're primed for a quality session.`,
+        confidence: 0.9,
+        priority: isLow ? 1 : 3,
+        actionable: isLow,
+        suggestedAction: isLow ? 'View Recovery Tips' : undefined,
+      });
+    }
+    if (hm.hrvRmssd != null) {
+      insights.push({
+        id: 'hrv-insight',
+        type: 'recommendation',
+        title: 'HRV Status',
+        message: `Your HRV is ${hm.hrvRmssd.toFixed(0)}ms${hm.restingHeartRate ? ` with ${hm.restingHeartRate}bpm resting HR` : ''}. ${hm.hrvRmssd > 50 ? 'Good autonomic balance — ready for training.' : 'Lower than average — consider a lighter workout.'}`,
+        confidence: 0.85,
+        priority: 2,
+        actionable: true,
+        suggestedAction: 'View Recovery Metrics',
+      });
+    }
+  }
+
+  // Workout-based insight
+  if (context.recentWorkouts.length > 0) {
+    const count = context.weeklyStats?.workoutCount || 0;
+    insights.push({
+      id: 'training-insight',
+      type: 'encouragement',
+      title: 'Training Consistency',
+      message: `${count} workout${count !== 1 ? 's' : ''} this week with ${((context.weeklyStats?.totalDistance || 0) / 1609.34).toFixed(1)} miles covered. ${count >= 3 ? 'Great consistency!' : 'Keep building your training habit.'}`,
+      confidence: 0.9,
+      priority: 3,
+      actionable: false,
+    });
+  }
+
+  // Upcoming event insight
+  if (context.upcomingEvents.length > 0) {
+    const next = context.upcomingEvents[0];
+    const daysUntil = Math.ceil((new Date(next.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    insights.push({
+      id: 'event-insight',
+      type: 'recommendation',
+      title: 'Event Countdown',
+      message: `${next.name} is ${daysUntil} days away. ${daysUntil <= 7 ? 'Time to taper — reduce volume, maintain intensity.' : 'Stay consistent with your training plan.'}`,
+      confidence: 0.95,
+      priority: 1,
+      actionable: true,
+      suggestedAction: 'View Event Details',
+    });
+  }
+
+  // If no insights at all, provide a basic one from profile
+  if (insights.length === 0) {
+    insights.push({
+      id: 'welcome-insight',
+      type: 'encouragement',
+      title: 'Ready to Train',
+      message: `${context.profile?.displayName || 'Athlete'}, keep building your training data for personalized insights. Log workouts, connect health devices, and set up your nutrition plan.`,
+      confidence: 0.7,
+      priority: 5,
+      actionable: true,
+      suggestedAction: 'Complete Your Profile',
+    });
+  }
+
+  return insights.slice(0, 3);
+}

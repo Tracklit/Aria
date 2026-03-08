@@ -9,6 +9,7 @@ interface NextMealCardProps {
   calories: number;
   macros: { protein: number; carbs: number; fats: number };
   timeWindow: string;
+  isTomorrow?: boolean;
   onPress?: () => void;
 }
 
@@ -18,6 +19,7 @@ const NextMealCard = React.memo(function NextMealCard({
   calories,
   macros,
   timeWindow,
+  isTomorrow,
   onPress,
 }: NextMealCardProps) {
   const colors = useColors();
@@ -28,6 +30,12 @@ const NextMealCard = React.memo(function NextMealCard({
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {isTomorrow && (
+        <View style={styles.tomorrowBadge}>
+          <Ionicons name="calendar-outline" size={12} color="#FF9F0A" />
+          <Text style={styles.tomorrowText}>TOMORROW</Text>
+        </View>
+      )}
       <View style={styles.header}>
         <View style={[styles.iconWrap, { backgroundColor: 'rgba(76,175,80,0.15)' }]}>
           <Ionicons name="restaurant-outline" size={20} color="#4CAF50" />
@@ -67,6 +75,23 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
+  },
+  tomorrowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,159,10,0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  tomorrowText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FF9F0A',
+    letterSpacing: 0.5,
   },
   header: {
     flexDirection: 'row',

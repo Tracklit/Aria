@@ -32,6 +32,8 @@ export default function AthleteInfoScreen() {
   const isImperial = units === 'imperial';
 
   const [height, setHeight] = useState('');
+  const [heightFeet, setHeightFeet] = useState('');
+  const [heightInches, setHeightInches] = useState('');
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [activityLevel, setActivityLevel] = useState<string[]>([]);
@@ -50,14 +52,22 @@ export default function AthleteInfoScreen() {
   const [trainingFocus, setTrainingFocus] = useState<string[]>([]);
 
   useEffect(() => {
-    const heightValue = typeof profile?.height === 'number'
-      ? (isImperial ? profile.height / CM_PER_INCH : profile.height)
-      : null;
+    const heightCm = typeof profile?.height === 'number' ? profile.height : null;
+    if (isImperial && heightCm !== null) {
+      const totalInches = heightCm / CM_PER_INCH;
+      const ft = Math.floor(totalInches / 12);
+      const inches = Math.round(totalInches % 12);
+      setHeightFeet(ft > 0 ? String(ft) : '');
+      setHeightInches(String(inches));
+      setHeight(''); // not used in imperial
+    } else {
+      setHeight(heightCm !== null ? formatForInput(heightCm) : '');
+      setHeightFeet('');
+      setHeightInches('');
+    }
     const weightValue = typeof profile?.weight === 'number'
       ? (isImperial ? profile.weight / KG_PER_LB : profile.weight)
       : null;
-
-    setHeight(heightValue !== null ? formatForInput(heightValue) : '');
     setWeight(weightValue !== null ? formatForInput(weightValue) : '');
     setBodyFat(typeof profile?.bodyFatPercentage === 'number' ? formatForInput(profile.bodyFatPercentage) : '');
     setActivityLevel(profile?.activityLevel ? [profile.activityLevel] : []);
@@ -86,15 +96,22 @@ export default function AthleteInfoScreen() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const parsedHeight = height ? parseFloat(height) : null;
+      let parsedHeightCm: number | null = null;
+      if (isImperial) {
+        const ft = heightFeet ? parseInt(heightFeet, 10) : 0;
+        const inches = heightInches ? parseFloat(heightInches) : 0;
+        const totalInches = ft * 12 + inches;
+        if (totalInches > 0) parsedHeightCm = totalInches * CM_PER_INCH;
+      } else {
+        const h = height ? parseFloat(height) : null;
+        if (h !== null && Number.isFinite(h)) parsedHeightCm = h;
+      }
       const parsedWeight = weight ? parseFloat(weight) : null;
       const parsedBodyFat = bodyFat ? parseFloat(bodyFat) : null;
       const parsedSleepHours = averageSleepHours ? parseFloat(averageSleepHours) : null;
 
       await updateProfile({
-        height: parsedHeight !== null && Number.isFinite(parsedHeight)
-          ? (isImperial ? parsedHeight * CM_PER_INCH : parsedHeight)
-          : null,
+        height: parsedHeightCm,
         weight: parsedWeight !== null && Number.isFinite(parsedWeight)
           ? (isImperial ? parsedWeight * KG_PER_LB : parsedWeight)
           : null,
@@ -138,9 +155,7 @@ export default function AthleteInfoScreen() {
     );
   };
 
-  const heightUnitLabel = isImperial ? 'in' : 'cm';
   const weightUnitLabel = isImperial ? 'lb' : 'kg';
-  const heightPlaceholder = isImperial ? 'e.g. 70' : 'e.g. 180';
   const weightPlaceholder = isImperial ? 'e.g. 165' : 'e.g. 75';
 
   return (
@@ -166,17 +181,42 @@ export default function AthleteInfoScreen() {
         <View style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.label}>Height</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
-                value={height}
-                onChangeText={setHeight}
-                placeholder={heightPlaceholder}
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="numeric"
-              />
-              <Text style={styles.unitLabel}>{heightUnitLabel}</Text>
-            </View>
+            {isImperial ? (
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={heightFeet}
+                  onChangeText={setHeightFeet}
+                  placeholder="5"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="numeric"
+                  maxLength={1}
+                />
+                <Text style={styles.unitLabel}>ft</Text>
+                <TextInput
+                  style={[styles.input, { marginLeft: 12 }]}
+                  value={heightInches}
+                  onChangeText={setHeightInches}
+                  placeholder="10"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="numeric"
+                  maxLength={4}
+                />
+                <Text style={styles.unitLabel}>in</Text>
+              </View>
+            ) : (
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  value={height}
+                  onChangeText={setHeight}
+                  placeholder="e.g. 180"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="numeric"
+                />
+                <Text style={styles.unitLabel}>cm</Text>
+              </View>
+            )}
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>

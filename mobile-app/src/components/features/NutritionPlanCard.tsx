@@ -17,6 +17,8 @@ interface NutritionPlanCardProps {
     season?: string | null;
     status?: string | null;
   };
+  /** Override active state (e.g. when multiple plans have status='active' in DB) */
+  isActivePlan?: boolean;
   onPress: () => void;
   onDelete?: () => void;
   onEdit?: () => void;
@@ -25,12 +27,12 @@ interface NutritionPlanCardProps {
   onActivate?: () => void;
 }
 
-export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPress, onDelete, onEdit, onArchive, onShare, onActivate }) => {
+export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, isActivePlan, onPress, onDelete, onEdit, onArchive, onShare, onActivate }) => {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const swipeableRef = React.useRef<Swipeable>(null);
 
-  const isActive = plan.status === 'active';
+  const isActive = isActivePlan ?? (plan.status === 'active');
   const isArchived = plan.status === 'archived';
 
   const renderLeftActions = () => {
@@ -133,10 +135,10 @@ export const NutritionPlanCard: React.FC<NutritionPlanCardProps> = ({ plan, onPr
             <Text style={styles.seasonText}>{plan.season.replace('_', ' ')}</Text>
           </View>
         )}
-        {!isActive && !isArchived && onActivate && (
+        {!isActive && onActivate && (
           <TouchableOpacity style={styles.activateBtn} onPress={onActivate}>
             <Ionicons name="flash" size={14} color="#32D74B" />
-            <Text style={styles.activateBtnText}>Activate</Text>
+            <Text style={styles.activateBtnText}>Set Active</Text>
           </TouchableOpacity>
         )}
       </View>

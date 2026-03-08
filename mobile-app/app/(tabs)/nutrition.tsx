@@ -15,7 +15,7 @@ const FILTERS: FilterOption[] = ['All', 'Active', 'Archived'];
 export default function NutritionScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
-  const { plans, isLoading, fetchPlans, deletePlan, updatePlan, activatePlan } = useNutrition();
+  const { plans, activePlan, isLoading, fetchPlans, deletePlan, updatePlan, activatePlan } = useNutrition();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function NutritionScreen() {
   }, [plans, activeFilter]);
 
   const handleActivate = async (plan: NutritionPlan) => {
-    if (plan.status === 'active') return;
+    if (activePlan?.id === plan.id) return;
     Alert.alert(
       'Activate Plan',
       `Set "${plan.title}" as your active nutrition plan?`,
@@ -56,6 +56,7 @@ export default function NutritionScreen() {
   const renderItem = ({ item }: { item: NutritionPlan }) => (
     <NutritionPlanCard
       plan={item}
+      isActivePlan={activePlan?.id === item.id}
       onPress={() => router.push(`/nutrition/${item.id}`)}
       onDelete={() => {
         Alert.alert('Delete Plan', 'Are you sure?', [

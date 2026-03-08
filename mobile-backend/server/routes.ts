@@ -28,6 +28,7 @@ import {
   NutritionPlanInput,
   ProgramGenerationInput,
   generateCoachingInsightFromHealth,
+  generateAIDashboardInsights,
 } from './aria-ai';
 import { uploadFileToBlob, deleteBlob, generateBlobSasUrl, readBlobAsBuffer } from './azure-storage';
 import { parseDocument } from './document-parser';
@@ -1497,57 +1498,19 @@ export function registerRoutes(app: Express): void {
 
   app.get('/api/dashboard/state', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const ariaApiUrl = process.env.ARIA_API_URL || 'https://aria-dev-api.azurewebsites.net';
-      console.log(`Proxying dashboard state to: ${ariaApiUrl}/api/v1/dashboard/state/${req.userId}`);
-
-      const response = await fetch(`${ariaApiUrl}/api/v1/dashboard/state/${req.userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.authorization || '',
-          'X-Source': 'aria-mobile-proxy'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Python backend error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json() as { dashboard: any };
-      // Python returns { success: true, dashboard: { ... } }
-      // We expect data.dashboard to match the structure the frontend needs
-
-      // Update local storage for caching/redundancy if needed, but for now we rely on Python
-      // We might want to save the state locally for offline support later
-
-      res.json(data.dashboard);
+      const { mode, context } = await determineDashboardMode(req.userId!);
+      const dashboard = await generateDashboardContent(req.userId!, mode, context);
+      res.json(dashboard);
     } catch (error: any) {
       console.error('Get dashboard state error:', error);
-      // Fallback to basic rule-based local logic in case of failure? 
-      // For now, fail to alert us to the issue
       res.status(500).json({ error: 'Failed to fetch dashboard state' });
     }
   });
 
   app.post('/api/dashboard/generate-insights', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const ariaApiUrl = process.env.ARIA_API_URL || 'https://aria-dev-api.azurewebsites.net';
-
-      const response = await fetch(`${ariaApiUrl}/api/v1/dashboard/generate-insights/${req.userId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.authorization || '',
-          'X-Source': 'aria-mobile-proxy'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Python backend error: ${response.status}`);
-      }
-
-      const data = await response.json() as { suggestions?: any[] };
-      res.json(data.suggestions || []);
+      const insights = await generateAIDashboardInsights(req.userId!);
+      res.json({ insights, mode: 'general', greeting: '', subtitle: '', cards: [] });
     } catch (error: any) {
       console.error('Generate insights error:', error);
       res.status(500).json({ error: 'Failed to generate insights' });

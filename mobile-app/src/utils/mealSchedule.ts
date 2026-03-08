@@ -11,6 +11,7 @@ interface NextMealInfo {
   calories: number;
   macros: { protein: number; carbs: number; fats: number };
   timeWindow: string;
+  isTomorrow: boolean;
 }
 
 interface MealWindow {
@@ -58,6 +59,7 @@ export function getNextMeal(mealSuggestions: MealSuggestion[]): NextMealInfo | n
           calories: suggestion.calories,
           macros: suggestion.macros,
           timeWindow: window.label,
+          isTomorrow: false,
         };
       }
     }
@@ -73,6 +75,7 @@ export function getNextMeal(mealSuggestions: MealSuggestion[]): NextMealInfo | n
       calories: suggestion.calories,
       macros: suggestion.macros,
       timeWindow: breakfastWindow.label,
+      isTomorrow: true,
     };
   }
 

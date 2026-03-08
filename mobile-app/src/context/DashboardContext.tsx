@@ -218,23 +218,10 @@ export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children 
         lastRefresh: new Date(),
       }));
     } catch (error: any) {
-      // Gracefully fall back to a mock insight
-      const fallbackInsights: AIInsight[] = [
-        {
-          id: 'fallback-1',
-          type: 'encouragement',
-          title: 'Form Improvement',
-          message: 'Your cadence has improved by 4 BPM over the last two weeks.',
-          confidence: 0.85,
-          priority: 3,
-          actionable: true,
-          suggestedAction: 'View Form Analysis',
-        },
-      ];
-
+      // No hardcoded fallback — insights will be empty until backend responds
       setState((prev) => ({
         ...prev,
-        insights: fallbackInsights,
+        insights: [],
         isGenerating: false,
         error: null,
       }));

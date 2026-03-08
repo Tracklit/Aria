@@ -310,6 +310,7 @@ export default function DashboardScreen() {
               calories={nextMeal.calories}
               macros={nextMeal.macros}
               timeWindow={nextMeal.timeWindow}
+              isTomorrow={nextMeal.isTomorrow}
               onPress={() => router.push('/(tabs)/nutrition')}
             />
           </Animated.View>
@@ -453,18 +454,7 @@ export default function DashboardScreen() {
               <ActivityIndicator color={colors.primary} />
             </View>
           ) : (
-            (insights.slice(0, 3).length > 0
-              ? insights.slice(0, 3)
-              : [
-                  {
-                    id: 0,
-                    title: 'Form Improvement',
-                    message:
-                      'Your cadence has improved by 4 BPM over the last two weeks, reducing impact stress on your knees.',
-                    suggestedAction: 'View Form Analysis',
-                  },
-                ]
-            ).map((insight, idx) => {
+            insights.slice(0, 3).map((insight, idx) => {
               const insightColors = ['#00E676', '#00E5FF', '#7C4DFF'];
               const insightIcons: Array<keyof typeof Ionicons.glyphMap> = ['bulb-outline', 'trending-up-outline', 'fitness-outline'];
               const accent = insightColors[idx % insightColors.length];

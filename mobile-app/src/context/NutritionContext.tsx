@@ -63,10 +63,11 @@ export const NutritionProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       const plans = await apiGetPlans();
       const fetched = plans as NutritionPlan[];
+      const active = fetched.find(p => p.status === 'active') || (fetched.length > 0 ? fetched[0] : null);
       setState(prev => ({
         ...prev,
         plans: fetched,
-        activePlan: fetched.length > 0 ? fetched[0] : null,
+        activePlan: active,
         isLoading: false,
       }));
     } catch (error: any) {
@@ -118,7 +119,7 @@ export const NutritionProvider: React.FC<{ children: ReactNode }> = ({ children 
     const activated = await apiActivatePlan(id) as NutritionPlan;
     setState(prev => ({
       ...prev,
-      plans: prev.plans.map(p => p.id === id ? activated : { ...p, status: 'inactive' }),
+      plans: prev.plans.map(p => p.id === id ? activated : { ...p, status: 'archived' }),
       activePlan: activated,
     }));
   }, []);
