@@ -55,6 +55,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your camera</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Aria saves your completed workouts to Apple Health so all your training data stays in one place.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Aria needs microphone access for voice input to your AI coach.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

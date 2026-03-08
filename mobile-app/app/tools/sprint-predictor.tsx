@@ -39,7 +39,8 @@ function polynomial(coeff: { a: number; b: number; c: number }, x: number): numb
 
 /**
  * Given an input time at a specific distance, reverse-solve to find the 100m equivalent (x).
- * Iterates from 9.9 in 0.01 increments until the polynomial output exceeds the input time.
+ * Matches brianmac algorithm: iterates from 9.9 in 0.001 increments until the polynomial
+ * output meets or exceeds the input time. Uses the same precision as the original.
  */
 function solve100mEquivalent(distance: number, time: number): number | null {
   if (distance === 100) return time;
@@ -47,21 +48,25 @@ function solve100mEquivalent(distance: number, time: number): number | null {
   const coeff = COEFFICIENTS[distance];
   if (!coeff) return null;
 
-  // Determine search direction: for most distances, polynomial increases with x
-  // We iterate x from 9.9 upward and find where predicted crosses input time
+  // Match brianmac: iterate x from 9.9 upward in 0.001 steps
+  for (let x = 9.9; x <= 15.2; x += 0.001) {
+    const predicted = polynomial(coeff, x);
+    if (predicted >= time) {
+      return Math.round(x * 1000) / 1000;
+    }
+  }
+
+  // Fallback: brute-force closest match (for edge cases where polynomial decreases)
   let bestX = 9.9;
   let bestDiff = Math.abs(polynomial(coeff, bestX) - time);
-
-  for (let x = 9.9; x <= 15.2; x += 0.01) {
-    const predicted = polynomial(coeff, x);
-    const diff = Math.abs(predicted - time);
+  for (let x = 9.9; x <= 15.2; x += 0.001) {
+    const diff = Math.abs(polynomial(coeff, x) - time);
     if (diff < bestDiff) {
       bestDiff = diff;
       bestX = x;
     }
   }
-
-  return Math.round(bestX * 100) / 100;
+  return Math.round(bestX * 1000) / 1000;
 }
 
 function formatDistanceLabel(meters: number, unit: 'meters' | 'yards'): string {
