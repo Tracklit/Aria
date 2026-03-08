@@ -2171,7 +2171,8 @@ export function registerRoutes(app: Express): void {
   app.get('/api/programs', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const progs = await storage.getPrograms(req.userId!);
-      res.json(progs);
+      // Strip programFileData from list response to avoid sending large base64 blobs
+      res.json(progs.map(({ programFileData: _, ...p }: any) => p));
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch programs' });
     }
@@ -2259,7 +2260,8 @@ Competition - Meet / race day,,,,,,
         return res.status(404).json({ error: 'Program not found' });
       }
       const sessions = await storage.getProgramSessions(program.id);
-      res.json({ ...program, sessions });
+      const { programFileData: _, ...programWithoutData } = program as any;
+      res.json({ ...programWithoutData, sessions });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch program' });
     }
@@ -2297,17 +2299,38 @@ Competition - Meet / race day,,,,,,
     }
   });
 
+  // Serve program file from DB — no Azure Blob dependency
+  app.get('/api/programs/:id/file', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const program = await storage.getProgram(parseInt(req.params.id));
+      if (!program || program.userId !== req.userId!) {
+        return res.status(404).json({ error: 'Program not found' });
+      }
+      if (!program.programFileData) {
+        return res.status(404).json({ error: 'No file attached to this program' });
+      }
+      const buffer = Buffer.from(program.programFileData, 'base64');
+      res.setHeader('Content-Type', program.programFileType || 'application/octet-stream');
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Serve program file error:', error?.message?.substring(0, 200));
+      res.status(500).json({ error: 'Failed to serve file' });
+    }
+  });
+
   app.delete('/api/programs/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const existing = await storage.getProgram(parseInt(req.params.id));
       if (!existing || existing.userId !== req.userId!) {
         return res.status(404).json({ error: 'Program not found' });
       }
-      if (existing.programFileUrl) {
+      // Legacy: clean up blob if it exists (old programs before DB storage migration)
+      if (existing.programFileUrl && existing.programFileUrl.includes('blob.core.windows.net')) {
         try {
           const blobName = existing.programFileUrl.split('/').pop();
           if (blobName) await deleteBlob(blobName);
-        } catch (e) { console.error('Failed to delete blob:', e); }
+        } catch (e) { console.error('Failed to delete blob (non-critical):', e); }
       }
       await storage.deleteProgram(parseInt(req.params.id));
       res.status(204).send();
@@ -2322,20 +2345,28 @@ Competition - Meet / race day,,,,,,
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const { url, blobName } = await uploadFileToBlob(req.file.buffer, req.file.originalname, req.file.mimetype);
       const parsed = await parseDocument(req.file.buffer, req.file.mimetype);
+
+      // Store file in DB as base64 — no Azure Blob dependency (see CLAUDE.md)
+      const base64 = req.file.buffer.toString('base64');
+      const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
 
       const program = await storage.createProgram({
         userId: req.userId!,
         title: req.body.title || req.file.originalname,
         description: req.body.description || `Imported from ${req.file.originalname}`,
         isUploadedProgram: true,
-        programFileUrl: url,
+        programFileData: base64,
         programFileType: req.file.mimetype,
         textContent: parsed.text,
       });
 
-      res.status(201).json(program);
+      // Set programFileUrl to our serve endpoint (permanent, never expires)
+      const fileUrl = `${proto}://${host}/api/programs/${program.id}/file`;
+      await storage.updateProgram(program.id, { programFileUrl: fileUrl });
+
+      res.status(201).json({ ...program, programFileUrl: fileUrl });
     } catch (error) {
       console.error('File upload error:', error);
       res.status(500).json({ error: 'Failed to upload program file' });

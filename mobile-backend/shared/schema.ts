@@ -560,6 +560,7 @@ export const programs = pgTable('programs', {
   isUploadedProgram: boolean('is_uploaded_program').default(false),
   programFileUrl: varchar('program_file_url', { length: 500 }),
   programFileType: varchar('program_file_type', { length: 20 }),
+  programFileData: text('program_file_data'), // base64-encoded file bytes (DB storage to avoid Azure Blob dependency — see CLAUDE.md)
   importedFromSheet: boolean('imported_from_sheet').default(false),
   googleSheetUrl: varchar('google_sheet_url', { length: 500 }),
   isTextBased: boolean('is_text_based').default(false),

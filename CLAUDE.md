@@ -165,10 +165,19 @@ The storage account `stkvnx2h6p44qw4` has `publicNetworkAccess` periodically **d
 **Rule: Store user-uploaded files in PostgreSQL (base64 in a `text` column), not Azure Blob Storage.** Serve via a dedicated backend endpoint (e.g. `/api/user/photo/:userId`). This pattern is already used for:
 - Profile photos → `user_profiles.photoData` → `GET /api/user/photo/:userId`
 - Chat attachments → `chat_attachments.data` → `GET /api/aria/chat/attachment/:id`
+- Program files → `programs.programFileData` → `GET /api/programs/:id/file`
 
 **Still on Blob Storage (legacy, will break when policy flips):**
-- Program file uploads (`POST /api/programs/upload`) — stores URL in `programs.programFileUrl`
-- Legacy profile photo URLs (old blob URLs) — fallback SAS/proxy in GET /api/user
+- Legacy profile photo URLs (old blob URLs still in some user records)
+- Legacy program file URLs (old blob URLs still in some program records)
+
+### Blob→DB Migration Log (revert once MCAPS resolved)
+
+| Feature | Date | Old (Blob) | New (DB) | Revert path |
+|---------|------|-----------|----------|-------------|
+| Profile photos | 2026-03-08 | `profile-images` container, SAS URLs | `user_profiles.photoData` (base64) + `photoMimeType`, served via `GET /api/user/photo/:userId` | Re-enable blob upload in `POST /api/user/public-profile`, restore SAS URL generation in `azure-storage.ts`, update `GET /api/user` to return blob URL |
+| Chat attachments | 2026-03-08 | `chat-attachments` container | `chat_attachments` table (base64 `data` column), served via `GET /api/aria/chat/attachment/:id` | Re-enable blob upload in `POST /api/aria/chat/attachment`, restore blob URL in response |
+| Program files | 2026-03-08 | `programs` container, blob URL in `programFileUrl` | `programs.programFileData` (base64), served via `GET /api/programs/:id/file` | Re-enable blob upload in `POST /api/programs/upload`, restore blob URL in `programFileUrl` |
 
 **If a feature needs file storage**, use this pattern:
 1. Add a `data text` (base64) + `mime_type varchar` column to the relevant table
