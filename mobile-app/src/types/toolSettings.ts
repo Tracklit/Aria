@@ -66,7 +66,7 @@ export const DEFAULT_PHOTO_FINISH: PhotoFinishSettings = {
   frameStep: 1 / 30,
   autoPauseOnScrub: true,
   showMilliseconds: true,
-  overlayLine: 'center',
+  overlayLine: 'none',
   overlayLineStyle: 'dashed',
   overlayLineColor: 'red',
   customLinePosition: 50,

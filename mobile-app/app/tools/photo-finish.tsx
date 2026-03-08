@@ -275,19 +275,36 @@ export default function PhotoFinishScreen() {
               <VideoView player={player} style={styles.video} contentFit="contain" nativeControls={false} />
               {settings.overlayLine !== 'none' && (
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {getLinePositions(settings.overlayLine, settings.customLinePosition).map((pos, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.overlayLine,
-                        {
-                          left: `${pos}%`,
-                          borderLeftColor: LINE_COLORS[settings.overlayLineColor],
-                          borderStyle: settings.overlayLineStyle,
-                        },
-                      ]}
-                    />
-                  ))}
+                  {getLinePositions(settings.overlayLine, settings.customLinePosition).map((pos, i) =>
+                    settings.overlayLineStyle === 'dashed' ? (
+                      <View
+                        key={i}
+                        style={[styles.overlayLineContainer, { left: `${pos}%` }]}
+                      >
+                        {Array.from({ length: 60 }).map((_, j) => (
+                          <View
+                            key={j}
+                            style={{
+                              width: 2,
+                              height: j % 2 === 0 ? 8 : 6,
+                              backgroundColor: j % 2 === 0 ? LINE_COLORS[settings.overlayLineColor] : 'transparent',
+                            }}
+                          />
+                        ))}
+                      </View>
+                    ) : (
+                      <View
+                        key={i}
+                        style={[
+                          styles.overlayLineSolid,
+                          {
+                            left: `${pos}%`,
+                            backgroundColor: LINE_COLORS[settings.overlayLineColor],
+                          },
+                        ]}
+                      />
+                    )
+                  )}
                 </View>
               )}
               {isLoading && (
@@ -664,12 +681,19 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   speedTextActive: {
     color: colors.background.primary,
   },
-  overlayLine: {
+  overlayLineContainer: {
     position: 'absolute' as const,
     top: 0,
     bottom: 0,
-    width: 0,
-    borderLeftWidth: 2,
+    width: 2,
+    alignItems: 'center' as const,
+    overflow: 'hidden' as const,
+  },
+  overlayLineSolid: {
+    position: 'absolute' as const,
+    top: 0,
+    bottom: 0,
+    width: 2,
   },
   constrainedLabel: {
     flexDirection: 'row' as const,
