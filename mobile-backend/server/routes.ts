@@ -741,21 +741,33 @@ export function registerRoutes(app: Express): void {
         storage.getUserProfile(req.userId!),
         storage.getUserPreferences(req.userId!),
       ]);
-      // Generate accessible URL for profile photo
-      if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
-        const sasUrl = await generateBlobSasUrl(profile.photoUrl);
-        // If SAS generation failed (no sig= in URL), use proxy endpoint
-        if (!sasUrl.includes('skoid=')) {
+      // If photo is stored in DB, serve via our endpoint (never expires)
+      if (profile?.photoData) {
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        profile.photoUrl = `${proto}://${host}/api/user/photo/${req.userId}`;
+      } else if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
+        // Legacy: old blob-stored photos — try SAS, fallback to proxy
+        try {
+          const sasUrl = await generateBlobSasUrl(profile.photoUrl);
+          if (sasUrl.includes('skoid=')) {
+            profile.photoUrl = sasUrl;
+          } else {
+            const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+            const host = req.headers['x-forwarded-host'] || req.headers.host;
+            profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
+          }
+        } catch {
           const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
           const host = req.headers['x-forwarded-host'] || req.headers.host;
           profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
-        } else {
-          profile.photoUrl = sasUrl;
         }
       }
+      // Strip photoData from response to avoid sending base64 blob over the wire
+      const { photoData: _pd, ...profileWithoutData } = profile || {} as any;
       res.json({
         user: req.user,
-        profile,
+        profile: profile ? profileWithoutData : null,
         preferences,
       });
     } catch (error: any) {
@@ -794,19 +806,30 @@ export function registerRoutes(app: Express): void {
           : storage.getUserPreferences(req.userId!),
       ]);
 
-      // Generate accessible URL for profile photo
-      if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
-        const sasUrl = await generateBlobSasUrl(profile.photoUrl);
-        if (!sasUrl.includes('skoid=')) {
+      // Resolve photo URL: DB-stored photos get our endpoint, legacy blob URLs get SAS/proxy
+      if (profile?.photoData) {
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        profile.photoUrl = `${proto}://${host}/api/user/photo/${req.userId}`;
+      } else if (profile?.photoUrl && profile.photoUrl.includes('.blob.core.windows.net')) {
+        try {
+          const sasUrl = await generateBlobSasUrl(profile.photoUrl);
+          if (sasUrl.includes('skoid=')) {
+            profile.photoUrl = sasUrl;
+          } else {
+            const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+            const host = req.headers['x-forwarded-host'] || req.headers.host;
+            profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
+          }
+        } catch {
           const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
           const host = req.headers['x-forwarded-host'] || req.headers.host;
           profile.photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(profile.photoUrl)}`;
-        } else {
-          profile.photoUrl = sasUrl;
         }
       }
+      const { photoData: _pd, ...profileWithoutData } = profile || {} as any;
 
-      res.json({ profile, preferences });
+      res.json({ profile: profile ? profileWithoutData : null, preferences });
     } catch (error: any) {
       console.error('Update user error:', error);
       if (error.name === 'ZodError') {
@@ -831,47 +854,55 @@ export function registerRoutes(app: Express): void {
 
   // ==================== PHOTO UPLOAD ROUTE ====================
 
-  app.post('/api/user/public-profile', authMiddleware, upload.single('profileImage'), async (req: AuthenticatedRequest, res: Response) => {
-    let phase: 'storage_upload' | 'db_update' | 'sas_generation' = 'storage_upload';
+  // Serve profile photo from DB — public-cacheable, no auth needed, never expires
+  app.get('/api/user/photo/:userId', async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.userId, 10);
+      if (!userId) return res.status(400).json({ error: 'Invalid user ID' });
 
+      const profile = await storage.getUserProfile(userId);
+      if (!profile?.photoData) {
+        return res.status(404).json({ error: 'No photo' });
+      }
+
+      const buffer = Buffer.from(profile.photoData, 'base64');
+      res.setHeader('Content-Type', profile.photoMimeType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+      res.setHeader('ETag', `"photo-${userId}-${profile.updatedAt?.getTime?.() || 0}"`);
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('Serve photo error:', error?.message?.substring(0, 200));
+      res.status(500).json({ error: 'Failed to serve photo' });
+    }
+  });
+
+  app.post('/api/user/public-profile', authMiddleware, upload.single('profileImage'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No image file provided' });
       }
 
-      const { url: blobUrl } = await uploadFileToBlob(
-        req.file.buffer,
-        req.file.originalname,
-        req.file.mimetype,
-        'profile-images',
-      );
+      // Store photo as base64 directly in DB — no Azure Blob dependency
+      const base64 = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype || 'image/jpeg';
 
-      phase = 'db_update';
-      await storage.updateUserProfile(req.userId!, { photoUrl: blobUrl });
+      // Build the permanent photo URL (never expires, served from our backend)
+      const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const photoUrl = `${proto}://${host}/api/user/photo/${req.userId}`;
 
-      phase = 'sas_generation';
-      try {
-        const sasUrl = await generateBlobSasUrl(blobUrl);
-        let photoUrl = sasUrl;
-        if (!sasUrl.includes('skoid=')) {
-          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-          const host = req.headers['x-forwarded-host'] || req.headers.host;
-          photoUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
-        }
-        res.json({ profileImageUrl: photoUrl, photoUrl, success: true });
-      } catch (sasError: any) {
-        console.warn('SAS generation failed after successful upload:', sasError?.message?.substring(0, 200));
-        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-        const host = req.headers['x-forwarded-host'] || req.headers.host;
-        const proxyUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
-        res.json({ profileImageUrl: proxyUrl, photoUrl: proxyUrl, success: true });
-      }
+      await storage.updateUserProfile(req.userId!, {
+        photoUrl,
+        photoData: base64,
+        photoMimeType: mimeType,
+      });
+
+      res.json({ profileImageUrl: photoUrl, photoUrl, success: true });
     } catch (error: any) {
       console.error('Photo upload error:', {
-        phase,
-        errorCode: error?.code || error?.details?.errorCode,
         userId: req.userId,
         mimeType: req.file?.mimetype,
+        size: req.file?.buffer?.length,
         message: error?.message,
       });
       res.status(500).json({ error: 'Failed to upload profile image' });

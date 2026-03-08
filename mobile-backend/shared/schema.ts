@@ -34,6 +34,8 @@ export const userProfiles = pgTable('user_profiles', {
   userId: integer('user_id').references(() => users.id).notNull().unique(),
   displayName: varchar('display_name', { length: 100 }),
   photoUrl: varchar('photo_url', { length: 500 }),
+  photoData: text('photo_data'), // base64-encoded image bytes (profile photos stored in DB to avoid Azure Storage dependency)
+  photoMimeType: varchar('photo_mime_type', { length: 50 }),
   sport: varchar('sport', { length: 50 }), // running, track, cycling, swimming, triathlon
   experienceLevel: varchar('experience_level', { length: 50 }), // beginner, intermediate, advanced, elite
   goalTags: json('goal_tags').$type<string[]>().default([]), // ['speed', 'endurance', 'weight_loss', 'first_5k']
