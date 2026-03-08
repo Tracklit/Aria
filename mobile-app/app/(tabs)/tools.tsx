@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn, FadeInUp, FadeInRight, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useRecentTimers } from '../../src/hooks/useRecentTimers';
 
 const sprintTools = [
   {
@@ -54,10 +55,33 @@ const trainingItems = [
   },
 ];
 
+function timeAgo(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function ToolsScreen() {
   const reducedMotion = useReducedMotion();
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
+  const { recents } = useRecentTimers();
+
+  const navigateToTimer = useCallback((seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    router.push({
+      pathname: '/tools/timer',
+      params: { h: String(h), m: String(m), s: String(s) },
+    });
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -111,6 +135,32 @@ export default function ToolsScreen() {
             </TouchableOpacity>
           </Animated.View>
         ))}
+
+        {/* Recent Timers */}
+        {recents.length > 0 && (
+          <>
+            <View style={[styles.sectionHeaderRow, { marginTop: spacing.lg }]}>
+              <Ionicons name="time-outline" size={14} color={colors.text.secondary} />
+              <Text style={styles.sectionHeader}>RECENT TIMERS</Text>
+              <View style={styles.sectionLine} />
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentsRow}>
+              {recents.map((timer, index) => (
+                <Animated.View key={`${timer.seconds}-${timer.usedAt}`} entering={reducedMotion ? undefined : FadeInRight.duration(300).delay(400 + index * 50)}>
+                  <TouchableOpacity
+                    style={styles.recentCard}
+                    activeOpacity={0.7}
+                    onPress={() => navigateToTimer(timer.seconds)}
+                  >
+                    <Ionicons name="timer-outline" size={20} color={colors.primary} />
+                    <Text style={styles.recentLabel}>{timer.label}</Text>
+                    <Text style={styles.recentTime}>{timeAgo(timer.usedAt)}</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              ))}
+            </ScrollView>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -186,5 +236,27 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
     marginLeft: spacing.md,
+  },
+  recentsRow: {
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  recentCard: {
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    width: 100,
+    gap: 6,
+  },
+  recentLabel: {
+    ...typography.bodyBold,
+    color: colors.text.primary,
+    fontSize: 16,
+  },
+  recentTime: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontSize: 10,
   },
 });

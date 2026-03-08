@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Platform } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ import Animated, { useSharedValue, useAnimatedProps, withTiming, Easing, runOnJS
 import { impactLight, impactMedium, impactHeavy, notificationSuccess, selectionChanged } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useRecentTimers } from '../../src/hooks/useRecentTimers';
 
 const screenWidth = Dimensions.get('window').width;
 const ringSize = Math.min(screenWidth * 0.7, 300);
@@ -118,11 +120,22 @@ function PickerColumn({
 export default function TimerScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { addRecent } = useRecentTimers();
+  const params = useLocalSearchParams<{ h?: string; m?: string; s?: string }>();
 
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
+
+  // Apply route params from recent timer tap
+  useEffect(() => {
+    if (params.h || params.m || params.s) {
+      setHours(params.h ? parseInt(params.h, 10) || 0 : 0);
+      setMinutes(params.m ? parseInt(params.m, 10) || 0 : 0);
+      setSeconds(params.s ? parseInt(params.s, 10) || 0 : 0);
+    }
+  }, [params.h, params.m, params.s]);
   const [remainingMs, setRemainingMs] = useState(0);
   const [totalMs, setTotalMs] = useState(0);
   const [keepAwake, setKeepAwake] = useState(true);
@@ -181,6 +194,7 @@ export default function TimerScreen() {
   const startTimer = useCallback(() => {
     const total = totalFromPicker;
     if (total <= 0) return;
+    addRecent(total / 1000);
     setTotalMs(total);
     setRemainingMs(total);
     endTimeRef.current = Date.now() + total;
@@ -197,7 +211,7 @@ export default function TimerScreen() {
     }, 50);
     setTimerState('running');
     impactLight();
-  }, [totalFromPicker, progress, onTimerComplete]);
+  }, [totalFromPicker, progress, onTimerComplete, addRecent]);
 
   const pauseTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
