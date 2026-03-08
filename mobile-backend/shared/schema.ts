@@ -464,6 +464,13 @@ export const events = pgTable('events', {
   goalTime: real('goal_time'), // in seconds
   notes: text('notes'),
   priority: varchar('priority', { length: 20 }).default('medium'), // high, medium, low
+  subEvents: json('sub_events').$type<Array<{
+    name: string;
+    distance?: number;
+    distanceLabel?: string;
+    goalTime?: number;
+    notes?: string;
+  }>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
@@ -493,11 +500,32 @@ export const nutritionPlans = pgTable('nutrition_plans', {
   dailyMealPlans: json('daily_meal_plans').$type<Record<string, any[]>>(),
   createdBy: varchar('created_by', { length: 20 }).default('user'), // user, ai
   aiPromptUsed: text('ai_prompt_used'),
+  mealsPerDay: integer('meals_per_day'),
+  wakeTime: varchar('wake_time', { length: 10 }), // HH:MM
+  sleepTime: varchar('sleep_time', { length: 10 }), // HH:MM
+  lunchTime: varchar('lunch_time', { length: 10 }), // HH:MM
+  trainingTime: varchar('training_time', { length: 10 }), // HH:MM
   status: varchar('status', { length: 20 }).default('active'), // active, archived
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   userStatusIdx: index('nutrition_plans_user_status_idx').on(table.userId, table.status),
+}));
+
+// ==================== NUTRITION LOGS ====================
+
+export const nutritionLogs = pgTable('nutrition_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  nutritionPlanId: integer('nutrition_plan_id').references(() => nutritionPlans.id),
+  mealName: varchar('meal_name', { length: 100 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull(), // completed, skipped
+  date: timestamp('date').notNull(),
+  calories: integer('calories'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  userDateIdx: index('nutrition_logs_user_date_idx').on(table.userId, table.date),
 }));
 
 // ==================== PROGRAMS ====================
@@ -574,6 +602,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   races: many(races),
   events: many(events),
   nutritionPlans: many(nutritionPlans),
+  nutritionLogs: many(nutritionLogs),
   programs: many(programs),
   healthMetrics: many(healthMetrics),
 }));
@@ -694,10 +723,22 @@ export const ariaMessagesRelations = relations(ariaMessages, ({ one }) => ({
   }),
 }));
 
-export const nutritionPlansRelations = relations(nutritionPlans, ({ one }) => ({
+export const nutritionPlansRelations = relations(nutritionPlans, ({ one, many }) => ({
   user: one(users, {
     fields: [nutritionPlans.userId],
     references: [users.id],
+  }),
+  logs: many(nutritionLogs),
+}));
+
+export const nutritionLogsRelations = relations(nutritionLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [nutritionLogs.userId],
+    references: [users.id],
+  }),
+  nutritionPlan: one(nutritionPlans, {
+    fields: [nutritionLogs.nutritionPlanId],
+    references: [nutritionPlans.id],
   }),
 }));
 
@@ -783,6 +824,9 @@ export type InsertRace = typeof races.$inferInsert;
 
 export type NutritionPlan = typeof nutritionPlans.$inferSelect;
 export type InsertNutritionPlan = typeof nutritionPlans.$inferInsert;
+
+export type NutritionLog = typeof nutritionLogs.$inferSelect;
+export type InsertNutritionLog = typeof nutritionLogs.$inferInsert;
 
 export type Program = typeof programs.$inferSelect;
 export type InsertProgram = typeof programs.$inferInsert;

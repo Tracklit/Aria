@@ -24,11 +24,29 @@ function isRemoteUri(uri: string): boolean {
   return /^https?:\/\//i.test(uri);
 }
 
+/**
+ * Returns true if the URL points to the backend blob-proxy endpoint,
+ * which requires an Authorization header (unlike direct SAS URLs).
+ */
+function isProxyUri(uri: string): boolean {
+  return uri.includes('/api/blob-proxy');
+}
+
 function normalizeLocalUri(uri: string): string {
   return uri.split(/[?#]/, 1)[0];
 }
 
-export async function saveProfileImageLocally(sourceUri: string): Promise<string> {
+/**
+ * Download a remote profile image and persist it locally.
+ *
+ * @param sourceUri  Remote or local URI of the image.
+ * @param authToken  Optional JWT token. Required when the URI points at the
+ *                   backend blob-proxy endpoint (which needs Authorization).
+ */
+export async function saveProfileImageLocally(
+  sourceUri: string,
+  authToken?: string | null,
+): Promise<string> {
   if (!sourceUri) {
     throw new Error('Profile image source URI is required');
   }
@@ -46,7 +64,15 @@ export async function saveProfileImageLocally(sourceUri: string): Promise<string
   }
 
   if (isRemoteUri(sourceUri)) {
-    await File.downloadFileAsync(sourceUri, tempFile, { idempotent: true });
+    // Proxy URLs require an auth token; SAS URLs do not.
+    const headers: Record<string, string> = {};
+    if (isProxyUri(sourceUri) && authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    await File.downloadFileAsync(sourceUri, tempFile, {
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
+      idempotent: true,
+    });
   } else {
     const sourceFile = new File(normalizeLocalUri(sourceUri));
     if (!sourceFile.exists) {

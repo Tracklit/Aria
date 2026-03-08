@@ -297,9 +297,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStoredProfile(resolvedProfile),
       ]);
       if (resolvedProfile.photoUrl) {
-        saveProfileImageLocally(resolvedProfile.photoUrl).catch((cacheError) => {
-          console.warn('[Auth] Failed to refresh local profile image cache:', cacheError);
-        });
+        // Download the server photo to local cache. Once cached, update the
+        // profile in state + storage so cold starts use the local file URI
+        // instead of an expiring SAS/proxy URL.
+        saveProfileImageLocally(resolvedProfile.photoUrl, token)
+          .then((localUri) => {
+            const localProfile = { ...resolvedProfile, photoUrl: localUri };
+            setState((prev) => {
+              // Only update if the profile hasn't been changed by another action
+              // (e.g., user uploaded a new photo in the meantime).
+              if (prev.profile?.photoUrl === resolvedProfile.photoUrl) {
+                return { ...prev, profile: localProfile };
+              }
+              return prev;
+            });
+            setStoredProfile(localProfile).catch(() => {});
+          })
+          .catch((cacheError) => {
+            console.warn('[Auth] Failed to refresh local profile image cache:', cacheError);
+          });
       }
       lastFetchedAt.current = Date.now();
 
@@ -622,13 +638,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await setStoredProfile(optimisticProfile);
 
       const response = await apiUploadProfilePicture(imageUri);
-      const syncedPhotoUrl = response.photoUrl ?? response.profileImageUrl;
-      const newProfile = { ...optimisticProfile, photoUrl: syncedPhotoUrl } as UserProfile;
-      setState((prev) => ({
-        ...prev,
-        profile: newProfile,
-      }));
-      await setStoredProfile(newProfile);
+      // Upload confirmed. Keep the durable local file URI for display and
+      // storage instead of the transient SAS/proxy URL from the server,
+      // which will expire and break on cold start.
+      const _serverUrl = response.photoUrl ?? response.profileImageUrl;
+      if (__DEV__) {
+        console.log('[Auth] Photo uploaded, server URL:', _serverUrl?.substring(0, 80));
+        console.log('[Auth] Keeping local URI for display:', localPhotoUri);
+      }
+      // optimisticProfile already has localPhotoUri -- no state change needed.
+      // Stored profile already persisted above with localPhotoUri.
     } catch (error: any) {
       setState((prev) => ({
         ...prev,

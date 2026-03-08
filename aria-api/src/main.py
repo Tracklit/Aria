@@ -862,7 +862,7 @@ async def ask_aria(request: Request, req: AskRequest):
         )
 
         content = response.choices[0].message.content
-        
+
         # Parse JSON response from AI
         import json
         try:
@@ -874,7 +874,21 @@ async def ask_aria(request: Request, req: AskRequest):
                 "recommendation": content,
                 "bibliography": None
             }
-        
+
+        # Ensure response_data has required AskResponse fields.
+        # If AI returned flat JSON (e.g. nutrition plan) without analysis/recommendation,
+        # wrap the entire content as the recommendation string.
+        if "recommendation" not in response_data:
+            response_data = {
+                "analysis": response_data.get("analysis", "AI generated response"),
+                "recommendation": content,  # preserve raw AI content as recommendation
+                "bibliography": response_data.get("bibliography", None),
+            }
+        # If recommendation is a dict/list (AI returned it as object instead of string),
+        # serialize it back to a JSON string so Pydantic doesn't mangle it with str()
+        elif isinstance(response_data.get("recommendation"), (dict, list)):
+            response_data["recommendation"] = json.dumps(response_data["recommendation"])
+
         # Save AI response to conversation history
         save_conversation(
             user_id=req.user_id,
@@ -882,7 +896,7 @@ async def ask_aria(request: Request, req: AskRequest):
             role="assistant",
             message=response_data.get("recommendation", content)
         )
-        
+
         await track_usage_internal(req.user_id, "ask", len(content) // 4)
 
         return AskResponse(**response_data)

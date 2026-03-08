@@ -18,6 +18,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../src/context';
 import { useTheme } from '../src/context/ThemeContext';
 import { impactLight, selectionChanged, notificationSuccess } from '../src/utils/haptics';
+import { CountryPicker } from '../src/components/ui/CountryPicker';
+import { Country, findCountryByName } from '../src/data/countries';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../src/theme';
 import { ThemeColors } from '../src/theme/colors';
 
@@ -41,7 +43,11 @@ export default function ProfileScreen() {
     profile?.dateOfBirth ? new Date(profile.dateOfBirth) : null
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Resolve the current country value to a Country object for display
+  const selectedCountry = useMemo(() => findCountryByName(country), [country]);
 
   // Email is only editable for email/password auth users (not Apple/Google sign-in)
   const isEmailEditable = !!(user?.email && !user.email.endsWith('@privaterelay.appleid.com'));
@@ -143,14 +149,18 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Country</Text>
-            <TextInput
+            <TouchableOpacity
               testID="profile.country"
-              style={styles.input}
-              value={country}
-              onChangeText={setCountry}
-              placeholder="e.g. USA, Kenya, Jamaica"
-              placeholderTextColor={colors.text.tertiary}
-            />
+              onPress={() => { impactLight(); setShowCountryPicker(true); }}
+              style={styles.countryButton}
+            >
+              <Text style={[styles.countryText, !selectedCountry && !country && styles.countryPlaceholder]}>
+                {selectedCountry
+                  ? `${selectedCountry.flag}  ${selectedCountry.name}`
+                  : country || 'Select a country'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+            </TouchableOpacity>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Email</Text>
@@ -222,6 +232,13 @@ export default function ProfileScreen() {
             />
           )
         )}
+
+        <CountryPicker
+          value={selectedCountry?.name || country}
+          onSelect={(c: Country) => setCountry(c.name)}
+          visible={showCountryPicker}
+          onClose={() => setShowCountryPicker(false)}
+        />
 
         <TouchableOpacity
           testID="profile.save"
@@ -309,6 +326,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   inputDisabled: {
     opacity: 0.5,
+  },
+  countryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  countryText: {
+    color: colors.text.primary,
+    fontSize: 16,
+    flex: 1,
+  },
+  countryPlaceholder: {
+    color: colors.text.tertiary,
   },
   dobButton: {
     flexDirection: 'row',
