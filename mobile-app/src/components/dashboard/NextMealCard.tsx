@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors, spacing, borderRadius } from '../../theme';
 
@@ -10,7 +10,10 @@ interface NextMealCardProps {
   macros: { protein: number; carbs: number; fats: number };
   timeWindow: string;
   isTomorrow?: boolean;
+  loggedStatus?: 'completed' | 'skipped' | null;
   onPress?: () => void;
+  onComplete?: () => Promise<void>;
+  onSkip?: () => Promise<void>;
 }
 
 const NextMealCard = React.memo(function NextMealCard({
@@ -20,13 +23,33 @@ const NextMealCard = React.memo(function NextMealCard({
   macros,
   timeWindow,
   isTomorrow,
+  loggedStatus,
   onPress,
+  onComplete,
+  onSkip,
 }: NextMealCardProps) {
   const colors = useColors();
+  const [isLogging, setIsLogging] = useState(false);
+
+  const handleAction = async (action: (() => Promise<void>) | undefined) => {
+    if (!action || isLogging) return;
+    setIsLogging(true);
+    try {
+      await action();
+    } finally {
+      setIsLogging(false);
+    }
+  };
+
+  const isLogged = loggedStatus === 'completed' || loggedStatus === 'skipped';
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.background.cardSolid }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.background.cardSolid },
+        isLogged && styles.cardLogged,
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -37,12 +60,32 @@ const NextMealCard = React.memo(function NextMealCard({
         </View>
       )}
       <View style={styles.header}>
-        <View style={[styles.iconWrap, { backgroundColor: 'rgba(76,175,80,0.15)' }]}>
-          <Ionicons name="restaurant-outline" size={20} color="#4CAF50" />
+        <View style={[styles.iconWrap, {
+          backgroundColor: loggedStatus === 'completed'
+            ? 'rgba(76,175,80,0.25)'
+            : loggedStatus === 'skipped'
+              ? 'rgba(255,69,58,0.15)'
+              : 'rgba(76,175,80,0.15)',
+        }]}>
+          {loggedStatus === 'completed' ? (
+            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+          ) : loggedStatus === 'skipped' ? (
+            <Ionicons name="close-circle" size={20} color="#FF453A" />
+          ) : (
+            <Ionicons name="restaurant-outline" size={20} color="#4CAF50" />
+          )}
         </View>
         <View style={styles.headerText}>
-          <Text style={[styles.mealName, { color: colors.text.primary }]}>{meal}</Text>
-          <Text style={[styles.timeWindow, { color: colors.text.tertiary }]}>{timeWindow}</Text>
+          <Text style={[
+            styles.mealName,
+            { color: colors.text.primary },
+            loggedStatus === 'skipped' && styles.mealNameSkipped,
+          ]}>
+            {meal}
+          </Text>
+          <Text style={[styles.timeWindow, { color: colors.text.tertiary }]}>
+            {isLogged ? (loggedStatus === 'completed' ? 'Completed' : 'Skipped') : timeWindow}
+          </Text>
         </View>
         <View style={styles.caloriesWrap}>
           <Text style={[styles.caloriesValue, { color: colors.text.primary }]}>{calories}</Text>
@@ -50,7 +93,14 @@ const NextMealCard = React.memo(function NextMealCard({
         </View>
       </View>
       {foods.length > 0 && (
-        <Text style={[styles.foods, { color: colors.text.secondary }]} numberOfLines={2}>
+        <Text
+          style={[
+            styles.foods,
+            { color: colors.text.secondary },
+            loggedStatus === 'skipped' && styles.foodsSkipped,
+          ]}
+          numberOfLines={2}
+        >
           {foods.slice(0, 3).join(', ')}
         </Text>
       )}
@@ -65,6 +115,36 @@ const NextMealCard = React.memo(function NextMealCard({
           <Text style={[styles.macroText, { color: colors.orange }]}>F {macros.fats}g</Text>
         </View>
       </View>
+
+      {/* Action buttons */}
+      {!isTomorrow && !isLogged && (onComplete || onSkip) && (
+        <View style={styles.actionsRow}>
+          {isLogging ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <>
+              {onComplete && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.completeButton]}
+                  onPress={() => handleAction(onComplete)}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={18} color="#4CAF50" />
+                  <Text style={[styles.actionText, { color: '#4CAF50' }]}>Done</Text>
+                </TouchableOpacity>
+              )}
+              {onSkip && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.skipButton]}
+                  onPress={() => handleAction(onSkip)}
+                >
+                  <Ionicons name="close-circle-outline" size={18} color="#FF453A" />
+                  <Text style={[styles.actionText, { color: '#FF453A' }]}>Skip</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+      )}
     </TouchableOpacity>
   );
 });
@@ -75,6 +155,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
+  },
+  cardLogged: {
+    opacity: 0.85,
   },
   tomorrowBadge: {
     flexDirection: 'row',
@@ -112,6 +195,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  mealNameSkipped: {
+    textDecorationLine: 'line-through',
+    opacity: 0.6,
+  },
   timeWindow: {
     fontSize: 13,
     marginTop: 2,
@@ -131,6 +218,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
+  foodsSkipped: {
+    textDecorationLine: 'line-through',
+    opacity: 0.5,
+  },
   macrosRow: {
     flexDirection: 'row',
     gap: 8,
@@ -143,6 +234,30 @@ const styles = StyleSheet.create({
   },
   macroText: {
     fontSize: 12,
+    fontWeight: '600',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  completeButton: {
+    backgroundColor: 'rgba(76,175,80,0.12)',
+  },
+  skipButton: {
+    backgroundColor: 'rgba(255,69,58,0.1)',
+  },
+  actionText: {
+    fontSize: 13,
     fontWeight: '600',
   },
 });

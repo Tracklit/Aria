@@ -127,11 +127,18 @@ export async function apiRequest<T = any>(
     });
   }
 
+  // Apply a 50s timeout for chat requests, 30s for everything else
+  const isChat = path.includes('/aria/chat') || path.includes('/aria/generate');
+  const timeoutMs = isChat ? 50_000 : 30_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(url, {
       method,
       headers: requestHeaders,
       body: data ? JSON.stringify(data) : undefined,
+      signal: controller.signal,
     });
 
     if (DEBUG_API) {
@@ -202,11 +209,22 @@ export async function apiRequest<T = any>(
     }
 
     return payload as T;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      const timeoutError = new Error(
+        isChat
+          ? 'AI response is taking too long. Please try again in a moment.'
+          : 'Request timed out. Please check your connection and try again.'
+      ) as Error & { status?: number };
+      timeoutError.status = 408;
+      throw timeoutError;
+    }
     if (DEBUG_API) {
       console.log(`[API] Network error for ${method} ${path}:`, error);
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -484,9 +502,19 @@ export async function deleteConversation(conversationId: number) {
   return apiRequest(`/api/aria/conversations/${conversationId}`, { method: 'DELETE' });
 }
 
+export interface ChatAttachmentInfo {
+  url: string;
+  type: 'image' | 'pdf' | 'text' | 'document';
+  filename: string;
+  size: number;
+  mimeType: string;
+  textContent?: string;
+}
+
 export interface ChatInput {
   message: string;
   conversationId?: number;
+  attachments?: ChatAttachmentInfo[];
 }
 
 export interface ChatResponse {
@@ -496,6 +524,51 @@ export interface ChatResponse {
 
 export async function sendChatMessage(input: ChatInput): Promise<ChatResponse> {
   return apiRequest('/api/aria/chat', { method: 'POST', data: input });
+}
+
+export async function uploadChatAttachment(uri: string, filename: string): Promise<ChatAttachmentInfo> {
+  const token = await getToken();
+  const url = `${env.MOBILE_BACKEND_BASE_URL || env.API_BASE_URL}/api/aria/chat/attachment`;
+
+  const match = /\.(\w+)$/.exec(filename);
+  const extension = match?.[1]?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    pdf: 'application/pdf',
+    csv: 'text/csv',
+    txt: 'text/plain',
+  };
+  const type = extension ? (mimeMap[extension] || 'application/octet-stream') : 'application/octet-stream';
+
+  const formData = new FormData();
+  // @ts-ignore - React Native FormData supports blob-like objects
+  formData.append('file', {
+    uri,
+    name: filename,
+    type,
+  });
+
+  if (DEBUG_API) {
+    console.log(`[API] POST /api/aria/chat/attachment (multipart, ${filename})`);
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || 'Failed to upload chat attachment');
+  }
+
+  return response.json();
 }
 
 // Streaming Chat
@@ -629,6 +702,56 @@ export async function generateNutritionPlan(data: any) {
 
 export async function activateNutritionPlan(id: number) {
   return apiRequest(`/api/nutrition/plans/${id}/activate`, { method: 'POST' });
+}
+
+// ==================== NUTRITION LOGS ====================
+
+export interface NutritionLogInput {
+  nutritionPlanId?: number;
+  mealName: string;
+  status: 'completed' | 'skipped';
+  date: string;
+  calories?: number;
+  notes?: string;
+}
+
+export interface NutritionLogEntry {
+  id: number;
+  userId: number;
+  nutritionPlanId: number | null;
+  mealName: string;
+  status: string;
+  date: string;
+  calories: number | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export async function logNutritionMeal(data: NutritionLogInput): Promise<NutritionLogEntry> {
+  return apiRequest('/api/nutrition/logs', { method: 'POST', data });
+}
+
+export async function getNutritionLogs(params?: { date?: string; nutritionPlanId?: number }): Promise<NutritionLogEntry[]> {
+  const query = new URLSearchParams();
+  if (params?.date) query.set('date', params.date);
+  if (params?.nutritionPlanId) query.set('nutritionPlanId', params.nutritionPlanId.toString());
+  const qs = query.toString();
+  return apiRequest(`/api/nutrition/logs${qs ? `?${qs}` : ''}`);
+}
+
+export async function getTodaysNutritionLogs(): Promise<NutritionLogEntry[]> {
+  return apiRequest('/api/nutrition/logs/today');
+}
+
+// ==================== WORKOUT COMPLETIONS ====================
+
+export interface TodaysCompletions {
+  completedPlannedWorkoutIds: number[];
+  completedProgramSessionIds: number[];
+}
+
+export async function getTodaysWorkoutCompletions(): Promise<TodaysCompletions> {
+  return apiRequest('/api/workouts/completions/today');
 }
 
 // ==================== PROGRAMS ====================

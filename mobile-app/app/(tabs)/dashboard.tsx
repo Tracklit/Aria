@@ -23,6 +23,7 @@ import { getNextMeal } from '../../src/utils/mealSchedule';
 import { getStreakBadge } from '../../src/utils/streakDisplay';
 import { useThemedStyles, useColors, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { getTodaysWorkoutCompletions, TodaysCompletions } from '../../src/lib/api';
 import {
   HeroHeader,
   WorkoutHeroCard,
@@ -66,9 +67,11 @@ interface WorkoutCardItem {
   gradient: [string, string, string];
   plannedWorkoutId?: number;
   programId?: number;
+  programSessionId?: number;
   programTitle?: string;
   sessionTitle?: string;
   exercises?: any;
+  isCompleted?: boolean;
 }
 
 function getDisplayName(profileName?: string | null, greeting?: string) {
@@ -104,7 +107,21 @@ export default function DashboardScreen() {
 
   const { healthMetrics, readiness, getReadinessScore, connectedDevices } = useHealth();
   const hasHealthData = connectedDevices.length > 0;
-  const { activePlan: activeNutritionPlan } = useNutrition();
+  const { activePlan: activeNutritionPlan, loadTodaysLogs, todaysLogs, logMeal } = useNutrition();
+
+  const [completions, setCompletions] = useState<TodaysCompletions>({
+    completedPlannedWorkoutIds: [],
+    completedProgramSessionIds: [],
+  });
+
+  const loadCompletions = useCallback(async () => {
+    try {
+      const data = await getTodaysWorkoutCompletions();
+      setCompletions(data);
+    } catch (err) {
+      // Silently fail -- dashboard still works without completion state
+    }
+  }, []);
 
   // Always use local time-based greeting instead of API response
   const greeting = useMemo(() => {
@@ -119,12 +136,17 @@ export default function DashboardScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refreshDashboard(), hasHealthData ? getReadinessScore() : Promise.resolve()]);
+      await Promise.all([
+        refreshDashboard(),
+        hasHealthData ? getReadinessScore() : Promise.resolve(),
+        loadCompletions(),
+        loadTodaysLogs(),
+      ]);
     } finally {
       setRefreshing(false);
       impactLight();
     }
-  }, [refreshDashboard, getReadinessScore, hasHealthData]);
+  }, [refreshDashboard, getReadinessScore, hasHealthData, loadCompletions, loadTodaysLogs]);
 
   useEffect(() => {
     loadDashboard();
@@ -133,10 +155,12 @@ export default function DashboardScreen() {
     loadTodaysWorkouts();
     loadDynamicSubtitle();
     generateAIInsights();
+    loadCompletions();
+    loadTodaysLogs();
     if (hasHealthData) {
       getReadinessScore();
     }
-  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, loadDynamicSubtitle, generateAIInsights, hasHealthData, getReadinessScore]);
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, loadDynamicSubtitle, generateAIInsights, hasHealthData, getReadinessScore, loadCompletions, loadTodaysLogs]);
 
   const displayName = useMemo(
     () => getDisplayName(profile?.displayName, greeting),
@@ -149,6 +173,14 @@ export default function DashboardScreen() {
     const suggestions = activeNutritionPlan?.mealSuggestions;
     return suggestions ? getNextMeal(suggestions) : null;
   }, [activeNutritionPlan]);
+
+  const nextMealLoggedStatus = useMemo(() => {
+    if (!nextMeal) return null;
+    const match = todaysLogs.find(
+      (log) => log.mealName.toLowerCase() === nextMeal.meal.toLowerCase()
+    );
+    return match ? (match.status as 'completed' | 'skipped') : null;
+  }, [nextMeal, todaysLogs]);
 
   const streakBadge = useMemo(() => getStreakBadge(currentStreak), [currentStreak]);
 
@@ -174,6 +206,7 @@ export default function DashboardScreen() {
         description: w.description || w.notes || '',
         gradient: GRADIENT_PALETTE[gradientIdx % GRADIENT_PALETTE.length],
         plannedWorkoutId: w.id,
+        isCompleted: completions.completedPlannedWorkoutIds.includes(w.id),
       });
       gradientIdx++;
     });
@@ -187,9 +220,11 @@ export default function DashboardScreen() {
         description: s.description || getDayLabel(s.dayNumber),
         gradient: GRADIENT_PALETTE[gradientIdx % GRADIENT_PALETTE.length],
         programId: s.programId,
+        programSessionId: s.id,
         programTitle: s.programTitle,
         sessionTitle: s.title || getDayLabel(s.dayNumber),
         exercises: s.exercises,
+        isCompleted: completions.completedProgramSessionIds.includes(s.id),
       });
       gradientIdx++;
     });
@@ -206,7 +241,7 @@ export default function DashboardScreen() {
     }
 
     return items;
-  }, [todaysWorkouts, todaysProgramSessions, effectiveTheme]);
+  }, [todaysWorkouts, todaysProgramSessions, effectiveTheme, completions]);
 
   const onCarouselScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offset = e.nativeEvent.contentOffset.x;
@@ -283,6 +318,7 @@ export default function DashboardScreen() {
                   description={item.description}
                   gradient={item.gradient}
                   isEmpty={item.kind === 'empty'}
+                  isCompleted={item.isCompleted}
                   onStart={() => handleStartWorkout(item)}
                 />
               </View>
@@ -313,7 +349,16 @@ export default function DashboardScreen() {
               macros={nextMeal.macros}
               timeWindow={nextMeal.timeWindow}
               isTomorrow={nextMeal.isTomorrow}
+              loggedStatus={nextMealLoggedStatus}
               onPress={() => router.push('/(tabs)/nutrition')}
+              onComplete={async () => {
+                await logMeal(activeNutritionPlan?.id, nextMeal.meal, 'completed', nextMeal.calories);
+                impactLight();
+              }}
+              onSkip={async () => {
+                await logMeal(activeNutritionPlan?.id, nextMeal.meal, 'skipped');
+                impactLight();
+              }}
             />
           </Animated.View>
         )}

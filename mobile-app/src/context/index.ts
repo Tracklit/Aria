@@ -16,7 +16,7 @@ export type { User, UserProfile, UserPreferences } from './AuthContext';
 export type { TrainingPlan, PlannedWorkout, Workout, WorkoutSession } from './WorkoutContext';
 export type { Message, Conversation } from './ChatContext';
 export type { DashboardCard, DashboardMode } from './DashboardContext';
-export type { NutritionPlan } from './NutritionContext';
+export type { NutritionPlan, NutritionLogEntry } from './NutritionContext';
 export type { Program, ProgramSession } from './ProgramsContext';
 export type { Event } from './EventsContext';
 export type { IntegrationProvider, ConnectedDevice, ReadinessData } from './HealthContext';

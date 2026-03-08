@@ -1083,6 +1083,16 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  app.get('/api/workouts/completions/today', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const completions = await storage.getTodaysCompletions(req.userId!);
+      res.json(completions);
+    } catch (error) {
+      console.error('Error fetching today\'s completions:', error);
+      res.status(500).json({ error: 'Failed to fetch today\'s completions' });
+    }
+  });
+
   app.get('/api/workouts/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const workoutId = parseInt(req.params.id);
@@ -2819,18 +2829,6 @@ Competition - Meet / race day,,,,,,
     } catch (error) {
       console.error('Error triggering sync:', error);
       res.status(500).json({ error: 'Failed to sync' });
-    }
-  });
-
-  // ==================== WORKOUT COMPLETIONS (TODAY) ====================
-
-  app.get('/api/workouts/completions/today', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const completions = await storage.getTodaysCompletions(req.userId!);
-      res.json(completions);
-    } catch (error) {
-      console.error('Error fetching today\'s completions:', error);
-      res.status(500).json({ error: 'Failed to fetch today\'s completions' });
     }
   });
 

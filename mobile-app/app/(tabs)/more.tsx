@@ -187,6 +187,8 @@ export default function MoreScreen() {
             <SettingsRow title="Athlete Profile" icon="body-outline" onPress={() => router.push('/athlete-info')} testID="settings.athlete_profile" />
             <View style={styles.divider} />
             <SettingsRow title="Upcoming Events" icon="calendar-outline" onPress={() => router.push('/events')} testID="settings.events" />
+            <View style={styles.divider} />
+            <SettingsRow title="Nutrition Log" icon="restaurant-outline" onPress={() => router.push('/nutrition-log')} testID="settings.nutrition_log" />
           </View>
         </View>
 

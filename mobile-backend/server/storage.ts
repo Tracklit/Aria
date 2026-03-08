@@ -61,6 +61,9 @@ import {
   healthMetrics,
   HealthMetric,
   InsertHealthMetric,
+  nutritionLogs,
+  NutritionLog,
+  InsertNutritionLog,
 } from '../shared/schema';
 
 export interface IStorage {
@@ -198,6 +201,14 @@ export interface IStorage {
   updateProgramSession(id: number, data: Partial<InsertProgramSession>): Promise<ProgramSession | undefined>;
   deleteProgramSession(id: number): Promise<void>;
   deleteSessionsByProgramExcluding(programId: number, keepIds: number[]): Promise<void>;
+
+  // Nutrition Logs
+  getNutritionLogs(userId: number, date?: Date, nutritionPlanId?: number): Promise<NutritionLog[]>;
+  getTodaysNutritionLogs(userId: number): Promise<NutritionLog[]>;
+  createNutritionLog(data: InsertNutritionLog): Promise<NutritionLog>;
+
+  // Workout Completions (today)
+  getTodaysCompletions(userId: number): Promise<{ completedPlannedWorkoutIds: number[]; completedProgramSessionIds: number[] }>;
 
   // Health Metrics
   getHealthMetrics(userId: number, startDate: Date, endDate: Date): Promise<HealthMetric[]>;
@@ -981,6 +992,93 @@ export class DatabaseStorage implements IStorage {
         and(eq(programSessions.programId, programId), notInArray(programSessions.id, keepIds))
       );
     }
+  }
+
+  // ==================== NUTRITION LOGS ====================
+
+  async getNutritionLogs(userId: number, date?: Date, nutritionPlanId?: number): Promise<NutritionLog[]> {
+    const conditions = [eq(nutritionLogs.userId, userId)];
+
+    if (date) {
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+      conditions.push(gte(nutritionLogs.date, dayStart));
+      conditions.push(lte(nutritionLogs.date, dayEnd));
+    }
+
+    if (nutritionPlanId) {
+      conditions.push(eq(nutritionLogs.nutritionPlanId, nutritionPlanId));
+    }
+
+    return db.select().from(nutritionLogs)
+      .where(and(...conditions))
+      .orderBy(desc(nutritionLogs.date));
+  }
+
+  async getTodaysNutritionLogs(userId: number): Promise<NutritionLog[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return db.select().from(nutritionLogs)
+      .where(and(
+        eq(nutritionLogs.userId, userId),
+        gte(nutritionLogs.date, today),
+        lte(nutritionLogs.date, tomorrow)
+      ))
+      .orderBy(desc(nutritionLogs.date));
+  }
+
+  async createNutritionLog(data: InsertNutritionLog): Promise<NutritionLog> {
+    const [log] = await db.insert(nutritionLogs).values(data).returning();
+    return log;
+  }
+
+  // ==================== WORKOUT COMPLETIONS (TODAY) ====================
+
+  async getTodaysCompletions(userId: number): Promise<{ completedPlannedWorkoutIds: number[]; completedProgramSessionIds: number[] }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Get today's workout completions (joined with planned workouts to filter by user's active plan)
+    const activePlan = await this.getActiveTrainingPlan(userId);
+    let completedPlannedWorkoutIds: number[] = [];
+
+    if (activePlan) {
+      const completions = await db.select({
+        plannedWorkoutId: workoutCompletions.plannedWorkoutId,
+      }).from(workoutCompletions)
+        .innerJoin(plannedWorkouts, eq(workoutCompletions.plannedWorkoutId, plannedWorkouts.id))
+        .where(and(
+          eq(plannedWorkouts.planId, activePlan.id),
+          gte(plannedWorkouts.date, today),
+          lte(plannedWorkouts.date, tomorrow),
+          sql`${workoutCompletions.status} IN ('completed', 'partial')`
+        ));
+
+      completedPlannedWorkoutIds = completions.map(c => c.plannedWorkoutId);
+    }
+
+    // Get completed program sessions
+    const userPrograms = await db.select({ id: programs.id }).from(programs)
+      .where(and(eq(programs.userId, userId), eq(programs.status, 'active')));
+
+    const completedProgramSessionIds: number[] = [];
+    for (const program of userPrograms) {
+      const completedSessions = await db.select({ id: programSessions.id }).from(programSessions)
+        .where(and(
+          eq(programSessions.programId, program.id),
+          eq(programSessions.isCompleted, true)
+        ));
+      completedProgramSessionIds.push(...completedSessions.map(s => s.id));
+    }
+
+    return { completedPlannedWorkoutIds, completedProgramSessionIds };
   }
 
   // ==================== HEALTH METRICS ====================
