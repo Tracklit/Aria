@@ -92,7 +92,33 @@ HEALTH DATA COACHING RULES:
 - If HRV trending down compared to baseline: Warn about potential overtraining
 - If resting HR elevated > 5bpm above baseline: Suggest recovery day
 - Always explain WHY using actual data values (e.g., "Your HRV of 28ms is below your typical range...")
-- If no health data is connected, do NOT mention wearables or health metrics`;
+- If no health data is connected, do NOT mention wearables or health metrics
+
+ACTIONABLE BUTTONS:
+When your response naturally leads to an actionable next step the user can take in the app, include a special block at the END of your response (after all text). Only include actions when genuinely relevant.
+
+Format (each action is a JSON object on its own line between the markers):
+[ACTIONS]
+{"label": "Button Label", "action": "action_type", "params": {}}
+[/ACTIONS]
+
+Available actions:
+- {"label": "Create Training Plan", "action": "create_training_plan", "params": {"weeks": 8}} - when discussing training plans
+- {"label": "Create Nutrition Plan", "action": "create_nutrition_plan", "params": {"calorieTarget": 2800}} - when discussing nutrition
+- {"label": "Log Workout", "action": "view_workout", "params": {}} - when suggesting the user log a workout
+- {"label": "Start Session", "action": "start_session", "params": {}} - when suggesting the user do a workout now
+- {"label": "View Events", "action": "create_event", "params": {}} - when discussing upcoming races or events
+
+Rules for actions:
+- Only include 1-3 actions maximum per response
+- Only include actions that are directly relevant to the conversation
+- Do NOT include actions in every response - only when the user would benefit from a quick shortcut
+- Adjust params based on the conversation context (e.g., calorie targets, plan duration)
+
+ATTACHMENT HANDLING:
+- When a user attaches an image, acknowledge it and provide relevant coaching advice if the image relates to training (e.g., form check, race results, food photo)
+- When a user attaches a text file or CSV, analyze the content and provide insights
+- When a user attaches a PDF, acknowledge the document and discuss its contents if text was extracted`;
 }
 
 export function getCoachingStyleModifier(style?: string | null): string {
@@ -144,18 +170,28 @@ export interface UserContext {
   connectedDevices: ConnectedDevice[];
 }
 
+// Helper to make context queries resilient -- a single failing query should not break chat
+async function safeQuery<T>(query: Promise<T>, label: string, fallback: T): Promise<T> {
+  try {
+    return await query;
+  } catch (error: any) {
+    console.warn(`[buildUserContext] ${label} query failed (non-fatal):`, error?.message || error);
+    return fallback;
+  }
+}
+
 export async function buildUserContext(userId: number): Promise<UserContext> {
   const [profile, preferences, activePlan, recentWorkouts, todaysPlannedWorkout, nutritionPlans, allPrograms, upcomingEvents, latestHealthMetrics, connectedDevices] = await Promise.all([
-    storage.getUserProfile(userId),
-    storage.getUserPreferences(userId),
-    storage.getActiveTrainingPlan(userId),
-    storage.getRecentWorkouts(userId, 5),
-    storage.getTodaysPlannedWorkout(userId),
-    storage.getNutritionPlans(userId),
-    storage.getPrograms(userId),
-    storage.getUpcomingEvents(userId, 3),
-    storage.getLatestHealthMetrics(userId),
-    storage.getConnectedDevices(userId),
+    safeQuery(storage.getUserProfile(userId), 'profile', undefined),
+    safeQuery(storage.getUserPreferences(userId), 'preferences', undefined),
+    safeQuery(storage.getActiveTrainingPlan(userId), 'activePlan', undefined),
+    safeQuery(storage.getRecentWorkouts(userId, 5), 'recentWorkouts', []),
+    safeQuery(storage.getTodaysPlannedWorkout(userId), 'todaysPlannedWorkout', undefined),
+    safeQuery(storage.getNutritionPlans(userId), 'nutritionPlans', []),
+    safeQuery(storage.getPrograms(userId), 'programs', []),
+    safeQuery(storage.getUpcomingEvents(userId, 3), 'upcomingEvents', []),
+    safeQuery(storage.getLatestHealthMetrics(userId), 'healthMetrics', undefined),
+    safeQuery(storage.getConnectedDevices(userId), 'connectedDevices', []),
   ]);
 
   // Calculate weekly stats
@@ -163,7 +199,11 @@ export async function buildUserContext(userId: number): Promise<UserContext> {
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0, 0, 0, 0);
 
-  const weeklyStats = await storage.getWeeklyStats(userId, weekStart);
+  const weeklyStats = await safeQuery(
+    storage.getWeeklyStats(userId, weekStart),
+    'weeklyStats',
+    { totalDistance: 0, totalDuration: 0, workoutCount: 0, avgPace: null }
+  );
 
   const activeNutritionPlan = nutritionPlans.find(p => p.status === 'active');
   const activePrograms = allPrograms.filter(p => p.status === 'active');
@@ -512,6 +552,9 @@ export interface AriaAPIResponse {
   response?: string;
 }
 
+const ARIA_API_TIMEOUT_MS = 45_000; // 45 second timeout for aria-api calls
+const ARIA_API_STREAM_TIMEOUT_MS = 60_000; // 60 second timeout for streaming calls
+
 export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
   const requestId = Math.random().toString(36).slice(2, 8);
   const requestStart = Date.now();
@@ -523,6 +566,9 @@ export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
     conversation_history_count: request.conversation_history.length,
   });
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ARIA_API_TIMEOUT_MS);
+
   try {
     const response = await fetch(`${ARIA_API_URL}/ask`, {
       method: 'POST',
@@ -530,6 +576,7 @@ export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(request),
+      signal: controller.signal,
     });
 
     const durationMs = Date.now() - requestStart;
@@ -553,9 +600,97 @@ export async function callAriaAPI(request: AriaAPIRequest): Promise<string> {
     });
 
     return aiResponse;
-  } catch (error) {
+  } catch (error: any) {
+    const durationMs = Date.now() - requestStart;
+    if (error?.name === 'AbortError') {
+      console.error('Aria API call timed out:', {
+        request_id: requestId,
+        timeout_ms: ARIA_API_TIMEOUT_MS,
+        duration_ms: durationMs,
+      });
+      throw new Error(`Aria AI service timed out after ${ARIA_API_TIMEOUT_MS / 1000}s — the AI backend may be starting up. Please try again.`);
+    }
     console.error('Aria API call failed:', error);
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * @deprecated Use callAriaAPI instead. The aria-api /ask endpoint now properly
+ * handles flat JSON responses by wrapping them in the recommendation field.
+ */
+export async function callAriaAPIFullContent(request: AriaAPIRequest): Promise<string> {
+  const requestId = Math.random().toString(36).slice(2, 8);
+  const requestStart = Date.now();
+
+  console.log('Sending to Aria API (full content):', {
+    request_id: requestId,
+    user_id: request.user_id,
+    user_input_length: request.user_input.length,
+  });
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ARIA_API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${ARIA_API_URL}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+
+    const durationMs = Date.now() - requestStart;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Aria API error (${response.status}):`, errorText);
+      throw new Error(`Aria API returned ${response.status}`);
+    }
+
+    const data = (await response.json()) as Record<string, any>;
+
+    console.log('Aria API full content response keys:', Object.keys(data));
+
+    // The aria-api may return the nutrition plan fields at the top level if
+    // Pydantic didn't strip them, or in the recommendation field.
+    // Try to reconstruct the full AI content:
+
+    // If recommendation looks like JSON (starts with {), return it directly
+    if (data.recommendation && typeof data.recommendation === 'string') {
+      const trimmed = data.recommendation.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        console.log(`[callAriaAPIFullContent] recommendation is JSON-like, returning directly`);
+        return trimmed;
+      }
+    }
+
+    // If the response has nutrition-specific fields at the top level, serialize them
+    if (data.calorieTarget || data.mealSuggestions || data.proteinGrams) {
+      console.log(`[callAriaAPIFullContent] Found nutrition fields at top level, serializing`);
+      return JSON.stringify(data);
+    }
+
+    // Fallback: return recommendation or the full response as string
+    const fallback = data.recommendation || data.response || JSON.stringify(data);
+    console.log(`[callAriaAPIFullContent] Using fallback, length: ${fallback.length}`);
+    return fallback;
+  } catch (error: any) {
+    const durationMs = Date.now() - requestStart;
+    if (error?.name === 'AbortError') {
+      console.error('Aria API full content call timed out:', {
+        request_id: requestId,
+        timeout_ms: ARIA_API_TIMEOUT_MS,
+        duration_ms: durationMs,
+      });
+      throw new Error(`Aria AI service timed out after ${ARIA_API_TIMEOUT_MS / 1000}s — please try again.`);
+    }
+    console.error('Aria API full content call failed:', error);
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -573,10 +708,15 @@ export async function callAriaAPIStream(request: AriaAPIRequest, callbacks: Stre
     user_input_length: request.user_input.length,
   });
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ARIA_API_STREAM_TIMEOUT_MS);
+
+  try {
   const response = await fetch(`${ARIA_API_URL}/ask/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
+    signal: controller.signal,
   });
 
   if (!response.ok) {
@@ -626,6 +766,14 @@ export async function callAriaAPIStream(request: AriaAPIRequest, callbacks: Stre
 
   // If stream ended without [DONE], call onDone anyway
   callbacks.onDone();
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Aria AI streaming timed out after ${ARIA_API_STREAM_TIMEOUT_MS / 1000}s — the AI backend may be starting up. Please try again.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ==================== NUTRITION PLAN GENERATION ====================
@@ -639,6 +787,11 @@ export interface NutritionPlanInput {
   calorieTarget?: number;
   notes?: string;
   preferredUnits?: UnitSystem;
+  mealsPerDay?: number;
+  wakeTime?: string;
+  sleepTime?: string;
+  lunchTime?: string;
+  trainingTime?: string;
 }
 
 export async function generateNutritionPlan(userId: number, input: NutritionPlanInput): Promise<string> {
@@ -647,24 +800,45 @@ export async function generateNutritionPlan(userId: number, input: NutritionPlan
   const units = resolveUnitSystem(input.preferredUnits, userContext.profile?.units);
   const unitInstruction = getUnitInstruction(units);
 
+  const mealsCount = input.mealsPerDay || 5;
+  const scheduleLines: string[] = [];
+  if (input.wakeTime) scheduleLines.push(`- Wake Time: ${input.wakeTime}`);
+  if (input.sleepTime) scheduleLines.push(`- Sleep Time: ${input.sleepTime}`);
+  if (input.lunchTime) scheduleLines.push(`- Lunch Time: ${input.lunchTime}`);
+  if (input.trainingTime) scheduleLines.push(`- Training Time: ${input.trainingTime}`);
+  const scheduleSection = scheduleLines.length > 0
+    ? `\nSchedule:\n${scheduleLines.join('\n')}\n- Distribute meals evenly between wake and sleep times\n- Schedule one meal 1-2 hours before training time\n- Align meal names with their scheduled times (e.g. "Breakfast 7:00 AM")`
+    : '';
+
   const nutritionRequest = `Create a personalized nutrition plan for me with these parameters:
 - Activity Level: ${input.activityLevel || 'moderate'}
 - Season: ${input.season || 'in_season'}
 - Dietary Restrictions: ${input.dietaryRestrictions?.join(', ') || 'None'}
 - Food Preferences/Locality: ${input.locality || 'No preference'}
 - Preferred Units: ${units}
+- Meals Per Day: ${mealsCount}
 ${input.calorieTarget ? `- Target Calories: ${input.calorieTarget}` : ''}
-${input.notes ? `- Notes: ${input.notes}` : ''}
+${input.notes ? `- Notes: ${input.notes}` : ''}${scheduleSection}
 
-You MUST return your response as a JSON object with "analysis" and "recommendation" fields.
-The "recommendation" field MUST contain a JSON string (escaped) with the nutrition plan.
-The "analysis" field should be a brief summary of the plan.
+Return ONLY a JSON object with these exact fields (no markdown, no code fences, no extra text):
+{
+  "title": "Plan title",
+  "description": "Plan description",
+  "calorieTarget": 2800,
+  "proteinGrams": 180,
+  "carbsGrams": 350,
+  "fatsGrams": 80,
+  "mealSuggestions": [
+    {"meal": "Breakfast 7:00 AM", "calories": 600, "foods": ["3 eggs scrambled", "Oatmeal with banana"], "macros": {"protein": 35, "carbs": 70, "fats": 20}},
+    {"meal": "Lunch 12:30 PM", "calories": 800, "foods": ["Grilled chicken breast", "Brown rice"], "macros": {"protein": 50, "carbs": 90, "fats": 25}}
+  ]
+}
 
-Example response format:
-{"analysis": "Created a 2800 calorie plan for sprint performance", "recommendation": "{\\"title\\": \\"Sprint Athlete Nutrition Plan\\", \\"description\\": \\"A high-performance nutrition plan\\", \\"calorieTarget\\": 2800, \\"proteinGrams\\": 180, \\"carbsGrams\\": 350, \\"fatsGrams\\": 80, \\"mealSuggestions\\": [{\\"meal\\": \\"Breakfast\\", \\"calories\\": 600, \\"foods\\": [\\"3 eggs scrambled\\", \\"Oatmeal with banana\\"], \\"macros\\": {\\"protein\\": 35, \\"carbs\\": 70, \\"fats\\": 20}}]}"}
-
-The nutrition plan JSON inside "recommendation" MUST include: title, description, calorieTarget (number), proteinGrams (number), carbsGrams (number), fatsGrams (number), and mealSuggestions (array with meal, calories, foods array, and macros object with protein/carbs/fats).
-Include 4-6 meals/snacks.`;
+Rules:
+- calorieTarget, proteinGrams, carbsGrams, fatsGrams MUST be numbers (not strings)
+- mealSuggestions MUST be an array with exactly ${mealsCount} items, each having meal (string), calories (number), foods (string array), macros (object with protein/carbs/fats as numbers)
+- Each meal name should include the scheduled time if schedule info was provided (e.g. "Breakfast 7:00 AM", "Pre-Workout Snack 3:30 PM")
+- Return ONLY the JSON object, nothing else`;
 
   const systemPrompt = buildAriaSystemPrompt() + `
 
@@ -672,20 +846,24 @@ ADDITIONAL INSTRUCTIONS FOR NUTRITION PLAN:
 - Create a structured nutrition plan optimized for sprint athletes
 - Consider the athlete's activity level, season, and dietary restrictions
 - Include locally available foods when locality is specified
-- Provide 4-6 meals/snacks per day
+- Generate exactly ${mealsCount} meals/snacks per day
+- If schedule times are provided, align meals with the athlete's daily schedule
 - Ensure macros support athletic performance and recovery
 - ${unitInstruction}
-- Return your response as JSON with "analysis" and "recommendation" fields as instructed`;
+- Return ONLY a flat JSON object with title, description, calorieTarget, proteinGrams, carbsGrams, fatsGrams, and mealSuggestions fields
+- Do NOT wrap in markdown code fences or add any text outside the JSON`;
 
   try {
-    const rawResponse = await callAriaAPI({
+    // Use callAriaAPIFullContent to get the raw AI text content, bypassing the
+    // aria-api's {analysis, recommendation} envelope which strips nutrition fields.
+    const rawContent = await callAriaAPIFullContent({
       user_id: userId.toString(),
       user_input: nutritionRequest + '\n\n' + contextString,
       system_prompt: systemPrompt,
       conversation_history: [],
     });
 
-    return rawResponse;
+    return rawContent;
   } catch (error) {
     console.error('Nutrition plan generation failed:', error);
     throw new Error('Failed to generate nutrition plan');
@@ -764,14 +942,47 @@ ADDITIONAL INSTRUCTIONS FOR PROGRAM GENERATION:
 
 // ==================== CHAT HANDLER ====================
 
+export interface ChatAttachment {
+  url: string;
+  type: 'image' | 'pdf' | 'text' | 'document';
+  filename: string;
+  size: number;
+  mimeType: string;
+  textContent?: string;
+}
+
 export interface ChatInput {
   message: string;
   conversationId?: number;
+  attachments?: ChatAttachment[];
 }
 
 export interface ChatResult {
   conversationId: number;
   response: string;
+}
+
+function buildAttachmentContext(attachments: ChatAttachment[]): string {
+  if (!attachments || attachments.length === 0) return '';
+
+  const parts: string[] = ['\n\n--- ATTACHED FILES ---'];
+  for (const att of attachments) {
+    if (att.type === 'image') {
+      parts.push(`[Image attached: ${att.filename} (${(att.size / 1024).toFixed(1)} KB)]`);
+    } else if (att.type === 'text' && att.textContent) {
+      parts.push(`[Text file attached: ${att.filename}]\nContent:\n${att.textContent.slice(0, 5000)}`);
+    } else if (att.type === 'pdf') {
+      if (att.textContent) {
+        parts.push(`[PDF attached: ${att.filename}]\nExtracted text:\n${att.textContent.slice(0, 5000)}`);
+      } else {
+        parts.push(`[PDF attached: ${att.filename} (${(att.size / 1024).toFixed(1)} KB) - text extraction unavailable]`);
+      }
+    } else {
+      parts.push(`[Document attached: ${att.filename} (${(att.size / 1024).toFixed(1)} KB)]`);
+    }
+  }
+  parts.push('--- END ATTACHED FILES ---');
+  return parts.join('\n');
 }
 
 export async function handleChat(userId: number, input: ChatInput): Promise<ChatResult> {
@@ -822,8 +1033,9 @@ export async function handleChat(userId: number, input: ChatInput): Promise<Chat
   const coachingStyle = userContext.preferences?.aiCoachingStyle;
   const systemPrompt = buildAriaSystemPrompt() + getCoachingStyleModifier(coachingStyle);
 
-  // Combine user message with context
-  const userInputWithContext = `${message}\n\n${contextString}`;
+  // Combine user message with context and attachments
+  const attachmentContext = buildAttachmentContext(input.attachments || []);
+  const userInputWithContext = `${message}${attachmentContext}\n\n${contextString}`;
 
   let aiResponse: string;
 
@@ -897,7 +1109,8 @@ export async function handleChatStream(userId: number, input: ChatInput, res: im
   const contextString = formatUserContextForAI(userContext);
   const coachingStyle = userContext.preferences?.aiCoachingStyle;
   const systemPrompt = buildAriaSystemPrompt() + getCoachingStyleModifier(coachingStyle);
-  const userInputWithContext = `${message}\n\n${contextString}`;
+  const attachmentContext = buildAttachmentContext(input.attachments || []);
+  const userInputWithContext = `${message}${attachmentContext}\n\n${contextString}`;
 
   // Set SSE headers
   res.writeHead(200, {

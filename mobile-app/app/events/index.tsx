@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '../../src/context';
-import { useEvents, Event } from '../../src/context/EventsContext';
+import { useEvents, Event, SubEvent } from '../../src/context/EventsContext';
 import { impactLight, impactMedium } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
@@ -141,6 +141,27 @@ function EventCard({ event, index }: { event: Event; index: number }) {
             </View>
           ) : null}
         </View>
+
+        {/* Sub-Events */}
+        {event.subEvents && event.subEvents.length > 0 && (
+          <View style={styles.subEventsContainer}>
+            <View style={styles.subEventsDivider} />
+            <Text style={styles.subEventsLabel}>Sub-Events</Text>
+            <View style={styles.subEventsChipRow}>
+              {event.subEvents.map((se: SubEvent, idx: number) => (
+                <View key={idx} style={styles.subEventChip}>
+                  <Text style={styles.subEventChipName}>{se.name}</Text>
+                  {se.distanceLabel ? (
+                    <Text style={styles.subEventChipDetail}>{se.distanceLabel}</Text>
+                  ) : null}
+                  {se.goalTime ? (
+                    <Text style={styles.subEventChipDetail}>{formatGoalTime(se.goalTime)}</Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -348,5 +369,44 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  // Sub-events
+  subEventsContainer: {
+    marginTop: spacing.sm,
+  },
+  subEventsDivider: {
+    height: 1,
+    backgroundColor: colors.background.secondary,
+    marginBottom: spacing.sm,
+  },
+  subEventsLabel: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  subEventsChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  subEventChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primary + '12',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  subEventChipName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  subEventChipDetail: {
+    fontSize: 11,
+    color: colors.text.secondary,
   },
 });

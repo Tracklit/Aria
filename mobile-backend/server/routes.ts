@@ -206,10 +206,20 @@ const finishSessionSchema = z.object({
   workoutData: z.any().optional(),
 });
 
+const chatAttachmentSchema = z.object({
+  url: z.string(),
+  type: z.enum(['image', 'pdf', 'text', 'document']),
+  filename: z.string(),
+  size: z.number(),
+  mimeType: z.string(),
+  textContent: z.string().optional(),
+});
+
 const chatSchema = z.object({
   message: z.string(),
   conversationId: z.number().optional(),
   stream: z.boolean().optional(),
+  attachments: z.array(chatAttachmentSchema).optional(),
 });
 
 const generatePlanSchema = z.object({
@@ -248,6 +258,14 @@ const updateRaceSchema = z.object({
   ageGroupPlace: z.number().optional(),
 });
 
+const subEventSchema = z.object({
+  name: z.string(),
+  distance: z.number().optional(),
+  distanceLabel: z.string().optional(),
+  goalTime: z.number().optional(),
+  notes: z.string().optional(),
+});
+
 const createEventSchema = z.object({
   name: z.string().min(1),
   eventType: z.enum(['race', 'competition', 'meet', 'time_trial', 'tryout', 'camp', 'clinic', 'charity_run']),
@@ -258,6 +276,7 @@ const createEventSchema = z.object({
   goalTime: z.number().optional(),
   notes: z.string().optional(),
   priority: z.enum(['high', 'medium', 'low']).optional(),
+  subEvents: z.array(subEventSchema).optional(),
 });
 
 const updateEventSchema = z.object({
@@ -270,6 +289,7 @@ const updateEventSchema = z.object({
   goalTime: z.number().optional(),
   notes: z.string().optional(),
   priority: z.enum(['high', 'medium', 'low']).optional(),
+  subEvents: z.array(subEventSchema).optional(),
 });
 
 const changePasswordSchema = z.object({
@@ -344,6 +364,22 @@ const upload = multer({
   },
 });
 
+const chatAttachmentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+  fileFilter: (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const allowed = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+      'application/pdf', 'text/csv', 'text/plain',
+    ];
+    if (allowed.includes(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported file type. Allowed: images (JPG, PNG, WebP), PDF, CSV, TXT'));
+    }
+  },
+});
+
 /**
  * Parse AI JSON responses. The AI may return:
  *   1. Raw JSON: { "title": "...", ... }
@@ -387,14 +423,21 @@ function parseAIJsonResponse(aiResponse: string, label: string): any {
 }
 
 function unwrapEnvelope(parsed: any): any {
-  // If it has a recommendation string, try to parse it as nested JSON
-  if (parsed.recommendation && typeof parsed.recommendation === 'string') {
-    try {
-      const inner = JSON.parse(parsed.recommendation);
-      if (typeof inner === 'object' && inner !== null) {
-        return { ...parsed, ...inner };
-      }
-    } catch { /* not nested JSON */ }
+  if (parsed.recommendation) {
+    // Case 1: recommendation is a JSON string containing the plan
+    if (typeof parsed.recommendation === 'string') {
+      try {
+        const inner = JSON.parse(parsed.recommendation);
+        if (typeof inner === 'object' && inner !== null) {
+          return { ...parsed, ...inner, recommendation: undefined };
+        }
+      } catch { /* not nested JSON */ }
+    }
+    // Case 2: recommendation is already an object (AI returned it as nested object, not string)
+    if (typeof parsed.recommendation === 'object' && parsed.recommendation !== null) {
+      const { recommendation, ...rest } = parsed;
+      return { ...rest, ...recommendation };
+    }
   }
   return parsed;
 }
@@ -493,6 +536,11 @@ const createNutritionPlanSchema = z.object({
   fatsGrams: z.number().optional(),
   mealSuggestions: z.any().optional(),
   createdBy: z.enum(['user', 'ai']).optional(),
+  mealsPerDay: z.number().min(2).max(8).optional(),
+  wakeTime: z.string().optional(),
+  sleepTime: z.string().optional(),
+  lunchTime: z.string().optional(),
+  trainingTime: z.string().optional(),
 });
 
 const generateNutritionSchema = z.object({
@@ -504,6 +552,11 @@ const generateNutritionSchema = z.object({
   calorieTarget: z.number().optional(),
   notes: z.string().optional(),
   preferredUnits: z.enum(['imperial', 'metric']).optional(),
+  mealsPerDay: z.number().min(2).max(8).optional(),
+  wakeTime: z.string().optional(),
+  sleepTime: z.string().optional(),
+  lunchTime: z.string().optional(),
+  trainingTime: z.string().optional(),
 });
 
 const createProgramSchema2 = z.object({
@@ -1606,6 +1659,74 @@ export function registerRoutes(app: Express): void {
     }
   });
 
+  // ==================== CHAT ATTACHMENT UPLOAD ====================
+
+  app.post('/api/aria/chat/attachment', authMiddleware, chatAttachmentUpload.single('file'), async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const file = req.file;
+      const isImage = file.mimetype.startsWith('image/');
+      const isTextBased = ['text/csv', 'text/plain'].includes(file.mimetype);
+      const isPdf = file.mimetype === 'application/pdf';
+
+      // Upload to Azure blob storage
+      const { url: blobUrl } = await uploadFileToBlob(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        'chat-attachments',
+      );
+
+      // Generate accessible URL
+      let accessibleUrl: string;
+      try {
+        accessibleUrl = await generateBlobSasUrl(blobUrl);
+        if (!accessibleUrl.includes('skoid=')) {
+          const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+          const host = req.headers['x-forwarded-host'] || req.headers.host;
+          accessibleUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+        }
+      } catch {
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.headers['x-forwarded-host'] || req.headers.host;
+        accessibleUrl = `${proto}://${host}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+      }
+
+      // Extract text content for text-based files
+      let textContent: string | undefined;
+      if (isTextBased) {
+        textContent = file.buffer.toString('utf-8').slice(0, 10000);
+      } else if (isPdf) {
+        try {
+          const parsed = await parseDocument(file.buffer, file.mimetype);
+          textContent = parsed.text.slice(0, 10000);
+        } catch (e) {
+          console.warn('PDF text extraction failed:', e);
+        }
+      }
+
+      const result: Record<string, any> = {
+        url: accessibleUrl,
+        type: isImage ? 'image' : isPdf ? 'pdf' : isTextBased ? 'text' : 'document',
+        filename: file.originalname,
+        size: file.size,
+        mimeType: file.mimetype,
+      };
+
+      if (textContent) {
+        result.textContent = textContent;
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Chat attachment upload error:', error);
+      res.status(500).json({ error: 'Failed to upload attachment' });
+    }
+  });
+
   app.post('/api/aria/chat', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const data = chatSchema.parse(req.body);
@@ -1620,6 +1741,8 @@ export function registerRoutes(app: Express): void {
         console.error('Chat error:', error);
         if (error.name === 'ZodError') {
           res.status(400).json({ error: 'Invalid input', details: error.errors });
+        } else if (error.message?.includes('timed out')) {
+          res.status(504).json({ error: 'AI service is temporarily slow. Please try again in a moment.' });
         } else {
           res.status(500).json({ error: 'Failed to process chat message' });
         }
@@ -1938,21 +2061,41 @@ export function registerRoutes(app: Express): void {
       const input = generateNutritionSchema.parse(req.body);
       const aiResponse = await generateNutritionPlan(req.userId!, input);
 
+      console.log('[nutrition/generate] AI raw response length:', aiResponse.length, 'first 300:', aiResponse.substring(0, 300));
+
       const parsedPlan = parseAIJsonResponse(aiResponse, 'nutrition');
+
+      console.log('[nutrition/generate] Parsed plan keys:', Object.keys(parsedPlan));
+
+      // Validate and coerce numeric fields — AI may return strings like "2800" instead of 2800
+      const calorieTarget = typeof parsedPlan.calorieTarget === 'string' ? parseInt(parsedPlan.calorieTarget, 10) : parsedPlan.calorieTarget;
+      const proteinGrams = typeof parsedPlan.proteinGrams === 'string' ? parseFloat(parsedPlan.proteinGrams) : parsedPlan.proteinGrams;
+      const carbsGrams = typeof parsedPlan.carbsGrams === 'string' ? parseFloat(parsedPlan.carbsGrams) : parsedPlan.carbsGrams;
+      const fatsGrams = typeof parsedPlan.fatsGrams === 'string' ? parseFloat(parsedPlan.fatsGrams) : parsedPlan.fatsGrams;
+
+      if (!calorieTarget && !parsedPlan.mealSuggestions) {
+        console.error('[nutrition/generate] AI response missing required fields. Parsed:', JSON.stringify(parsedPlan).substring(0, 500));
+        return res.status(502).json({ error: 'AI returned an incomplete nutrition plan. Please try again.' });
+      }
 
       const plan = await storage.createNutritionPlan({
         userId: req.userId!,
         title: parsedPlan.title || 'AI Generated Nutrition Plan',
-        description: parsedPlan.description || parsedPlan.analysis,
+        description: parsedPlan.description || parsedPlan.analysis || null,
         activityLevel: input.activityLevel,
         season: input.season,
-        calorieTarget: parsedPlan.calorieTarget,
-        proteinGrams: parsedPlan.proteinGrams,
-        carbsGrams: parsedPlan.carbsGrams,
-        fatsGrams: parsedPlan.fatsGrams,
-        mealSuggestions: parsedPlan.mealSuggestions,
+        calorieTarget: calorieTarget || null,
+        proteinGrams: proteinGrams || null,
+        carbsGrams: carbsGrams || null,
+        fatsGrams: fatsGrams || null,
+        mealSuggestions: Array.isArray(parsedPlan.mealSuggestions) ? parsedPlan.mealSuggestions : null,
         createdBy: 'ai',
         aiPromptUsed: JSON.stringify(input),
+        mealsPerDay: input.mealsPerDay || null,
+        wakeTime: input.wakeTime || null,
+        sleepTime: input.sleepTime || null,
+        lunchTime: input.lunchTime || null,
+        trainingTime: input.trainingTime || null,
       });
 
       res.status(201).json(plan);
@@ -1961,7 +2104,8 @@ export function registerRoutes(app: Express): void {
         return res.status(400).json({ error: error.errors });
       }
       console.error('Nutrition generation error:', error);
-      res.status(500).json({ error: 'Failed to generate nutrition plan' });
+      const message = error instanceof Error ? error.message : 'Failed to generate nutrition plan';
+      res.status(500).json({ error: message });
     }
   });
 
@@ -2675,6 +2819,72 @@ Competition - Meet / race day,,,,,,
     } catch (error) {
       console.error('Error triggering sync:', error);
       res.status(500).json({ error: 'Failed to sync' });
+    }
+  });
+
+  // ==================== WORKOUT COMPLETIONS (TODAY) ====================
+
+  app.get('/api/workouts/completions/today', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const completions = await storage.getTodaysCompletions(req.userId!);
+      res.json(completions);
+    } catch (error) {
+      console.error('Error fetching today\'s completions:', error);
+      res.status(500).json({ error: 'Failed to fetch today\'s completions' });
+    }
+  });
+
+  // ==================== NUTRITION LOGS ====================
+
+  app.post('/api/nutrition/logs', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const data = z.object({
+        nutritionPlanId: z.number().optional(),
+        mealName: z.string().min(1),
+        status: z.enum(['completed', 'skipped']),
+        date: z.string(),
+        calories: z.number().optional(),
+        notes: z.string().optional(),
+      }).parse(req.body);
+
+      const log = await storage.createNutritionLog({
+        userId: req.userId!,
+        nutritionPlanId: data.nutritionPlanId ?? null,
+        mealName: data.mealName,
+        status: data.status,
+        date: new Date(data.date),
+        calories: data.calories ?? null,
+        notes: data.notes ?? null,
+      });
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Error creating nutrition log:', error);
+      res.status(500).json({ error: 'Failed to create nutrition log' });
+    }
+  });
+
+  app.get('/api/nutrition/logs', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const date = req.query.date ? new Date(req.query.date as string) : undefined;
+      const nutritionPlanId = req.query.nutritionPlanId ? parseInt(req.query.nutritionPlanId as string) : undefined;
+      const logs = await storage.getNutritionLogs(req.userId!, date, nutritionPlanId);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching nutrition logs:', error);
+      res.status(500).json({ error: 'Failed to fetch nutrition logs' });
+    }
+  });
+
+  app.get('/api/nutrition/logs/today', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const logs = await storage.getTodaysNutritionLogs(req.userId!);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching today\'s nutrition logs:', error);
+      res.status(500).json({ error: 'Failed to fetch today\'s nutrition logs' });
     }
   });
 

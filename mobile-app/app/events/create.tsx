@@ -16,10 +16,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { useEvents, Event } from '../../src/context/EventsContext';
+import { useEvents, Event, SubEvent } from '../../src/context/EventsContext';
 import { impactLight, impactMedium, notificationSuccess, notificationWarning } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
+import { useTheme } from '../../src/context/ThemeContext';
 import { ToastManager } from '../../src/components/Toast';
 
 const EVENT_TYPES = [
@@ -39,9 +40,18 @@ const PRIORITIES = [
   { value: 'low', label: 'Low', color: '#22C55E' },
 ] as const;
 
+const DISTANCE_PRESETS = ['60m', '100m', '200m', '400m', '800m', '1500m', '110mH', '400mH', 'Mile', '5K', '10K'];
+
+const SUPPORTS_SUB_EVENTS = ['competition', 'meet'];
+
+function emptySubEvent(): SubEvent {
+  return { name: '', distanceLabel: '', goalTime: undefined, notes: '' };
+}
+
 export default function CreateEventScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
+  const { effectiveTheme } = useTheme();
   const params = useLocalSearchParams<{ eventId?: string }>();
   const isEditing = !!params.eventId;
   const { events, createEvent, updateEvent, deleteEvent } = useEvents();
@@ -57,6 +67,7 @@ export default function CreateEventScreen() {
   const [notes, setNotes] = useState('');
   const [priority, setPriority] = useState('medium');
   const [isSaving, setIsSaving] = useState(false);
+  const [subEvents, setSubEvents] = useState<SubEvent[]>([]);
 
   useEffect(() => {
     if (isEditing && params.eventId) {
@@ -71,9 +82,26 @@ export default function CreateEventScreen() {
         setGoalTime(existing.goalTime ? existing.goalTime.toString() : '');
         setNotes(existing.notes || '');
         setPriority(existing.priority);
+        if (existing.subEvents && existing.subEvents.length > 0) {
+          setSubEvents(existing.subEvents);
+        }
       }
     }
   }, [isEditing, params.eventId, events]);
+
+  const addSubEvent = useCallback(() => {
+    impactLight();
+    setSubEvents(prev => [...prev, emptySubEvent()]);
+  }, []);
+
+  const removeSubEvent = useCallback((index: number) => {
+    impactLight();
+    setSubEvents(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateSubEvent = useCallback((index: number, field: keyof SubEvent, value: any) => {
+    setSubEvents(prev => prev.map((se, i) => i === index ? { ...se, [field]: value } : se));
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!name.trim()) {
@@ -83,6 +111,9 @@ export default function CreateEventScreen() {
 
     setIsSaving(true);
     try {
+      // Filter out empty sub-events
+      const validSubEvents = subEvents.filter(se => se.name.trim());
+
       const data: Partial<Event> = {
         name: name.trim(),
         eventType,
@@ -93,6 +124,7 @@ export default function CreateEventScreen() {
         goalTime: goalTime ? parseFloat(goalTime) : undefined,
         notes: notes.trim() || undefined,
         priority,
+        subEvents: validSubEvents.length > 0 ? validSubEvents : undefined,
       };
 
       if (isEditing && params.eventId) {
@@ -110,7 +142,7 @@ export default function CreateEventScreen() {
     } finally {
       setIsSaving(false);
     }
-  }, [name, eventType, date, location, distance, distanceLabel, goalTime, notes, priority, isEditing, params.eventId, createEvent, updateEvent]);
+  }, [name, eventType, date, location, distance, distanceLabel, goalTime, notes, priority, subEvents, isEditing, params.eventId, createEvent, updateEvent]);
 
   const handleDelete = useCallback(() => {
     if (!params.eventId) return;
@@ -133,6 +165,8 @@ export default function CreateEventScreen() {
       },
     ]);
   }, [params.eventId, deleteEvent]);
+
+  const showSubEventsSection = SUPPORTS_SUB_EVENTS.includes(eventType);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -213,7 +247,7 @@ export default function CreateEventScreen() {
                 setShowDatePicker(Platform.OS !== 'ios');
                 if (selectedDate) setDate(selectedDate);
               }}
-              themeVariant="dark"
+              themeVariant={effectiveTheme === 'dark' ? 'dark' : 'light'}
             />
           )}
           {Platform.OS === 'ios' && showDatePicker && (
@@ -306,6 +340,87 @@ export default function CreateEventScreen() {
             textAlignVertical="top"
           />
         </Animated.View>
+
+        {/* Sub-Events Section */}
+        {showSubEventsSection && (
+          <Animated.View entering={FadeInUp.delay(420).duration(400)}>
+            <View style={styles.subEventsHeader}>
+              <Text style={styles.label}>Sub-Events</Text>
+              <Text style={styles.subEventsHint}>Add individual races or events within this {eventType}</Text>
+            </View>
+
+            {subEvents.map((se, idx) => (
+              <View key={idx} style={styles.subEventCard}>
+                <View style={styles.subEventTopRow}>
+                  <Text style={styles.subEventIndex}>#{idx + 1}</Text>
+                  <TouchableOpacity
+                    onPress={() => removeSubEvent(idx)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={22} color={colors.red || '#EF4444'} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.subEventFieldLabel}>Event Name</Text>
+                <TextInput
+                  style={styles.subEventInput}
+                  value={se.name}
+                  onChangeText={(v) => updateSubEvent(idx, 'name', v)}
+                  placeholder="e.g. 100m Final"
+                  placeholderTextColor={colors.text.tertiary}
+                />
+
+                <Text style={styles.subEventFieldLabel}>Distance</Text>
+                <View style={styles.distancePresetsRow}>
+                  {DISTANCE_PRESETS.map(preset => (
+                    <TouchableOpacity
+                      key={preset}
+                      style={[
+                        styles.distancePresetChip,
+                        se.distanceLabel === preset && { backgroundColor: colors.primary + '25', borderColor: colors.primary },
+                      ]}
+                      onPress={() => {
+                        impactLight();
+                        updateSubEvent(idx, 'distanceLabel', se.distanceLabel === preset ? '' : preset);
+                      }}
+                    >
+                      <Text style={[
+                        styles.distancePresetText,
+                        se.distanceLabel === preset && { color: colors.primary },
+                      ]}>
+                        {preset}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.subEventFieldLabel}>Goal Time (seconds)</Text>
+                <TextInput
+                  style={styles.subEventInput}
+                  value={se.goalTime ? se.goalTime.toString() : ''}
+                  onChangeText={(v) => updateSubEvent(idx, 'goalTime', v ? parseFloat(v) : undefined)}
+                  placeholder="e.g. 10.85"
+                  placeholderTextColor={colors.text.tertiary}
+                  keyboardType="decimal-pad"
+                />
+
+                <Text style={styles.subEventFieldLabel}>Notes</Text>
+                <TextInput
+                  style={styles.subEventInput}
+                  value={se.notes || ''}
+                  onChangeText={(v) => updateSubEvent(idx, 'notes', v)}
+                  placeholder="Optional notes..."
+                  placeholderTextColor={colors.text.tertiary}
+                />
+              </View>
+            ))}
+
+            <TouchableOpacity style={styles.addSubEventButton} onPress={addSubEvent}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+              <Text style={styles.addSubEventText}>Add Sub-Event</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Save Button */}
         <Animated.View entering={FadeInUp.delay(450).duration(400)}>
@@ -469,6 +584,79 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   deleteButtonText: {
     ...typography.body,
     color: '#EF4444',
+    fontWeight: '600',
+  },
+  // Sub-events
+  subEventsHeader: {
+    marginTop: spacing.sm,
+  },
+  subEventsHint: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    marginBottom: spacing.sm,
+  },
+  subEventCard: {
+    backgroundColor: colors.background.cardSolid,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.background.secondary,
+  },
+  subEventTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  subEventIndex: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  subEventFieldLabel: {
+    ...typography.caption,
+    color: colors.text.tertiary,
+    fontWeight: '500',
+    marginBottom: 4,
+    marginTop: spacing.xs,
+  },
+  subEventInput: {
+    backgroundColor: colors.background.secondary,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    color: colors.text.primary,
+    ...typography.body,
+  },
+  distancePresetsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  distancePresetChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background.secondary,
+    borderWidth: 1,
+    borderColor: colors.background.secondary,
+  },
+  distancePresetText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  addSubEventButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.md,
+    marginTop: spacing.xs,
+  },
+  addSubEventText: {
+    ...typography.body,
+    color: colors.primary,
     fontWeight: '600',
   },
 });

@@ -21,6 +21,18 @@ function getMealIcon(mealName: string): keyof typeof Ionicons.glyphMap {
   return 'restaurant-outline';
 }
 
+// Extract time from meal name like "Breakfast 7:00 AM" -> { name: "Breakfast", time: "7:00 AM" }
+function parseMealNameAndTime(mealStr: string): { name: string; time: string | null } {
+  const timeMatch = mealStr.match(/\s+(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm))\s*$/);
+  if (timeMatch) {
+    return {
+      name: mealStr.slice(0, timeMatch.index).trim(),
+      time: timeMatch[1].trim(),
+    };
+  }
+  return { name: mealStr, time: null };
+}
+
 export default function NutritionPlanDetail() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
@@ -98,8 +110,9 @@ export default function NutritionPlanDetail() {
       setAiInstructions('');
       setIsEditing(false);
       router.replace(`/nutrition/${newPlan.id}`);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to adjust plan with AI. Please try again.');
+    } catch (error: any) {
+      const message = error?.message || 'Failed to adjust plan with AI. Please try again.';
+      Alert.alert('AI Adjustment Failed', message);
     } finally {
       setIsAdjusting(false);
     }
@@ -331,14 +344,21 @@ export default function NutritionPlanDetail() {
         {plan.mealSuggestions && plan.mealSuggestions.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Meal Plan</Text>
-            {plan.mealSuggestions.map((meal, index) => (
+            {plan.mealSuggestions.map((meal, index) => {
+              const { name: mealDisplayName, time: mealTime } = parseMealNameAndTime(meal.meal);
+              return (
               <View key={index} style={[styles.mealItem, index > 0 && styles.mealDivider]}>
                 <View style={styles.mealHeader}>
                   <View style={styles.mealNameRow}>
                     <View style={styles.mealIconBg}>
                       <Ionicons name={getMealIcon(meal.meal)} size={16} color={colors.teal} />
                     </View>
-                    <Text style={styles.mealName}>{meal.meal}</Text>
+                    <View>
+                      <Text style={styles.mealName}>{mealDisplayName}</Text>
+                      {mealTime && (
+                        <Text style={styles.mealTime}>{mealTime}</Text>
+                      )}
+                    </View>
                   </View>
                   <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
                 </View>
@@ -346,7 +366,8 @@ export default function NutritionPlanDetail() {
                   <Text key={fi} style={styles.foodItem}>• {food}</Text>
                 ))}
               </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -397,6 +418,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   mealNameRow: { flexDirection: 'row', alignItems: 'center' },
   mealIconBg: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(48, 213, 200, 0.12)', alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
   mealName: { ...typography.body, color: colors.text.primary, fontWeight: '600' },
+  mealTime: { ...typography.caption, color: colors.text.tertiary, marginTop: 1 },
   mealCalories: { ...typography.caption, color: colors.primary },
   foodItem: { ...typography.caption, color: colors.text.secondary, marginLeft: 30, marginVertical: 1 },
   // Header actions

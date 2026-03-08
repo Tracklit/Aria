@@ -6,6 +6,9 @@ import {
   deleteNutritionPlan as apiDeletePlan,
   generateNutritionPlan as apiGeneratePlan,
   activateNutritionPlan as apiActivatePlan,
+  logNutritionMeal as apiLogMeal,
+  getTodaysNutritionLogs as apiGetTodaysLogs,
+  NutritionLogEntry,
 } from '../lib/api';
 
 export interface NutritionPlan {
@@ -27,13 +30,21 @@ export interface NutritionPlan {
   }> | null;
   createdBy?: string | null;
   status?: string | null;
+  mealsPerDay?: number | null;
+  wakeTime?: string | null;
+  sleepTime?: string | null;
+  lunchTime?: string | null;
+  trainingTime?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
 
+export type { NutritionLogEntry };
+
 interface NutritionState {
   plans: NutritionPlan[];
   activePlan: NutritionPlan | null;
+  todaysLogs: NutritionLogEntry[];
   isLoading: boolean;
   error: string | null;
 }
@@ -46,6 +57,8 @@ interface NutritionContextType extends NutritionState {
   generatePlan: (input: any) => Promise<NutritionPlan>;
   setActivePlan: (plan: NutritionPlan | null) => void;
   activatePlan: (id: number) => Promise<void>;
+  logMeal: (planId: number | undefined, mealName: string, status: 'completed' | 'skipped', calories?: number) => Promise<void>;
+  loadTodaysLogs: () => Promise<void>;
 }
 
 const NutritionContext = createContext<NutritionContextType | undefined>(undefined);
@@ -54,6 +67,7 @@ export const NutritionProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [state, setState] = useState<NutritionState>({
     plans: [],
     activePlan: null,
+    todaysLogs: [],
     isLoading: false,
     error: null,
   });
@@ -124,8 +138,44 @@ export const NutritionProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   }, []);
 
+  const loadTodaysLogs = useCallback(async () => {
+    try {
+      const logs = await apiGetTodaysLogs();
+      setState(prev => ({ ...prev, todaysLogs: logs }));
+    } catch (error: any) {
+      console.error('Failed to load today\'s nutrition logs:', error.message);
+    }
+  }, []);
+
+  const logMeal = useCallback(async (
+    planId: number | undefined,
+    mealName: string,
+    status: 'completed' | 'skipped',
+    calories?: number,
+  ) => {
+    const log = await apiLogMeal({
+      nutritionPlanId: planId,
+      mealName,
+      status,
+      date: new Date().toISOString(),
+      calories,
+    });
+    setState(prev => ({ ...prev, todaysLogs: [log, ...prev.todaysLogs] }));
+  }, []);
+
   return (
-    <NutritionContext.Provider value={{ ...state, fetchPlans, createPlan, updatePlan, deletePlan, generatePlan, setActivePlan, activatePlan }}>
+    <NutritionContext.Provider value={{
+      ...state,
+      fetchPlans,
+      createPlan,
+      updatePlan,
+      deletePlan,
+      generatePlan,
+      setActivePlan,
+      activatePlan,
+      logMeal,
+      loadTodaysLogs,
+    }}>
       {children}
     </NutritionContext.Provider>
   );

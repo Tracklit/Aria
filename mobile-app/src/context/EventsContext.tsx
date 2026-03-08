@@ -6,6 +6,14 @@ import {
   deleteEvent as apiDeleteEvent,
 } from '../lib/api';
 
+export interface SubEvent {
+  name: string;
+  distance?: number;
+  distanceLabel?: string;
+  goalTime?: number;
+  notes?: string;
+}
+
 export interface Event {
   id: number;
   userId: number;
@@ -18,6 +26,7 @@ export interface Event {
   goalTime?: number;
   notes?: string;
   priority: string;
+  subEvents?: SubEvent[];
   createdAt: string;
   updatedAt: string;
 }
