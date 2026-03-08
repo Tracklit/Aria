@@ -98,6 +98,7 @@ export default function DashboardScreen() {
     loadDashboard,
     loadPatterns,
     loadDynamicSubtitle,
+    generateAIInsights,
     refreshDashboard,
   } = useDashboard();
 
@@ -131,10 +132,11 @@ export default function DashboardScreen() {
     loadTodaysWorkout();
     loadTodaysWorkouts();
     loadDynamicSubtitle();
+    generateAIInsights();
     if (hasHealthData) {
       getReadinessScore();
     }
-  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, loadDynamicSubtitle, hasHealthData, getReadinessScore]);
+  }, [loadDashboard, loadPatterns, loadTodaysWorkout, loadTodaysWorkouts, loadDynamicSubtitle, generateAIInsights, hasHealthData, getReadinessScore]);
 
   const displayName = useMemo(
     () => getDisplayName(profile?.displayName, greeting),
