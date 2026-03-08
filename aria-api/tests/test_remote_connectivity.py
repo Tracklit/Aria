@@ -17,7 +17,7 @@ MOBILE_API_BASE_URL = os.getenv(
 ).rstrip("/")
 AI_API_BASE_URL = os.getenv(
     "AI_API_BASE_URL",
-    "https://aria-dev-api.azurewebsites.net",
+    "https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io",
 ).rstrip("/")
 
 

@@ -12,13 +12,13 @@
       "value": "westus"
     },
     "keyVaultName": {
-      "value": "kv-tracklit-dev-kvnx2h"
+      "value": "kv-ariaprodhw63c3"
     },
     "postgresServerName": {
-      "value": "pg-tracklit-dev-kvnx2h"
+      "value": "pg-tracklit-prod-tnrusd"
     },
     "redisCacheName": {
-      "value": "redis-tracklit-dev-kvnx2h"
+      "value": "redis-tracklit-prod-tnrusd"
     },
     "appServicePlanSku": {
       "value": "B2"
@@ -36,7 +36,7 @@
       "value": ""
     },
     "appInsightsWorkspaceId": {
-      "value": "log-tracklit-dev-kvnx2h"
+      "value": "log-aria-prod-hw63c3"
     },
     "azureCommunicationConnectionString": {
       "value": ""
@@ -48,7 +48,7 @@
       "value": ""
     },
     "storageAccountName": {
-      "value": "ariastoragekvnx2h"
+      "value": "stariaprodhw63c3"
     },
     "azureSpeechKey": {
       "value": ""

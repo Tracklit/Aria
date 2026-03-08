@@ -16,36 +16,38 @@ The mobile app talks to both backends: mobile-backend handles CRUD/auth, aria-ap
 
 | Service | URL |
 |---------|-----|
-| **aria-api (prod)** | `https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io` |
-| **mobile-backend (prod)** | `https://ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io` |
-| **aria-api (dev, often down)** | `https://aria-dev-api.azurewebsites.net` |
+| **aria-api (prod)** | `https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io` |
+| **mobile-backend (prod)** | `https://ca-aria-mobile-prod.calmcliff-31ba567d.westus.azurecontainerapps.io` |
 
-**Always use the prod aria-api URL** for AI generation (nutrition plans, programs, chat). The dev API is frequently down.
+**Always use the prod aria-api URL** for AI generation (nutrition plans, programs, chat).
 
 ### Manual Deployment (Docker + ACR)
 
 **Never use GitHub Actions for deployment.** Always deploy manually:
 
 ```bash
-# 1. Switch to dev subscription (where ACR + container apps live)
-az account set --subscription "ME-MngEnvMCAP568620-anrugama-dev"
-az acr login --name tracklitdevkvnx2h
+# 1. Switch to prod subscription (where ACR + container apps live)
+az account set --subscription "c38ed438-eaf7-426e-b932-32853a0110c2"
+az acr login --name acrariaprodvse
 
 # 2. Build for linux/amd64 and push to ACR
 docker buildx build --platform linux/amd64 -f mobile-backend/Dockerfile mobile-backend \
-  -t tracklitdevkvnx2h.azurecr.io/aria-mobile-app:latest --push
+  -t acrariaprodvse.azurecr.io/aria-mobile-app:latest --push
 
 # 3. Deploy to Container App
 az containerapp update --name ca-aria-mobile-prod --resource-group rg-aria-prod \
-  --image tracklitdevkvnx2h.azurecr.io/aria-mobile-app:latest
+  --image acrariaprodvse.azurecr.io/aria-mobile-app:latest \
+  --revision-suffix "deploy-$(date +%s)"
 ```
 
 Key details:
-- ACR and container apps are both in `ME-MngEnvMCAP568620-anrugama-dev` subscription
-- Resource group: `rg-aria-prod` (despite being in dev subscription)
+- ACR, container apps, and most resources are in subscription `c38ed438-eaf7-426e-b932-32853a0110c2`
+- PostgreSQL and Redis are in `rg-tracklit-prod` (subscription `7216c616-e53d-4d67-a328-eb3acea66383`)
+- Resource group: `rg-aria-prod`
 - Must build with `--platform linux/amd64` (macOS builds ARM by default)
-- ACR registry: `tracklitdevkvnx2h.azurecr.io`
+- ACR registry: `acrariaprodvse.azurecr.io`
 - Mobile backend image: `aria-mobile-app`, AI API image: `aria-api`
+- Always use `--revision-suffix` to force a new revision when deploying with `latest` tag
 
 ## Development Commands
 
@@ -143,7 +145,7 @@ docker build -f mobile-backend/Dockerfile mobile-backend
 
 GitHub Actions (`.github/workflows/ci-cd.yml`) triggers on push/PR to `main` or `develop`:
 1. **test** — Postgres 15 + Redis 7 services, Python 3.11, pytest with coverage
-2. **build** — Docker images pushed to Azure ACR (`tracklitdevkvnx2h.azurecr.io`)
+2. **build** — Docker images pushed to Azure ACR (`acrariaprodvse.azurecr.io`)
 3. **deploy-staging** — `develop` branch → Azure staging
 4. **deploy-production** — `main` branch → Azure production
 
@@ -151,16 +153,13 @@ CI image names: `aria-api` (API), `aria-mobile-app` (mobile backend).
 
 ## Critical Deployment Rules
 
-Read `ARIA-DEV-API-OPS.md` before touching deployment. Key rules:
-
-- **Pinned image tag**: aria-api uses `main-20f8ab7`, NOT `latest` (latest was overwritten by a mobile image)
-- **B1 plan minimum**: Free tier causes 503 quota errors under normal usage
-- **Production dependency**: TrackLit prod backend (`app-tracklit-prod-tnrusd`) calls aria-dev-api for Sprinthia AI chat — downtime breaks prod for all users
-- **ACR password**: `DOCKER_REGISTRY_SERVER_PASSWORD` must be set or container pull fails
+- **Revision suffix required**: When redeploying with same `latest` tag, must add `--revision-suffix "name-$(date +%s)"` to force a new revision
+- **Prod ACR**: All images go to `acrariaprodvse.azurecr.io` (prod subscription `c38ed438-...`)
+- **Legacy dev API**: `aria-dev-api.azurewebsites.net` is deprecated — see `ARIA-DEV-API-OPS.md` for history
 
 ## Azure Blob Storage — DO NOT USE for new features
 
-The storage account `stkvnx2h6p44qw4` has `publicNetworkAccess` periodically **disabled by `MCAPSGov-AutomationApp`** (Microsoft MCAPS governance automation). This blocks ALL data plane operations — uploads, downloads, SAS URLs, and even managed identity access — causing 500 errors.
+The legacy dev storage account `stkvnx2h6p44qw4` had `publicNetworkAccess` periodically **disabled by `MCAPSGov-AutomationApp`** (Microsoft MCAPS governance automation). Production now uses `stariaprodhw63c3` in `rg-aria-prod`, but the DB-storage pattern should still be preferred for reliability.
 
 **Rule: Store user-uploaded files in PostgreSQL (base64 in a `text` column), not Azure Blob Storage.** Serve via a dedicated backend endpoint (e.g. `/api/user/photo/:userId`). This pattern is already used for:
 - Profile photos → `user_profiles.photoData` → `GET /api/user/photo/:userId`

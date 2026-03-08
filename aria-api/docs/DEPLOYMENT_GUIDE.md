@@ -228,7 +228,7 @@ Use the included `deploy-aria.ps1` script for manual deployments.
 # Deploy to development
 .\deploy-aria.ps1 `
   -ResourceGroup "rg-aria-dev" `
-  -AppName "aria-dev-api" `
+  -AppName "ca-aria-api-prod" `
   -Environment "dev"
 
 # Deploy to production (with tests)

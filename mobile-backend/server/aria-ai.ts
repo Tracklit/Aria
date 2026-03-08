@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import { User, UserProfile, UserPreferences, TrainingPlan, Workout, NutritionPlan, Program, Event, HealthMetric, ConnectedDevice } from '../shared/schema';
 
-const ARIA_API_URL = process.env.ARIA_API_URL || 'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
+const ARIA_API_URL = process.env.ARIA_API_URL || 'https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io';
 const METERS_PER_MILE = 1609.34;
 const METERS_PER_KILOMETER = 1000;
 type UnitSystem = 'imperial' | 'metric';

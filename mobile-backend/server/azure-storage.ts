@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 const storageAccountName =
   process.env.AZURE_STORAGE_ACCOUNT ||
   process.env.AZURE_STORAGE_ACCOUNT_NAME ||
-  'stkvnx2h6p44qw4';
+  'stariaprodhw63c3';
 const containerName =
   process.env.AZURE_STORAGE_CONTAINER ||
   process.env.AZURE_STORAGE_CONTAINER_NAME ||

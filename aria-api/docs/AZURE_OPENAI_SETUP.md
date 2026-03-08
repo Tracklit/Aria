@@ -23,7 +23,7 @@ This guide explains how to configure Azure OpenAI for the Aria application using
 ```
 ┌─────────────────────────┐
 │   Azure App Service     │
-│   (aria-dev-api)        │
+│   (ca-aria-api-prod)        │
 │                         │
 │  System-Assigned        │
 │  Managed Identity       │
@@ -36,7 +36,7 @@ This guide explains how to configure Azure OpenAI for the Aria application using
             ▼
 ┌─────────────────────────┐
 │  Azure OpenAI Service   │
-│  (aria-openai-azure)    │
+│  (oai-aria-prod)    │
 │                         │
 │  disableLocalAuth=true  │
 │  ✓ Managed Identity     │
@@ -48,7 +48,7 @@ This guide explains how to configure Azure OpenAI for the Aria application using
 
 ### Using Azure Portal:
 
-1. Navigate to your App Service (e.g., `aria-dev-api`)
+1. Navigate to your App Service (e.g., `ca-aria-api-prod`)
 2. Go to **Settings** → **Identity**
 3. Under **System assigned** tab, toggle **Status** to **On**
 4. Click **Save**
@@ -58,9 +58,9 @@ This guide explains how to configure Azure OpenAI for the Aria application using
 
 ```bash
 # Enable system-assigned managed identity
-az webapp identity assign \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev
+az containerapp identity assign \
+  --name ca-aria-api-prod \
+  --resource-group rg-aria-prod
 
 # Output will include principalId - save this for next step
 ```
@@ -71,7 +71,7 @@ The managed identity needs the **"Cognitive Services OpenAI User"** role to acce
 
 ### Using Azure Portal:
 
-1. Navigate to your Azure OpenAI resource (e.g., `aria-openai-azure`)
+1. Navigate to your Azure OpenAI resource (e.g., `oai-aria-prod`)
 2. Go to **Access control (IAM)**
 3. Click **+ Add** → **Add role assignment**
 4. Select role: **Cognitive Services OpenAI User**
@@ -89,8 +89,8 @@ PRINCIPAL_ID="<your-principal-id-from-step-1>"
 
 # Get the Azure OpenAI resource ID
 OPENAI_RESOURCE_ID=$(az cognitiveservices account show \
-  --name aria-openai-azure \
-  --resource-group rg-tracklit-dev \
+  --name oai-aria-prod \
+  --resource-group rg-aria-prod \
   --query id -o tsv)
 
 # Assign the role
@@ -108,7 +108,7 @@ Update your App Service configuration to use managed identity authentication.
 
 ```bash
 # Azure OpenAI Endpoint (REQUIRED)
-AZURE_OPENAI_ENDPOINT=https://aria-openai-azure.openai.azure.com/
+AZURE_OPENAI_ENDPOINT=https://oai-aria-prod.openai.azure.com/
 
 # Azure OpenAI Deployment Name (REQUIRED)
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
@@ -132,23 +132,23 @@ AZURE_OPENAI_DEPLOYMENT=gpt-4o
 
 ```bash
 # Set required environment variables
-az webapp config appsettings set \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
+az containerapp config appsettings set \
+  --name ca-aria-api-prod \
+  --resource-group rg-aria-prod \
   --settings \
-    AZURE_OPENAI_ENDPOINT="https://aria-openai-azure.openai.azure.com/" \
+    AZURE_OPENAI_ENDPOINT="https://oai-aria-prod.openai.azure.com/" \
     AZURE_OPENAI_DEPLOYMENT="gpt-4o"
 
 # Remove API key if it exists
-az webapp config appsettings delete \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
+az containerapp config appsettings delete \
+  --name ca-aria-api-prod \
+  --resource-group rg-aria-prod \
   --setting-names AZURE_OPENAI_API_KEY
 
 # Restart the app
-az webapp restart \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev
+az containerapp restart \
+  --name ca-aria-api-prod \
+  --resource-group rg-aria-prod
 ```
 
 ## Step 4: Verify Configuration
@@ -157,7 +157,7 @@ az webapp restart \
 
 ```bash
 # Test the Azure OpenAI connection
-curl -X POST "https://aria-dev-api.azurewebsites.net/test/openai?question=Hello"
+curl -X POST "https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/test/openai?question=Hello"
 ```
 
 Expected response:
@@ -173,7 +173,7 @@ Expected response:
 ### Check Health Endpoint:
 
 ```bash
-curl "https://aria-dev-api.azurewebsites.net/health"
+curl "https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/health"
 ```
 
 Expected response:

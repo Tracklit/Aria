@@ -81,7 +81,7 @@ import requests
 
 with open("question.mp3", "rb") as audio_file:
     response = requests.post(
-        "https://aria-dev-api.azurewebsites.net/voice/transcribe",
+        "https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/transcribe",
         files={"audio": audio_file},
         params={"language": "en-US"}
     )
@@ -121,7 +121,7 @@ Body:
 
 **Example (JavaScript)**:
 ```javascript
-const response = await fetch('https://aria-dev-api.azurewebsites.net/voice/synthesize', {
+const response = await fetch('https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/synthesize', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -164,7 +164,7 @@ Parameters:
 
 **Example (cURL)**:
 ```bash
-curl -X POST "https://aria-dev-api.azurewebsites.net/voice/ask" \
+curl -X POST "https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/ask" \
   -F "audio=@question.mp3" \
   -F "user_id=11" \
   -F "language=en-US" \
@@ -280,7 +280,7 @@ async function askAriaByVoice() {
   });
   formData.append('user_id', userId);
   
-  const response = await fetch('https://aria-dev-api.azurewebsites.net/voice/ask', {
+  const response = await fetch('https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/ask', {
     method: 'POST',
     body: formData,
   });
@@ -312,7 +312,7 @@ def ask_aria_voice(audio_file_path: str, user_id: str):
     
     # Send to API
     response = requests.post(
-        'https://aria-dev-api.azurewebsites.net/voice/ask',
+        'https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/ask',
         files={'audio': audio_data},
         data={'user_id': user_id}
     )
@@ -392,7 +392,7 @@ ask_aria_voice("my_question.mp3", "11")
 
 ### Check Service Status
 ```bash
-curl https://aria-dev-api.azurewebsites.net/voice/status
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/voice/status
 ```
 
 ## Database Schema

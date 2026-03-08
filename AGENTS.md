@@ -79,6 +79,7 @@
 - **Prevention guardrail**: Storage auth is now resilient across both key-based and identity-based environments, upload no longer requires container-create privileges on every request, and required container exists explicitly in production.
 - **Test coverage added**: Manual E2E verification with a real `multipart/form-data` request and sample `.jpg` image against local backend + Azurite, and production E2E verification against `ca-aria-mobile-prod` with real account credentials (`POST /api/user/public-profile` 200 and persisted `photoUrl`).
 - **Deployment/runtime caveat**: Managed identity must have `Storage Blob Data Contributor` (or higher) on target storage account/container. If blob public access is disabled, avoid creating containers with `publicAccess=Blob`.
+- **Migration note (2026-03-08)**: Storage migrated from `stkvnx2h6p44qw4` (dev) to `stariaprodhw63c3` (prod). Dev storage references are now obsolete.
 
 ## 11. Chat Voice Mic/Transcription Errors (2026-03-05)
 - **Symptom**: Chat mic flow frequently failed with "error starting microphone" and transcription errors (especially in Expo Go), so voice input was effectively unusable.
@@ -127,6 +128,7 @@
 - **Prevention guardrail**: Blob proxy provides a reliable fallback when direct SAS access is blocked by network/auth policies. Profile photo URLs should always go through the SAS-or-proxy pattern.
 - **Test coverage added**: Maestro E2E verified profile photo displays on dashboard and More tab
 - **Deployment/runtime caveat**: Backend must be redeployed. Managed identity needs Storage Blob Data Contributor role.
+- **Migration note (2026-03-08)**: Storage migrated from `stkvnx2h6p44qw4` (dev) to `stariaprodhw63c3` (prod). Dev storage references are now obsolete.
 
 ## 17. Keyboard Covers Bottom Input Fields (2026-03-07)
 - **Symptom**: On edit profile, athlete info, create nutrition, and create event screens, the keyboard covered input fields at the bottom of the screen making them invisible while typing
@@ -158,4 +160,5 @@
 - **Exact fix**: `az storage account update --name stkvnx2h6p44qw4 --resource-group rg-tracklit-dev --public-network-access Enabled`
 - **Prevention guardrail**: Monitor storage account settings. Consider adding a health check that tests blob upload capability, or an Azure Policy assignment that enforces `publicNetworkAccess: Enabled`.
 - **Test coverage added**: Tested end-to-end upload via curl to production endpoint — returns 200 with valid SAS URL.
-- **Deployment/runtime caveat**: No code changes needed. This is an infrastructure setting. If photo uploads break again, first check `az storage account show --name stkvnx2h6p44qw4 --resource-group rg-tracklit-dev --query publicNetworkAccess`.
+- **Deployment/runtime caveat**: No code changes needed. This is an infrastructure setting. If photo uploads break again, first check `az storage account show --name stariaprodhw63c3 --resource-group rg-aria-prod --query publicNetworkAccess`.
+- **Migration note (2026-03-08)**: Storage migrated from `stkvnx2h6p44qw4` (dev, `rg-tracklit-dev`) to `stariaprodhw63c3` (prod, `rg-aria-prod`). The MCAPS governance issue was specific to the dev subscription.

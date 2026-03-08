@@ -5,15 +5,15 @@
 param appName string = 'aria-mobile'
 param environment string = 'prod'
 param location string = 'westus'
-param dockerImage string = 'tracklitprodtnrusd.azurecr.io/aria-mobile-app:latest'
+param dockerImage string = 'acrariaprodvse.azurecr.io/aria-mobile-app:latest'
 
 // Reuse existing TrackLit resources
 param postgresServerName string = 'pg-tracklit-prod-tnrusd'
 param redisName string = 'redis-tracklit-prod-tnrusd'
-param keyVaultName string = 'kv-tracklit-prod-tnrusd'
-param containerRegistryName string = 'tracklitprodtnrusd'
-param existingPostgresResourceGroup string = 'rg-tracklit-dev'
-param existingKeyVaultResourceGroup string = 'rg-tracklit-dev'
+param keyVaultName string = 'kv-ariaprodhw63c3'
+param containerRegistryName string = 'acrariaprodvse'
+param existingPostgresResourceGroup string = 'rg-tracklit-prod'
+param existingKeyVaultResourceGroup string = 'rg-aria-prod'
 
 // App Service Plan (B2 SKU - 2 cores, 3.5GB RAM)
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
@@ -144,7 +144,7 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
         }
         {
           name: 'ARIA_API_URL'
-          value: 'https://aria-dev-api.azurewebsites.net'
+          value: 'https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io'
         }
         {
           name: 'AZURE_STORAGE_CONNECTION_STRING'

@@ -1,19 +1,16 @@
 const PRODUCTION_MOBILE_BACKEND_BASE_URL =
-  'https://ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
+  'https://ca-aria-mobile-prod.calmcliff-31ba567d.westus.azurecontainerapps.io';
 const PRODUCTION_AI_API_BASE_URL =
-  'https://ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io';
+  'https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io';
 
 const ALLOWED_MOBILE_BACKEND_HOSTS = new Set([
-  'ca-aria-mobile-prod.bravepond-d57ce243.westus.azurecontainerapps.io',
+  'ca-aria-mobile-prod.calmcliff-31ba567d.westus.azurecontainerapps.io',
   'app-tracklit-prod-tnrusd.azurewebsites.net',
-  'app-tracklit-dev-kvnx2h.azurewebsites.net',
   'localhost',
 ]);
 
 const ALLOWED_AI_API_HOSTS = new Set([
-  'ca-aria-api-prod.bravepond-d57ce243.westus.azurecontainerapps.io',
-  'aria-dev-api.azurewebsites.net',
-  'aria-dev-api-alt-fqks2g.azurewebsites.net',
+  'ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io',
   'localhost',
 ]);
 

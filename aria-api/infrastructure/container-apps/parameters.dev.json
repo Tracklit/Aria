@@ -6,13 +6,13 @@
       "value": "aria"
     },
     "environment": {
-      "value": "dev"
+      "value": "prod"
     },
     "location": {
-      "value": "eastus"
+      "value": "westus"
     },
     "containerRegistryName": {
-      "value": "acraria<uniquesuffix>"
+      "value": "acrariaprodvse"
     },
     "pythonApiImage": {
       "value": "aria-api:latest"
@@ -55,22 +55,22 @@
       "value": false
     },
     "existingKeyVaultName": {
-      "value": "kv-tracklit-dev-kvnx2h"
+      "value": "kv-ariaprodhw63c3"
     },
     "existingKeyVaultResourceGroup": {
-      "value": "rg-tracklit-dev"
+      "value": "rg-aria-prod"
     },
     "existingPostgresServerName": {
-      "value": "pg-tracklit-dev-kvnx2h"
+      "value": "pg-tracklit-prod-tnrusd"
     },
     "existingPostgresResourceGroup": {
-      "value": "rg-tracklit-dev"
+      "value": "rg-tracklit-prod"
     },
     "existingRedisCacheName": {
-      "value": "redis-tracklit-dev-kvnx2h"
+      "value": "redis-tracklit-prod-tnrusd"
     },
     "existingRedisResourceGroup": {
-      "value": "rg-tracklit-dev"
+      "value": "rg-tracklit-prod"
     }
   }
 }

@@ -17,7 +17,7 @@ const AI_BASE_URL = (
   process.env.AI_API_BASE_URL ||
   process.env.EXPO_PUBLIC_AI_API_BASE_URL ||
   process.env.ARIA_API_URL ||
-  'https://aria-dev-api.azurewebsites.net'
+  'https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io'
 ).replace(/\/$/, '');
 
 const RUN_REMOTE_INTEGRATION = process.env.RUN_REMOTE_INTEGRATION === 'true';

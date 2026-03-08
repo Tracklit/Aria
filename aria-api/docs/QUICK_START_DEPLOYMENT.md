@@ -32,24 +32,24 @@ This guide will walk you through deploying Aria to Azure using the TrackLit infr
 **Method 1: Docker Image (Required for Code Changes)**
 ```bash
 # 1. Login to Azure Container Registry
-az acr login --name tracklitdevkvnx2h
+az acr login --name acrariaprodvse
 
 # 2. Build new Docker image
-docker build -t tracklitdevkvnx2h.azurecr.io/aria-api:latest .
+docker build -t acrariaprodvse.azurecr.io/aria-api:latest .
 
 # 3. Push to registry
-docker push tracklitdevkvnx2h.azurecr.io/aria-api:latest
+docker push acrariaprodvse.azurecr.io/aria-api:latest
 
 # 4. Force app to pull new image
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
+az webapp stop --name ca-aria-api-prod --resource-group rg-aria-prod
+az webapp start --name ca-aria-api-prod --resource-group rg-aria-prod
 ```
 
 **Method 2: Configuration Changes Only**
 ```bash
 # For environment variables or app settings (no code changes)
-az webapp config appsettings set --name aria-dev-api --resource-group rg-tracklit-dev --settings KEY=VALUE
-az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
+az webapp config appsettings set --name ca-aria-api-prod --resource-group rg-aria-prod --settings KEY=VALUE
+az webapp restart --name ca-aria-api-prod --resource-group rg-aria-prod
 ```
 
 ---
@@ -509,7 +509,7 @@ After deployment, verify voice integration:
 
 ```bash
 # Check voice status endpoint
-curl https://aria-dev-api.azurewebsites.net/api/v1/voice/status
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/api/v1/voice/status
 ```
 
 Expected response:

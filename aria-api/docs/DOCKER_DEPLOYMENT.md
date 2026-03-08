@@ -2,19 +2,19 @@
 
 ## Overview
 
-Aria runs as a Docker container on Azure App Service. This guide explains how to deploy code changes and troubleshoot deployment issues.
+Aria runs as Docker containers on Azure Container Apps (`ca-aria-api-prod`, `ca-aria-mobile-prod`) in resource group `rg-aria-prod`. This guide explains how to deploy code changes and troubleshoot deployment issues.
 
 ---
 
 ## 🚨 Critical Information
 
-**The Aria API runs in a Docker container on Azure App Service.**
+**The Aria API runs in a Docker container on Azure Container Apps.**
 
 This means:
 - ✅ **Code changes require rebuilding the Docker image**
 - ❌ **ZIP file deployments will NOT update running code**
 - 🔄 **Container must pull new image after pushing to registry**
-- 📦 **Images stored in Azure Container Registry: `tracklitdevkvnx2h.azurecr.io`**
+- 📦 **Images stored in Azure Container Registry: `acrariaprodvse.azurecr.io`**
 
 ---
 
@@ -30,23 +30,23 @@ git commit -m "feat: your changes"
 git push origin main
 
 # 3. Login to Azure Container Registry
-az acr login --name tracklitdevkvnx2h
+az acr login --name acrariaprodvse
 
 # 4. Build Docker image
-docker build -t tracklitdevkvnx2h.azurecr.io/aria-api:latest \
-             -t tracklitdevkvnx2h.azurecr.io/aria-api:$(date +%Y%m%d-%H%M%S) .
+docker build -t acrariaprodvse.azurecr.io/aria-api:latest \
+             -t acrariaprodvse.azurecr.io/aria-api:$(date +%Y%m%d-%H%M%S) .
 
 # 5. Push to registry
-docker push tracklitdevkvnx2h.azurecr.io/aria-api:latest
+docker push acrariaprodvse.azurecr.io/aria-api:latest
 
-# 6. Force app to pull new image (stop/start cycle)
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
-sleep 10
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
+# 6. Deploy to Container App (use --revision-suffix to force new revision)
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --image acrariaprodvse.azurecr.io/aria-api:latest \
+  --revision-suffix "deploy-$(date +%s)"
 
 # 7. Wait for startup and test
 sleep 60
-curl https://aria-dev-api.azurewebsites.net/api/v1/health
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/health/ready
 ```
 
 ### For Configuration Changes Only
@@ -54,14 +54,10 @@ curl https://aria-dev-api.azurewebsites.net/api/v1/health
 If you're only changing environment variables (no code changes):
 
 ```bash
-# Update app settings
-az webapp config appsettings set \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --settings KEY=VALUE
-
-# Restart (not stop/start)
-az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
+# Update env vars on Container App
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --set-env-vars "KEY=VALUE" \
+  --revision-suffix "config-$(date +%s)"
 ```
 
 ---
@@ -102,12 +98,12 @@ You likely did a ZIP deployment. **ZIP deployments don't work for Docker contain
 
 ```bash
 # Rebuild and push Docker image
-docker build -t tracklitdevkvnx2h.azurecr.io/aria-api:latest .
-docker push tracklitdevkvnx2h.azurecr.io/aria-api:latest
+docker buildx build --platform linux/amd64 -t acrariaprodvse.azurecr.io/aria-api:latest . --push
 
-# Force container recreation
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
+# Force new revision
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --image acrariaprodvse.azurecr.io/aria-api:latest \
+  --revision-suffix "deploy-$(date +%s)"
 ```
 
 ### Problem: Container not pulling new image
@@ -117,19 +113,15 @@ az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
 - App restarted but still running old code
 
 **Solution:**
-Use stop/start instead of restart:
+Use `--revision-suffix` to force a new revision that pulls the updated image:
 
 ```bash
-# Stop the app
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
-sleep 10
-
-# Start the app (forces pull)
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
-sleep 60
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --image acrariaprodvse.azurecr.io/aria-api:latest \
+  --revision-suffix "deploy-$(date +%s)"
 
 # Verify
-curl https://aria-dev-api.azurewebsites.net/api/v1/health
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/health/ready
 ```
 
 ### Problem: Build fails with large context
@@ -163,15 +155,13 @@ verify-*/
 **Solution:**
 1. Check environment variables are set:
 ```bash
-az webapp config appsettings list \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --query "[?name=='AZURE_SPEECH_KEY' || name=='AZURE_SPEECH_REGION']"
+az containerapp show --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --query "properties.template.containers[0].env"
 ```
 
 2. Check application logs:
 ```bash
-az webapp log tail --name aria-dev-api --resource-group rg-tracklit-dev
+az containerapp logs show --name ca-aria-api-prod --resource-group rg-aria-prod --follow
 ```
 
 3. Look for voice integration messages:
@@ -187,48 +177,27 @@ After deploying, verify the changes took effect:
 
 ### 1. Check Container Image
 ```bash
-# Get current container image
-az webapp config show \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --query "linuxFxVersion" \
-  --output tsv
+az containerapp show --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --query "properties.template.containers[0].image" --output tsv
 ```
 
-Should show: `DOCKER|tracklitdevkvnx2h.azurecr.io/aria-api:latest`
-
-### 2. Check Last Deployment
+### 2. Check Active Revisions
 ```bash
-# View recent deployments
-az webapp deployment list \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --query "[0]" \
-  --output table
+az containerapp revision list --name ca-aria-api-prod --resource-group rg-aria-prod --output table
 ```
 
 ### 3. Check Application Logs
 ```bash
-# Download logs
-az webapp log download \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --log-file logs.zip
-
-# Check for startup messages
-unzip -p logs.zip LogFiles/*_default_docker.log | grep -i "voice\|starting\|error" | tail -50
+az containerapp logs show --name ca-aria-api-prod --resource-group rg-aria-prod --follow
 ```
 
 ### 4. Test Endpoints
 ```bash
 # Health check
-curl https://aria-dev-api.azurewebsites.net/api/v1/health
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/health/ready
 
 # Voice status (if applicable)
-curl https://aria-dev-api.azurewebsites.net/api/v1/voice/status
-
-# API version
-curl https://aria-dev-api.azurewebsites.net/api/v1/
+curl https://ca-aria-api-prod.calmcliff-31ba567d.westus.azurecontainerapps.io/api/v1/voice/status
 ```
 
 ---
@@ -238,33 +207,27 @@ curl https://aria-dev-api.azurewebsites.net/api/v1/
 ### Build & Deploy
 ```bash
 # Full deployment
-az acr login --name tracklitdevkvnx2h && \
-docker build -t tracklitdevkvnx2h.azurecr.io/aria-api:latest . && \
-docker push tracklitdevkvnx2h.azurecr.io/aria-api:latest && \
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev && \
-sleep 10 && \
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
+az acr login --name acrariaprodvse && \
+docker buildx build --platform linux/amd64 -t acrariaprodvse.azurecr.io/aria-api:latest . --push && \
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --image acrariaprodvse.azurecr.io/aria-api:latest \
+  --revision-suffix "deploy-$(date +%s)"
 ```
 
 ### View Logs
 ```bash
 # Tail logs in real-time
-az webapp log tail --name aria-dev-api --resource-group rg-tracklit-dev
-
-# Download logs
-az webapp log download --name aria-dev-api --resource-group rg-tracklit-dev --log-file logs.zip
+az containerapp logs show --name ca-aria-api-prod --resource-group rg-aria-prod --follow
 ```
 
 ### Container Management
 ```bash
-# Stop container
-az webapp stop --name aria-dev-api --resource-group rg-tracklit-dev
+# Restart active revision
+az containerapp revision restart --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --revision <revision-name>
 
-# Start container
-az webapp start --name aria-dev-api --resource-group rg-tracklit-dev
-
-# Restart container (doesn't pull new image)
-az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
+# List revisions
+az containerapp revision list --name ca-aria-api-prod --resource-group rg-aria-prod --output table
 ```
 
 ---
@@ -277,16 +240,16 @@ az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
 
 2. **Tag images with timestamps**
    ```bash
-   docker build -t tracklitdevkvnx2h.azurecr.io/aria-api:$(date +%Y%m%d-%H%M%S) .
+   docker build -t acrariaprodvse.azurecr.io/aria-api:$(date +%Y%m%d-%H%M%S) .
    ```
 
-3. **Use stop/start for code changes**
-   - `restart` doesn't pull new images
-   - `stop` + `start` forces image pull
+3. **Use `--revision-suffix` for deployments**
+   - Same `latest` tag won't trigger a new revision without it
+   - Forces Container Apps to pull the updated image
 
 4. **Monitor logs after deployment**
    ```bash
-   az webapp log tail --name aria-dev-api --resource-group rg-tracklit-dev
+   az containerapp logs show --name ca-aria-api-prod --resource-group rg-aria-prod --follow
    ```
 
 5. **Test locally first**
@@ -303,19 +266,15 @@ If deployment breaks production:
 
 ```bash
 # 1. Find last working image
-az acr repository show-tags --name tracklitdevkvnx2h --repository aria-api --orderby time_desc
+az acr repository show-tags --name acrariaprodvse --repository aria-api --orderby time_desc
 
-# 2. Update to use specific tag
-az webapp config container set \
-  --name aria-dev-api \
-  --resource-group rg-tracklit-dev \
-  --docker-custom-image-name tracklitdevkvnx2h.azurecr.io/aria-api:<tag>
-
-# 3. Restart
-az webapp restart --name aria-dev-api --resource-group rg-tracklit-dev
+# 2. Deploy specific tag
+az containerapp update --name ca-aria-api-prod --resource-group rg-aria-prod \
+  --image acrariaprodvse.azurecr.io/aria-api:<tag> \
+  --revision-suffix "rollback-$(date +%s)"
 ```
 
 ---
 
-**Last Updated**: 2026-01-02  
-**Version**: 1.0
+**Last Updated**: 2026-03-08
+**Version**: 2.0 (migrated from App Service to Container Apps, dev ACR to prod ACR)

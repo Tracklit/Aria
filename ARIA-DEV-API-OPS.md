@@ -1,5 +1,7 @@
 # Aria Dev API — Operations Guide
 
+> **DEPRECATED (2026-03-08)**: The `aria-dev-api` App Service is a legacy dev deployment. Production Aria now runs on Container Apps (`ca-aria-api-prod`, `ca-aria-mobile-prod`) in `rg-aria-prod` using prod resources (ACR: `acrariaprodvse`, PostgreSQL: `pg-tracklit-prod-tnrusd`, Redis: `redis-tracklit-prod-tnrusd`, OpenAI: `oai-aria-prod`). This document is preserved for historical reference only. Do not use these dev resources for new work.
+
 ## Current Deployment Configuration
 
 | Setting | Value |
