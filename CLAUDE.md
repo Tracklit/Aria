@@ -157,32 +157,18 @@ CI image names: `aria-api` (API), `aria-mobile-app` (mobile backend).
 - **Prod ACR**: All images go to `acrariaprodvse.azurecr.io` (prod subscription `c38ed438-...`)
 - **Legacy dev API**: `aria-dev-api.azurewebsites.net` is deprecated — see `ARIA-DEV-API-OPS.md` for history
 
-## Azure Blob Storage — DO NOT USE for new features
+## File Storage
 
-The legacy dev storage account `stkvnx2h6p44qw4` had `publicNetworkAccess` periodically **disabled by `MCAPSGov-AutomationApp`** (Microsoft MCAPS governance automation). Production now uses `stariaprodhw63c3` in `rg-aria-prod`, but the DB-storage pattern should still be preferred for reliability.
+Production uses storage account `stariaprodhw63c3` in `rg-aria-prod` (subscription `c38ed438-...`). The MCAPS governance issues that plagued the old dev storage account (`stkvnx2h6p44qw4`) do not apply to this prod account — `publicNetworkAccess` is enabled and not subject to automated policy flips.
 
-**Rule: Store user-uploaded files in PostgreSQL (base64 in a `text` column), not Azure Blob Storage.** Serve via a dedicated backend endpoint (e.g. `/api/user/photo/:userId`). This pattern is already used for:
+**Azure Blob Storage is available** for new features via `azure-storage.ts` (managed identity auth with connection-string fallback). However, the following features currently store files in PostgreSQL (base64) from the earlier workaround and continue to work fine:
 - Profile photos → `user_profiles.photoData` → `GET /api/user/photo/:userId`
 - Chat attachments → `chat_attachments.data` → `GET /api/aria/chat/attachment/:id`
 - Program files → `programs.programFileData` → `GET /api/programs/:id/file`
 
-**Still on Blob Storage (legacy, will break when policy flips):**
-- Legacy profile photo URLs (old blob URLs still in some user records)
-- Legacy program file URLs (old blob URLs still in some program records)
-
-### Blob→DB Migration Log (revert once MCAPS resolved)
-
-| Feature | Date | Old (Blob) | New (DB) | Revert path |
-|---------|------|-----------|----------|-------------|
-| Profile photos | 2026-03-08 | `profile-images` container, SAS URLs | `user_profiles.photoData` (base64) + `photoMimeType`, served via `GET /api/user/photo/:userId` | Re-enable blob upload in `POST /api/user/public-profile`, restore SAS URL generation in `azure-storage.ts`, update `GET /api/user` to return blob URL |
-| Chat attachments | 2026-03-08 | `chat-attachments` container | `chat_attachments` table (base64 `data` column), served via `GET /api/aria/chat/attachment/:id` | Re-enable blob upload in `POST /api/aria/chat/attachment`, restore blob URL in response |
-| Program files | 2026-03-08 | `programs` container, blob URL in `programFileUrl` | `programs.programFileData` (base64), served via `GET /api/programs/:id/file` | Re-enable blob upload in `POST /api/programs/upload`, restore blob URL in `programFileUrl` |
-
-**If a feature needs file storage**, use this pattern:
-1. Add a `data text` (base64) + `mime_type varchar` column to the relevant table
-2. Store `buffer.toString('base64')` on upload
-3. Add a `GET /api/<resource>/:id` endpoint that decodes and serves with proper Content-Type
-4. Return the endpoint URL (permanent, never expires) instead of a blob/SAS URL
+**For new features needing file storage**, either approach works:
+- **Blob Storage**: Use `uploadFileToBlob()` from `azure-storage.ts`. Good for large files, images, media.
+- **DB storage**: Store base64 in a `text` column + serve via backend endpoint. Good for small files that benefit from transactional consistency.
 
 ## Gotchas
 
