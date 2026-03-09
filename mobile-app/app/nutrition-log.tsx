@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../src/theme';
 import { ThemeColors } from '../src/theme/colors';
-import { getNutritionLogs, NutritionLogEntry } from '../src/lib/api';
+import { getNutritionLogs, getNutritionAIFeedback, NutritionLogEntry } from '../src/lib/api';
 
 function formatDate(dateString: string | null): string {
   if (!dateString) return 'Unknown date';
@@ -38,12 +38,115 @@ function groupByDate(logs: NutritionLogEntry[]): Record<string, NutritionLogEntr
   return groups;
 }
 
+function AIFeedbackCard({
+  dateKey,
+  feedback,
+  loadingFeedback,
+  onRequest,
+}: {
+  dateKey: string;
+  feedback: string | null | undefined;
+  loadingFeedback: boolean;
+  onRequest: () => void;
+}) {
+  const colors = useColors();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // When feedback arrives, animate it in
+  React.useEffect(() => {
+    if (feedback) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [feedback, fadeAnim]);
+
+  return (
+    <View
+      style={{
+        backgroundColor: 'rgba(0,229,255,0.05)',
+        borderColor: 'rgba(0,229,255,0.15)',
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 12,
+      }}
+      testID={feedback ? 'nutrition_log.ai_feedback_card' : undefined}
+    >
+      {loadingFeedback ? (
+        <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+          <ActivityIndicator color="#00E5FF" />
+          <Text style={{ color: colors.text.secondary, fontSize: 13, marginTop: 8 }}>
+            Analyzing your nutrition...
+          </Text>
+        </View>
+      ) : feedback ? (
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text
+            style={{
+              fontSize: 10,
+              letterSpacing: 2,
+              color: '#00E5FF',
+              textTransform: 'uppercase',
+              marginBottom: 8,
+              fontWeight: '600',
+            }}
+          >
+            ARIA INSIGHT
+          </Text>
+          <Text
+            testID="nutrition_log.ai_feedback_text"
+            style={{ fontSize: 14, color: colors.text.primary, lineHeight: 20 }}
+          >
+            {feedback}
+          </Text>
+        </Animated.View>
+      ) : (
+        <View style={{ alignItems: 'center' }}>
+          <TouchableOpacity
+            testID="nutrition_log.ai_feedback_request"
+            onPress={onRequest}
+            style={{
+              borderColor: '#00E5FF',
+              borderWidth: 1,
+              borderRadius: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 8,
+            }}
+          >
+            <Text style={{ color: '#00E5FF', fontSize: 14, fontWeight: '600' }}>
+              Get AI Feedback
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function NutritionLogScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
   const [logs, setLogs] = useState<NutritionLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiFeedback, setAiFeedback] = useState<Record<string, string | null>>({});
+  const [aiFeedbackLoading, setAiFeedbackLoading] = useState<Record<string, boolean>>({});
+
+  const requestAIFeedback = useCallback(async (dateKey: string) => {
+    const isoDate = new Date(dateKey).toISOString().split('T')[0];
+    setAiFeedbackLoading((prev) => ({ ...prev, [dateKey]: true }));
+    try {
+      const result = await getNutritionAIFeedback(isoDate);
+      setAiFeedback((prev) => ({ ...prev, [dateKey]: result.feedback }));
+    } catch {
+      setAiFeedback((prev) => ({ ...prev, [dateKey]: 'Unable to get AI feedback. Please try again.' }));
+    } finally {
+      setAiFeedbackLoading((prev) => ({ ...prev, [dateKey]: false }));
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -137,6 +240,12 @@ export default function NutritionLogScreen() {
                   ) : null}
                 </View>
               ))}
+              <AIFeedbackCard
+                dateKey={dateKey}
+                feedback={aiFeedback[dateKey]}
+                loadingFeedback={!!aiFeedbackLoading[dateKey]}
+                onRequest={() => requestAIFeedback(dateKey)}
+              />
             </View>
           ))}
         </ScrollView>

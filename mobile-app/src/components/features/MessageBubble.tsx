@@ -10,6 +10,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Markdown from 'react-native-markdown-display';
 import * as Clipboard from 'expo-clipboard';
 import { useColors, useThemedStyles, typography, spacing, borderRadius } from '../../theme';
@@ -41,6 +42,7 @@ interface MessageBubbleProps {
   attachments?: ChatAttachmentInfo[];
   onEdit?: (text: string) => void;
   onAction?: (action: ActionButton) => void;
+  isFirstInSequence?: boolean;
 }
 
 // ==================== Action parsing ====================
@@ -91,6 +93,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   attachments,
   onEdit,
   onAction,
+  isFirstInSequence,
 }) => {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
@@ -99,6 +102,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const opacity = useRef(new Animated.Value(animate ? 0 : 1)).current;
   const translateY = useRef(new Animated.Value(animate ? 12 : 0)).current;
 
+  // Streaming pulse orb animation
+  const streamPulse = useRef(new Animated.Value(0.8)).current;
+
   useEffect(() => {
     if (!animate) return;
     Animated.parallel([
@@ -106,6 +112,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       Animated.timing(translateY, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start();
   }, [animate, opacity, translateY]);
+
+  useEffect(() => {
+    if (streaming) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(streamPulse, { toValue: 1.2, duration: 450, useNativeDriver: true }),
+          Animated.timing(streamPulse, { toValue: 0.8, duration: 450, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+      return () => {
+        loop.stop();
+        streamPulse.setValue(0.8);
+      };
+    }
+  }, [streaming, streamPulse]);
 
   // Parse actions from AI messages (not during streaming)
   const { displayText, actions } = useMemo(() => {
@@ -282,18 +304,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         animate ? { opacity, transform: [{ translateY }] } : undefined,
       ]}
     >
+      {/* ARIA label above first AI message in sequence */}
+      {isAI && isFirstInSequence ? (
+        <Text style={styles.ariaLabel}>ARIA</Text>
+      ) : null}
+
       <Pressable
         onLongPress={handleLongPress}
         delayLongPress={400}
-        style={[styles.bubble, isAI ? styles.aiBubble : styles.userBubble]}
+        style={[
+          styles.bubble,
+          isAI ? styles.aiBubble : styles.userBubble,
+        ]}
       >
-        {renderAttachments()}
-        {isAI && !streaming ? (
-          <Markdown style={markdownStyles}>{displayText}</Markdown>
-        ) : (
-          <Text style={styles.text}>{displayText}</Text>
-        )}
-        {renderActions()}
+        {/* User message gradient background */}
+        {!isAI ? (
+          <LinearGradient
+            colors={['#00C4FF', '#0084FF']}
+            style={styles.userBubbleGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+        ) : null}
+
+        <View style={!isAI ? styles.userBubbleContent : undefined}>
+          {renderAttachments()}
+          {isAI && !streaming ? (
+            <Markdown style={markdownStyles}>{displayText}</Markdown>
+          ) : (
+            <Text style={styles.text}>{displayText}</Text>
+          )}
+          {renderActions()}
+        </View>
+
+        {/* Streaming pulse orb */}
+        {streaming ? (
+          <Animated.View style={[
+            styles.streamingOrb,
+            { transform: [{ scale: streamPulse }] },
+          ]} />
+        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -310,20 +360,53 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   userContainer: {
     alignItems: 'flex-end',
   },
+  ariaLabel: {
+    fontSize: 10,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: colors.text.secondary,
+    marginBottom: 4,
+  },
   bubble: {
     maxWidth: '85%',
     padding: spacing.md,
     borderRadius: borderRadius.lg,
+    overflow: 'hidden',
   },
   aiBubble: {
     backgroundColor: colors.background.cardSolid,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   userBubble: {
-    backgroundColor: colors.primary,
+    // Background handled by LinearGradient
+    backgroundColor: 'transparent',
+  },
+  userBubbleGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: borderRadius.lg,
+  },
+  userBubbleContent: {
+    position: 'relative',
   },
   text: {
     ...typography.body,
     color: colors.text.primary,
+  },
+  streamingOrb: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00E5FF',
+    marginTop: 6,
+    shadowColor: '#00E5FF',
+    shadowRadius: 6,
+    shadowOpacity: 0.6,
+    shadowOffset: { width: 0, height: 0 },
   },
   // Attachment styles
   attachmentsContainer: {

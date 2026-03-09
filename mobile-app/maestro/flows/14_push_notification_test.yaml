@@ -1,0 +1,55 @@
+appId: com.aria.mobile
+---
+# Flow 14: Push Notification Test (UI flow only)
+#
+# Tests:
+#   - Navigate to More tab -> Notifications settings
+#   - Verify "Send Test Notification" button is present
+#   - Tap it and verify a status message appears within 5s
+#
+# NOTE: iOS Simulator cannot receive real push notifications.
+#       A success response or a "no token" error are both acceptable outcomes —
+#       both prove the button is wired up and the backend responded.
+#
+# testIDs (settings/notifications.tsx):
+#   settings.notifications.test_button - "Send Test Notification" TouchableOpacity
+#   settings.notifications.test_status - Status text that appears after the tap
+
+- launchApp:
+    clearState: false
+- runFlow: flows/00_login.yaml
+
+# Navigate to More / Settings tab
+- tapOn:
+    id: "tab.more"
+- assertVisible:
+    id: "settings.title"
+
+# Scroll to and tap the Notifications row
+- scrollUntilVisible:
+    element:
+      text: "Notifications"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    text: "Notifications"
+
+# Wait for the test button to appear on the Notifications screen
+- extendedWaitUntil:
+    visible:
+      id: "settings.notifications.test_button"
+    timeout: 8000
+- assertVisible:
+    id: "settings.notifications.test_button"
+
+# Tap Send Test Notification
+- tapOn:
+    id: "settings.notifications.test_button"
+
+# A status message must appear within 5s regardless of success or error
+- extendedWaitUntil:
+    visible:
+      id: "settings.notifications.test_status"
+    timeout: 5000
+- assertVisible:
+    id: "settings.notifications.test_status"

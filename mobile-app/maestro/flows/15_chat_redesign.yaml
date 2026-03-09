@@ -1,0 +1,64 @@
+appId: com.aria.mobile
+---
+# Flow 15: Chat Redesign
+#
+# Tests:
+#   - Tap history icon (chat.menu) -> drawer slides in
+#   - Verify "Aria Coach" heading and "New Chat" button in drawer
+#   - Close drawer via "New Chat"
+#   - Verify empty state heading "Your AI Sprint Coach" is shown
+#   - Verify two known suggestion chips are present
+#   - Verify input dock (chat.input + chat.send) is present
+#
+# testIDs (chat.tsx):
+#   chat.menu             - History icon that opens the conversation drawer
+#   chat.new_conversation - "New Chat" button (in drawer and header)
+#   chat.input            - Message input field
+#   chat.send             - Send button
+#   chat.suggestion.<text> - Suggestion chip (text used as key)
+
+- launchApp:
+    clearState: false
+- runFlow: flows/00_login.yaml
+
+# Navigate to Chat tab
+- tapOn:
+    id: "tab.chat"
+- assertVisible:
+    id: "chat.input"
+
+# Start a fresh conversation so we see the empty state
+- tapOn:
+    id: "chat.new_conversation"
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# Empty state heading
+- assertVisible: "Your AI Sprint Coach"
+
+# Two known suggestion chips (from SUGGESTIONS array in chat.tsx)
+- assertVisible: "Analyze my recent sprint times"
+- assertVisible: "Build me a 60m training plan"
+
+# Open the conversation history drawer
+- tapOn:
+    id: "chat.menu"
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Drawer header
+- assertVisible: "Aria Coach"
+- assertVisible: "New Chat"
+
+# Close drawer by tapping New Chat
+- tapOn:
+    id: "chat.new_conversation"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# Input dock must be visible
+- assertVisible:
+    id: "chat.input"
+- assertVisible:
+    id: "chat.send"

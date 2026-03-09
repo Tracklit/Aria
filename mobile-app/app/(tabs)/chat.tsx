@@ -12,10 +12,13 @@ import {
   Animated,
   Alert,
   Image,
+  Dimensions,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -28,10 +31,24 @@ import { impactLight, impactMedium, selectionChanged } from '../../src/utils/hap
 import { useThemedStyles, useColors } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 
+const { width: screenWidth } = Dimensions.get('window');
+
 const SUGGESTIONS = [
-  'How should I prepare for my first 5K?',
-  'What to eat before a long run?',
+  'Analyze my recent sprint times',
+  'Build me a 60m training plan',
+  'What should I eat before a meet?',
+  'How do I recover after max-effort sprints?',
 ];
+
+// Color hash for conversation initials
+const INITIAL_COLORS = ['#00E5FF', '#30D5C8', '#FF9F0A', '#32D74B', '#FF453A', '#FFD60A'];
+function getInitialColor(title: string): string {
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = title.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return INITIAL_COLORS[Math.abs(hash) % INITIAL_COLORS.length];
+}
 
 export default function ChatScreen() {
   const colors = useColors();
@@ -60,11 +77,83 @@ export default function ChatScreen() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<ChatAttachmentInfo[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const inputRef = useRef<TextInput>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const tabBarHeight = useBottomTabBarHeight();
+
+  // Drawer animation values
+  const drawerTranslateX = useRef(new Animated.Value(-screenWidth * 0.8)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+  // Typing indicator bounce animations
+  const dot1Anim = useRef(new Animated.Value(0)).current;
+  const dot2Anim = useRef(new Animated.Value(0)).current;
+  const dot3Anim = useRef(new Animated.Value(0)).current;
+
+  // Recording pulse ring animation
+  const recordPulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isSending && !isStreaming) {
+      const createDotAnim = (anim: Animated.Value, delay: number) =>
+        Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(anim, { toValue: -4, duration: 200, useNativeDriver: true }),
+            Animated.timing(anim, { toValue: 0, duration: 200, useNativeDriver: true }),
+          ])
+        );
+      const a1 = createDotAnim(dot1Anim, 0);
+      const a2 = createDotAnim(dot2Anim, 150);
+      const a3 = createDotAnim(dot3Anim, 300);
+      a1.start();
+      a2.start();
+      a3.start();
+      return () => {
+        a1.stop();
+        a2.stop();
+        a3.stop();
+        dot1Anim.setValue(0);
+        dot2Anim.setValue(0);
+        dot3Anim.setValue(0);
+      };
+    }
+  }, [isSending, isStreaming, dot1Anim, dot2Anim, dot3Anim]);
+
+  // Recording red pulse ring
+  useEffect(() => {
+    if (isRecording) {
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(recordPulseAnim, { toValue: 1.4, duration: 600, useNativeDriver: true }),
+          Animated.timing(recordPulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        ])
+      );
+      loop.start();
+      return () => {
+        loop.stop();
+        recordPulseAnim.setValue(1);
+      };
+    }
+  }, [isRecording, recordPulseAnim]);
+
+  const openDrawer = useCallback(() => {
+    setShowDrawer(true);
+    Animated.parallel([
+      Animated.timing(drawerTranslateX, { toValue: 0, duration: 280, useNativeDriver: true }),
+      Animated.timing(backdropOpacity, { toValue: 0.5, duration: 280, useNativeDriver: true }),
+    ]).start();
+  }, [drawerTranslateX, backdropOpacity]);
+
+  const closeDrawer = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(drawerTranslateX, { toValue: -screenWidth * 0.8, duration: 240, useNativeDriver: true }),
+      Animated.timing(backdropOpacity, { toValue: 0, duration: 240, useNativeDriver: true }),
+    ]).start(() => setShowDrawer(false));
+  }, [drawerTranslateX, backdropOpacity]);
 
   const startPulse = useCallback(() => {
     Animated.loop(
@@ -358,23 +447,66 @@ export default function ChatScreen() {
 
     return (
       <>
-        {messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            text={message.text}
-            sender={message.sender}
-            animate={message.animate}
-            attachments={(message as any).attachments}
-            onEdit={message.sender === 'user' ? handleEditMessage : undefined}
-            onAction={message.sender === 'ai' ? handleAction : undefined}
-          />
-        ))}
+        {messages.map((message, index) => {
+          const isFirst = index === 0 || messages[index - 1].sender !== message.sender;
+          return (
+            <MessageBubble
+              key={message.id}
+              text={message.text}
+              sender={message.sender}
+              animate={message.animate}
+              attachments={(message as any).attachments}
+              onEdit={message.sender === 'user' ? handleEditMessage : undefined}
+              onAction={message.sender === 'ai' ? handleAction : undefined}
+              isFirstInSequence={isFirst}
+            />
+          );
+        })}
         {isStreaming && streamingMessage ? (
-          <MessageBubble text={`${streamingMessage}\u2582`} sender="ai" streaming />
+          <MessageBubble text={`${streamingMessage}\u2582`} sender="ai" streaming isFirstInSequence />
         ) : null}
       </>
     );
   }, [messages, streamingMessage, isStreaming, handleEditMessage, handleAction]);
+
+  const renderConversationItem = useCallback(({ item: conversation }: { item: typeof conversations[number] }) => {
+    const title = conversation.title || 'New Conversation';
+    const initial = title.charAt(0).toUpperCase();
+    const circleColor = getInitialColor(title);
+    const isActive = currentConversationId === conversation.id;
+
+    return (
+      <TouchableOpacity
+        testID={`chat.conversation.${conversation.id}`}
+        onPress={async () => {
+          await selectConversation(conversation.id);
+          closeDrawer();
+        }}
+        style={[
+          styles.drawerRow,
+          isActive && styles.drawerRowActive,
+        ]}
+      >
+        <View style={[styles.drawerRowCircle, { backgroundColor: circleColor }]}>
+          <Text style={styles.drawerRowInitial}>{initial}</Text>
+        </View>
+        <View style={styles.drawerRowContent}>
+          <Text
+            style={[
+              styles.drawerRowText,
+              isActive && styles.drawerRowTextActive,
+            ]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        </View>
+        <Text style={styles.drawerRowDate}>
+          {new Date(conversation.updatedAt).toLocaleDateString()}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [currentConversationId, selectConversation, closeDrawer, styles, colors]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -382,71 +514,100 @@ export default function ChatScreen() {
         style={styles.keyboard}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             testID="chat.menu"
             style={styles.headerIconBtn}
-            onPress={() => setShowDrawer((s) => !s)}
+            onPress={openDrawer}
           >
-            <Ionicons name="menu-outline" size={24} color={colors.text.primary} />
+            <Ionicons name="chatbubbles-outline" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chat</Text>
+          <View style={styles.headerCenter}>
+            <LinearGradient
+              colors={['#30D5C8', '#00E5FF']}
+              style={styles.headerAvatar}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Text style={styles.headerAvatarText}>A</Text>
+            </LinearGradient>
+            <Text style={styles.headerTitle}>ARIA</Text>
+          </View>
           <TouchableOpacity
             testID="chat.new_conversation"
             style={styles.headerIconBtn}
             onPress={() => {
               impactLight();
               startNewConversation();
-              setShowDrawer(false);
+              closeDrawer();
             }}
           >
             <Ionicons name="create-outline" size={22} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
+        {/* Animated Drawer */}
         {showDrawer ? (
-          <View style={styles.drawer}>
-            <Text style={styles.drawerTitle}>Conversation History</Text>
-            <TouchableOpacity
-              style={styles.drawerNew}
-              onPress={() => {
-                startNewConversation();
-                setShowDrawer(false);
-              }}
+          <>
+            <Animated.View
+              style={[
+                styles.backdrop,
+                { opacity: backdropOpacity },
+              ]}
+              onTouchEnd={closeDrawer}
+            />
+            <Animated.View
+              style={[
+                styles.drawer,
+                { transform: [{ translateX: drawerTranslateX }] },
+              ]}
             >
-              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-              <Text style={styles.drawerNewText}>New Chat</Text>
-            </TouchableOpacity>
-            <ScrollView>
-              {conversations.map((conversation) => (
-                <TouchableOpacity
-                  testID={`chat.conversation.${conversation.id}`}
-                  key={conversation.id}
-                  onPress={async () => {
-                    await selectConversation(conversation.id);
-                    setShowDrawer(false);
-                  }}
-                  style={[
-                    styles.drawerRow,
-                    currentConversationId === conversation.id && styles.drawerRowActive,
-                  ]}
+              {/* Drawer header */}
+              <View style={styles.drawerHeader}>
+                <LinearGradient
+                  colors={['#30D5C8', '#00E5FF']}
+                  style={styles.drawerAvatar}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 >
-                  <Text
-                    style={[
-                      styles.drawerRowText,
-                      currentConversationId === conversation.id && styles.drawerRowTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {conversation.title}
-                  </Text>
-                  <Text style={styles.drawerRowDate}>
-                    {new Date(conversation.updatedAt).toLocaleDateString()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                  <Text style={styles.drawerAvatarText}>A</Text>
+                </LinearGradient>
+                <View>
+                  <Text style={styles.drawerHeaderTitle}>Aria Coach</Text>
+                  <Text style={styles.drawerHeaderSubtitle}>AI Sprint Coach</Text>
+                </View>
+              </View>
+
+              {/* New Chat button */}
+              <TouchableOpacity
+                onPress={() => {
+                  impactLight();
+                  startNewConversation();
+                  closeDrawer();
+                }}
+                style={styles.drawerNewBtn}
+              >
+                <LinearGradient
+                  colors={['#00E5FF', '#30D5C8']}
+                  style={styles.drawerNewGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.drawerNewText}>New Chat</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Conversation list */}
+              <FlatList
+                data={conversations}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={renderConversationItem}
+                style={styles.drawerList}
+                showsVerticalScrollIndicator={false}
+              />
+            </Animated.View>
+          </>
         ) : null}
 
         {error ? (
@@ -474,24 +635,33 @@ export default function ChatScreen() {
             renderedMessages
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="sparkles" size={36} color={colors.teal} style={styles.emptyIcon} />
+              <View style={styles.emptyAvatarContainer}>
+                <LinearGradient
+                  colors={['#30D5C8', '#00E5FF']}
+                  style={styles.emptyAvatar}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.emptyAvatarText}>A</Text>
+                </LinearGradient>
+              </View>
               <Text style={styles.emptyTitle}>
-                {hasValidToken ? 'Chat with Aria' : 'Sign In Required'}
+                {hasValidToken ? 'Your AI Sprint Coach' : 'Sign In Required'}
               </Text>
               <Text style={styles.emptyText}>
                 {hasValidToken
-                  ? 'Ask anything about endurance, workouts, and recovery.'
+                  ? 'Ask me anything about your training, performance, or race strategy.'
                   : 'Please sign in to use chat.'}
               </Text>
               <View style={styles.suggestions}>
-                <Text style={styles.suggestionsTitle}>Try asking:</Text>
                 {SUGGESTIONS.map((suggestion) => (
                   <TouchableOpacity
                     key={suggestion}
-                    testID={`chat.suggestion.${suggestion.replace(/[^a-zA-Z0-9]+/g, '_')}`}
+                    testID={`chat.suggestion.${suggestion}`}
                     style={styles.suggestionChip}
                     onPress={() => { selectionChanged(); setInputText(suggestion); }}
                   >
+                    <Ionicons name="chevron-forward-outline" size={12} color={colors.teal} style={{ marginRight: 6 }} />
                     <Text style={styles.suggestionText}>{suggestion}</Text>
                   </TouchableOpacity>
                 ))}
@@ -502,9 +672,9 @@ export default function ChatScreen() {
           {isSending && !isStreaming ? (
             <View style={styles.typingIndicator}>
               <View style={styles.typingDots}>
-                <View style={[styles.typingDot, { opacity: 0.4 }]} />
-                <View style={[styles.typingDot, { opacity: 0.6 }]} />
-                <View style={[styles.typingDot, { opacity: 0.8 }]} />
+                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot1Anim }] }]} />
+                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot2Anim }] }]} />
+                <Animated.View style={[styles.typingDot, { transform: [{ translateY: dot3Anim }] }]} />
               </View>
               <Text style={styles.typingText}>Aria is thinking...</Text>
             </View>
@@ -541,62 +711,90 @@ export default function ChatScreen() {
           </View>
         ) : null}
 
-        <View style={[styles.inputDock, { paddingBottom: tabBarHeight }]}>
-          <TouchableOpacity
-            style={[styles.attachBtn, isUploading && { opacity: 0.5 }]}
-            onPress={handleAttachPress}
-            disabled={isUploading || isSending}
-          >
-            {isUploading ? (
-              <ActivityIndicator size="small" color={colors.text.primary} />
-            ) : (
-              <Ionicons name="add" size={24} color={colors.text.primary} />
-            )}
-          </TouchableOpacity>
-          <TextInput
-            ref={inputRef}
-            testID="chat.input"
-            style={styles.input}
-            placeholder={isTranscribing ? 'Transcribing voice...' : 'Type a message'}
-            placeholderTextColor={colors.text.secondary}
-            value={inputText}
-            onChangeText={setInputText}
-            editable={!isSending && !isTranscribing && hasValidToken}
-            multiline
-          />
-          <TouchableOpacity
-            style={[
-              styles.voiceBtn,
-              isRecording && styles.voiceBtnRecording,
-              (isTranscribing || isSending || !hasValidToken) && styles.voiceBtnDisabled,
-            ]}
-            onPress={handleVoiceInput}
-            disabled={isTranscribing || isSending || !hasValidToken}
-          >
-            {isTranscribing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Animated.View style={{ transform: [{ scale: isRecording ? pulseAnim : 1 }] }}>
-                <Ionicons
-                  name={isRecording ? 'mic' : 'mic-outline'}
-                  size={20}
-                  color={isRecording ? colors.red : colors.text.primary}
-                />
-              </Animated.View>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="chat.send"
-            style={[styles.sendBtn, !canSend && styles.sendBtnDisabled]}
-            disabled={!canSend}
-            onPress={handleSend}
-          >
-            {isSending ? (
-              <ActivityIndicator color={colors.text.primary} size="small" />
-            ) : (
-              <Ionicons name="arrow-up" size={24} color={canSend ? colors.teal : colors.text.tertiary} />
-            )}
-          </TouchableOpacity>
+        <View style={[
+          styles.inputDock,
+          { paddingBottom: tabBarHeight },
+        ]}>
+          <View style={[
+            styles.inputContainer,
+            inputFocused && styles.inputContainerFocused,
+          ]}>
+            <TouchableOpacity
+              style={[styles.attachBtn, isUploading && { opacity: 0.5 }]}
+              onPress={handleAttachPress}
+              disabled={isUploading || isSending}
+            >
+              {isUploading ? (
+                <ActivityIndicator size="small" color={colors.text.primary} />
+              ) : (
+                <Ionicons name="attach-outline" size={22} color={colors.text.secondary} />
+              )}
+            </TouchableOpacity>
+            <TextInput
+              ref={inputRef}
+              testID="chat.input"
+              style={styles.input}
+              placeholder={isTranscribing ? 'Transcribing voice...' : 'Message Aria...'}
+              placeholderTextColor={colors.text.secondary}
+              value={inputText}
+              onChangeText={setInputText}
+              editable={!isSending && !isTranscribing && hasValidToken}
+              multiline
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+            />
+            <View style={styles.inputActions}>
+              {/* Voice button */}
+              <TouchableOpacity
+                style={[
+                  styles.voiceBtn,
+                  (isTranscribing || isSending || !hasValidToken) && styles.voiceBtnDisabled,
+                ]}
+                onPress={handleVoiceInput}
+                disabled={isTranscribing || isSending || !hasValidToken}
+              >
+                {isTranscribing ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : isRecording ? (
+                  <View style={styles.voiceRecordingContainer}>
+                    <Animated.View style={[
+                      styles.voicePulseRing,
+                      { transform: [{ scale: recordPulseAnim }] },
+                    ]} />
+                    <Ionicons name="mic" size={18} color={colors.red} />
+                  </View>
+                ) : (
+                  <Ionicons name="mic-outline" size={18} color={colors.text.secondary} />
+                )}
+              </TouchableOpacity>
+              {/* Send button */}
+              <TouchableOpacity
+                testID="chat.send"
+                style={styles.sendBtnOuter}
+                disabled={!canSend}
+                onPress={handleSend}
+              >
+                {isSending ? (
+                  <View style={[styles.sendBtn, styles.sendBtnDisabled]}>
+                    <ActivityIndicator color={colors.text.primary} size="small" />
+                  </View>
+                ) : canSend ? (
+                  <LinearGradient
+                    colors={['#00E5FF', '#30D5C8']}
+                    style={styles.sendBtn}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="send" size={18} color="#000" />
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.sendBtn, styles.sendBtnDisabled]}>
+                    <Ionicons name="send" size={18} color={colors.text.tertiary} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -611,69 +809,146 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   keyboard: {
     flex: 1,
   },
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
-    paddingHorizontal: 12,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 16,
     paddingVertical: 10,
   },
   headerIconBtn: {
-    width: 30,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    color: colors.text.primary,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  drawer: {
-    position: 'absolute',
-    top: 56,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 5,
-    backgroundColor: colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: colors.background.secondary,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-  },
-  drawerTitle: {
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  drawerNew: {
+  headerCenter: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  headerTitle: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  // Drawer
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,1)',
+    zIndex: 10,
+  },
+  drawer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: screenWidth * 0.8,
+    height: '100%',
+    backgroundColor: '#111111',
+    zIndex: 11,
+    paddingTop: 60,
+    paddingHorizontal: 16,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  drawerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerAvatarText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  drawerHeaderTitle: {
+    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  drawerHeaderSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  drawerNewBtn: {
+    marginBottom: 16,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  drawerNewGradient: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
   },
   drawerNewText: {
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 14,
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  drawerList: {
+    flex: 1,
   },
   drawerRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background.secondary,
-    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    marginBottom: 2,
   },
   drawerRowActive: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  drawerRowCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  drawerRowInitial: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  drawerRowContent: {
+    flex: 1,
+    marginRight: 8,
   },
   drawerRowText: {
     color: colors.text.primary,
     fontSize: 14,
-    marginBottom: 4,
   },
   drawerRowTextActive: {
     color: colors.primary,
@@ -681,8 +956,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   drawerRowDate: {
     color: colors.text.secondary,
-    fontSize: 11,
+    fontSize: 12,
   },
+  // Error
   errorBanner: {
     marginHorizontal: 12,
     marginTop: 10,
@@ -699,6 +975,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     fontSize: 12,
   },
+  // Messages
   messages: {
     flex: 1,
   },
@@ -709,45 +986,64 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: 24,
     alignItems: 'center',
   },
+  // Empty state
   emptyState: {
     paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  emptyAvatarContainer: {
+    marginBottom: 20,
+    shadowColor: '#00E5FF',
+    shadowRadius: 20,
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  emptyAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyAvatarText: {
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '700',
   },
   emptyTitle: {
     color: colors.text.primary,
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptyText: {
     color: colors.text.secondary,
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 22,
-    marginBottom: 20,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   suggestions: {
-    marginTop: 6,
-  },
-  suggestionsTitle: {
-    color: colors.text.secondary,
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  emptyIcon: {
-    marginBottom: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   suggestionChip: {
-    backgroundColor: colors.background.secondary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: 'rgba(0,229,255,0.25)',
     borderWidth: 1,
-    borderColor: 'rgba(48, 213, 200, 0.3)',
-    borderRadius: 18,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 8,
+    margin: 4,
   },
   suggestionText: {
     color: colors.text.primary,
-    fontSize: 14,
+    fontSize: 13,
   },
+  // Typing indicator
   typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -769,7 +1065,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     color: colors.text.secondary,
     fontSize: 12,
   },
-  // Pending attachments preview
+  // Pending attachments
   pendingAttachments: {
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -807,52 +1103,73 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     top: -4,
     right: 4,
   },
+  // Input dock
   inputDock: {
-    borderTopWidth: 1,
-    borderTopColor: colors.background.secondary,
     backgroundColor: colors.background.primary,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 24,
+    padding: 8,
+  },
+  inputContainerFocused: {
+    borderColor: colors.primary,
+  },
+  attachBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 36,
     maxHeight: 100,
-    borderRadius: 21,
-    backgroundColor: colors.background.secondary,
     color: colors.text.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     fontSize: 15,
   },
-  attachBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.cardSolid,
-    borderWidth: 1,
-    borderColor: colors.background.secondary,
+  inputActions: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
   },
   voiceBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.secondary,
-  },
-  voiceBtnRecording: {
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    borderWidth: 1,
-    borderColor: colors.red,
   },
   voiceBtnDisabled: {
     opacity: 0.55,
+  },
+  voiceRecordingContainer: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voicePulseRing: {
+    position: 'absolute',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: colors.red,
+    opacity: 0.6,
+  },
+  sendBtnOuter: {
+    width: 40,
+    height: 40,
   },
   sendBtn: {
     width: 40,
@@ -860,9 +1177,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#004d40',
   },
   sendBtnDisabled: {
-    backgroundColor: '#1F3430',
+    backgroundColor: colors.background.secondary,
   },
 });

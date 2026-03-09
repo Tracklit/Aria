@@ -1,0 +1,61 @@
+appId: com.aria.mobile
+---
+# Flow 13: Nutrition Log - AI Feedback
+#
+# Tests:
+#   - Navigate to Tools tab -> TRAINING section -> Nutrition Log
+#   - Verify Nutrition Log screen loads
+#   - If logs exist, verify AI Feedback card section is present below a day's entries
+#   - Tap "Get AI Feedback" button if feedback not yet loaded
+#   - Wait up to 30s for "ARIA INSIGHT" label to appear
+#   - Verify feedback text is non-empty
+#
+# testIDs (tools.tsx / nutrition-log.tsx):
+#   tools.nutrition_log_entry         - Nutrition Log row in TRAINING section of Tools tab
+#   nutrition_log.ai_feedback_request - "Get AI Feedback" button
+#   nutrition_log.ai_feedback_text    - AI feedback body text
+#   nutrition_log.ai_feedback_card    - Card wrapper (visible when feedback loaded)
+
+- launchApp:
+    clearState: false
+- runFlow: flows/00_login.yaml
+
+# Navigate to Tools tab
+- tapOn:
+    id: "tab.tools"
+
+# Scroll to TRAINING section and tap Nutrition Log
+- scrollUntilVisible:
+    element:
+      id: "tools.nutrition_log_entry"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "tools.nutrition_log_entry"
+
+- extendedWaitUntil:
+    visible: "Nutrition Log"
+    timeout: 8000
+- assertVisible: "Nutrition Log"
+
+# If the "Get AI Feedback" button is visible, tap it and wait for the insight
+- runFlow:
+    when:
+      visible:
+        id: "nutrition_log.ai_feedback_request"
+    commands:
+      - tapOn:
+          id: "nutrition_log.ai_feedback_request"
+      - extendedWaitUntil:
+          visible: "ARIA INSIGHT"
+          timeout: 30000
+      - assertVisible: "ARIA INSIGHT"
+      - assertVisible:
+          id: "nutrition_log.ai_feedback_text"
+
+# If feedback was already loaded before we tapped, just assert the card is present
+- runFlow:
+    when:
+      visible: "ARIA INSIGHT"
+    commands:
+      - assertVisible: "ARIA INSIGHT"

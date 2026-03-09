@@ -145,7 +145,7 @@ export default function SprintPredictorScreen() {
         </Text>
 
         <View style={styles.inputSection}>
-          <TouchableOpacity style={styles.distancePicker} onPress={() => { impactLight(); setShowPicker(true); }}>
+          <TouchableOpacity style={styles.distancePicker} onPress={() => { impactLight(); setShowPicker(true); }} testID="tools.sprint_predictor.predict">
             <Text style={styles.distanceText}>{formatDistanceLabel(selectedDistance, settings.distanceUnit)}</Text>
             <Ionicons name="chevron-down" size={20} color={colors.primary} />
           </TouchableOpacity>
@@ -153,10 +153,11 @@ export default function SprintPredictorScreen() {
           <TextInput
             style={styles.timeInput}
             value={inputTime}
-            onChangeText={setInputTime}
+            onChangeText={(text) => setInputTime(text.replace(',', '.'))}
             placeholder="Time (seconds)"
             placeholderTextColor={colors.text.tertiary}
             keyboardType="decimal-pad"
+            testID="tools.sprint_predictor.input"
           />
         </View>
 
@@ -168,7 +169,7 @@ export default function SprintPredictorScreen() {
         )}
 
         {predictions.length > 0 ? (
-          <View style={styles.resultsSection}>
+          <View style={styles.resultsSection} testID="tools.sprint_predictor.result">
             <Text style={styles.resultsTitle}>Predicted Times</Text>
             {predictions.map((p) => (
               <View

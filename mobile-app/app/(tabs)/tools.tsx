@@ -49,6 +49,11 @@ const trainingItems = [
     route: '/training-log',
   },
   {
+    title: 'Nutrition Log',
+    icon: 'restaurant-outline' as const,
+    route: '/nutrition-log',
+  },
+  {
     title: 'Progress & Analytics',
     icon: 'pulse-outline' as const,
     route: '/(tabs)/progress',
@@ -128,6 +133,7 @@ export default function ToolsScreen() {
               style={styles.trainingCard}
               activeOpacity={0.7}
               onPress={() => router.push(item.route as any)}
+              {...(item.title === 'Nutrition Log' ? { testID: 'tools.nutrition_log_entry' } : {})}
             >
               <Ionicons name={item.icon} size={24} color={colors.primary} />
               <Text style={styles.trainingTitle}>{item.title}</Text>

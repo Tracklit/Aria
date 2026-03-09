@@ -42,3 +42,10 @@ appId: com.aria.mobile
 
 # Logs
 - runFlow: flows/10_nutrition_log_screen.yaml
+
+# New feature flows (13-17)
+- runFlow: flows/13_nutrition_log_ai_feedback.yaml
+- runFlow: flows/14_push_notification_test.yaml
+- runFlow: flows/15_chat_redesign.yaml
+- runFlow: flows/16_sprint_predictor_decimal.yaml
+- runFlow: flows/17_start_gun_sequence.yaml

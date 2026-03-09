@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { registerPushToken } from '../lib/api';
 
 let Notifications: typeof import('expo-notifications') | null = null;
@@ -50,9 +52,10 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: undefined, // Uses the project ID from app.json automatically
-    });
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      Constants.easConfig?.projectId;
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
     const token = tokenData.data;
     console.log('[Notifications] Push token:', token);
 
@@ -82,7 +85,11 @@ export function setupNotificationListeners() {
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
     const data = response.notification.request.content.data;
     console.log('[Notifications] Tapped:', data);
-    // TODO: Deep link based on data.screen / data.route
+
+    const screen = data?.screen as string | undefined;
+    if (screen === 'chat') router.push('/(tabs)/chat');
+    else if (screen === 'nutrition-log') router.push('/nutrition-log');
+    else if (screen === 'settings') router.push('/settings/notifications');
   });
 
   return () => {

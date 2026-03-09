@@ -1,0 +1,59 @@
+appId: com.aria.mobile
+---
+# Flow 16: Sprint Predictor - Comma Decimal Input
+#
+# Tests:
+#   - Navigate to Tools -> Sprint Predictor
+#   - Enter "10,5" (comma as decimal separator used in some locales)
+#   - Tap Predict
+#   - Verify the results table appears with valid numbers
+#   - Assert "NaN" is NOT visible (would indicate the parse failed)
+#
+# testIDs (tools/sprint-predictor.tsx):
+#   tools.sprint_predictor.input   - Time input field
+#   tools.sprint_predictor.predict - Predict / distance-picker trigger button
+#   tools.sprint_predictor.result  - Results section wrapper
+
+- launchApp:
+    clearState: false
+- runFlow: flows/00_login.yaml
+
+# Navigate to Tools tab
+- tapOn:
+    id: "tab.tools"
+
+# Scroll to Sprint Predictor and open it
+- scrollUntilVisible:
+    element:
+      text: "Sprint Predictor"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    text: "Sprint Predictor"
+
+# Wait for the input field
+- extendedWaitUntil:
+    visible:
+      id: "tools.sprint_predictor.input"
+    timeout: 8000
+
+# Clear any pre-existing value and enter a comma-separated decimal
+- tapOn:
+    id: "tools.sprint_predictor.input"
+- clearText
+- inputText: "10,5"
+
+# Trigger the prediction
+- tapOn:
+    id: "tools.sprint_predictor.predict"
+
+# Results must appear
+- extendedWaitUntil:
+    visible:
+      id: "tools.sprint_predictor.result"
+    timeout: 5000
+- assertVisible:
+    id: "tools.sprint_predictor.result"
+
+# "NaN" must NOT be in the results — its presence means the comma was not normalised
+- assertNotVisible: "NaN"

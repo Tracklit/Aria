@@ -1,0 +1,68 @@
+appId: com.aria.mobile
+---
+# Flow 17: Start Gun - Full Sequence
+#
+# Tests:
+#   - Navigate to Tools -> Start Gun
+#   - Tap START
+#   - Verify "On Your Marks" phase state element appears
+#   - Verify "Set" phase state element appears
+#   - Verify "Bang" phase state element appears (sequence completes)
+#
+# NOTE: Audio volume cannot be asserted via Maestro.
+#       This flow validates the full sequence completes without crashing.
+#
+# testIDs (tools/start-gun.tsx):
+#   tools.start_gun.start        - START button
+#   tools.start_gun.state_marks  - Hidden View rendered only during 'marks' phase
+#   tools.start_gun.state_set    - Hidden View rendered only during 'set' phase
+#   tools.start_gun.state_bang   - Hidden View rendered only during 'bang' phase
+#   tools.start_gun.stop         - Reset button (not asserted here)
+
+- launchApp:
+    clearState: false
+- runFlow: flows/00_login.yaml
+
+# Navigate to Tools tab
+- tapOn:
+    id: "tab.tools"
+
+# Scroll to Start Gun and open it
+- scrollUntilVisible:
+    element:
+      text: "Start Gun"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    text: "Start Gun"
+
+# Wait for the START button
+- extendedWaitUntil:
+    visible:
+      id: "tools.start_gun.start"
+    timeout: 8000
+
+# Tap START and watch each phase marker appear in sequence
+- tapOn:
+    id: "tools.start_gun.start"
+
+- extendedWaitUntil:
+    visible:
+      id: "tools.start_gun.state_marks"
+    timeout: 5000
+- assertVisible:
+    id: "tools.start_gun.state_marks"
+
+- extendedWaitUntil:
+    visible:
+      id: "tools.start_gun.state_set"
+    timeout: 10000
+- assertVisible:
+    id: "tools.start_gun.state_set"
+
+- extendedWaitUntil:
+    visible:
+      id: "tools.start_gun.state_bang"
+    timeout: 10000
+- assertVisible:
+    id: "tools.start_gun.state_bang"

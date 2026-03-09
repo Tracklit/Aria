@@ -1566,3 +1566,76 @@ function buildFallbackInsights(context: UserContext): AIInsight[] {
 
   return insights.slice(0, 3);
 }
+
+// ==================== NUTRITION AI FEEDBACK ====================
+
+export async function generateNutritionFeedback(userId: number, date: string): Promise<string | null> {
+  try {
+    // Fetch the user's active nutrition plan
+    const plans = await storage.getNutritionPlans(userId);
+    const activePlan = plans.find(p => p.status === 'active');
+
+    if (!activePlan) {
+      console.log(`[nutritionFeedback] No active nutrition plan for user ${userId}`);
+      return null;
+    }
+
+    // Fetch the day's nutrition logs
+    const dateObj = new Date(date);
+    const logs = await storage.getNutritionLogs(userId, dateObj);
+
+    // Build the planned meals section
+    const plannedMeals = activePlan.mealSuggestions as Array<{
+      meal: string;
+      foods: string[];
+      calories: number;
+      macros: { protein: number; carbs: number; fats: number };
+    }> | null;
+
+    const plannedMealsText = plannedMeals
+      ? plannedMeals.map(m => `- ${m.meal}: ${m.calories} cal (P:${m.macros.protein}g C:${m.macros.carbs}g F:${m.macros.fats}g) — ${m.foods.join(', ')}`).join('\n')
+      : 'No specific meals planned';
+
+    // Build what the athlete actually did
+    const logsText = logs.length > 0
+      ? logs.map(log => {
+          const status = log.status === 'completed' ? 'COMPLETED' : 'SKIPPED';
+          const calText = log.calories ? `, ${log.calories} cal` : '';
+          const timeText = log.date ? ` at ${new Date(log.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : '';
+          return `- [${status}] ${log.mealName}${timeText}${calText}`;
+        }).join('\n')
+      : 'No meals logged yet';
+
+    const prompt = `You are Aria, an expert AI nutrition coach for sprint and track athletes.
+
+ATHLETE'S ACTIVE NUTRITION PLAN:
+Plan Title: ${activePlan.title}
+Daily Targets: ${activePlan.calorieTarget || 'N/A'} cal | Protein: ${activePlan.proteinGrams || 'N/A'}g | Carbs: ${activePlan.carbsGrams || 'N/A'}g | Fats: ${activePlan.fatsGrams || 'N/A'}g
+
+MEAL PLAN FOR TODAY:
+${plannedMealsText}
+
+WHAT THE ATHLETE DID TODAY (${date}):
+${logsText}
+
+Provide brief coaching feedback. Cover:
+1. Overall adherence (1 sentence, specific)
+2. What they did well (1-2 sentences)
+3. Key improvement for tomorrow (1 actionable tip)
+4. Sprint performance note (connect nutrition to athletic performance)
+
+Under 180 words. Direct, warm, coach-like voice. No markdown headers or bullets.`;
+
+    const rawResponse = await callAriaAPI({
+      user_id: userId.toString(),
+      user_input: prompt,
+      system_prompt: buildAriaSystemPrompt(),
+      conversation_history: [],
+    });
+
+    return rawResponse;
+  } catch (error) {
+    console.error('[nutritionFeedback] Error generating feedback:', error);
+    return null;
+  }
+}

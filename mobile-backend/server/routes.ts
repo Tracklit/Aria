@@ -29,8 +29,10 @@ import {
   ProgramGenerationInput,
   generateCoachingInsightFromHealth,
   generateAIDashboardInsights,
+  generateNutritionFeedback,
 } from './aria-ai';
 import { uploadFileToBlob, deleteBlob, generateBlobSasUrl, readBlobAsBuffer } from './azure-storage';
+import { sendPushNotification } from './notifications';
 import { parseDocument } from './document-parser';
 import {
   getStravaAuthUrl,
@@ -2976,6 +2978,51 @@ Competition - Meet / race day,,,,,,
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: 'Failed to register push token' });
+    }
+  });
+
+  // ==================== NUTRITION AI FEEDBACK ====================
+
+  app.get('/api/nutrition/ai-feedback', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const date = req.query.date
+        ? String(req.query.date)
+        : new Date().toISOString().split('T')[0];
+      const feedback = await generateNutritionFeedback(req.userId!, date);
+      res.json({ feedback, date });
+    } catch (error) {
+      console.error('Error generating nutrition AI feedback:', error);
+      const date = req.query.date
+        ? String(req.query.date)
+        : new Date().toISOString().split('T')[0];
+      res.json({ feedback: null, date });
+    }
+  });
+
+  // ==================== PUSH TOKEN TEST ====================
+
+  app.post('/api/push-token/test', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const pushToken = await storage.getUserPushToken(req.userId!);
+      if (!pushToken) {
+        return res.status(400).json({ success: false, error: 'No push token registered' });
+      }
+
+      const sent = await sendPushNotification(
+        pushToken,
+        'Aria Test',
+        'Notifications are working!',
+        { screen: 'settings' }
+      );
+
+      if (!sent) {
+        return res.json({ success: false, error: 'Failed to deliver push notification' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error sending test push notification:', error);
+      res.json({ success: false, error: 'Failed to send test notification' });
     }
   });
 

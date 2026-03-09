@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context';
+import { sendTestPushNotification } from '../../src/lib/api';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
 import { selectionChanged } from '../../src/utils/haptics';
@@ -36,6 +37,22 @@ export default function NotificationsScreen() {
     ...defaultPrefs,
     ...preferences?.notificationPrefs,
   });
+
+  const [testStatus, setTestStatus] = useState<string | null>(null);
+
+  async function handleTestNotification() {
+    try {
+      const result = await sendTestPushNotification();
+      if (result.success) {
+        setTestStatus('Test notification sent!');
+      } else {
+        setTestStatus(result.error ?? 'No push token registered. Open app on a physical device to register.');
+      }
+    } catch {
+      setTestStatus('Failed to send test notification');
+    }
+    setTimeout(() => setTestStatus(null), 3000);
+  }
 
   const handleToggle = async (key: keyof NotificationPrefs, value: boolean) => {
     selectionChanged();
@@ -82,6 +99,28 @@ export default function NotificationsScreen() {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Test Notifications */}
+        <View>
+          <Text style={styles.testSectionHeader}>TEST NOTIFICATIONS</Text>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={handleTestNotification}
+            testID="settings.notifications.test_button"
+          >
+            <Text style={styles.testButtonText}>Send Test Notification</Text>
+          </TouchableOpacity>
+          {testStatus && (
+            <Text
+              style={styles.testStatusText}
+              testID="settings.notifications.test_status"
+            >
+              {testStatus}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.testSeparator} />
+
         {/* Training */}
         {renderSectionHeader('barbell-outline', 'TRAINING')}
         <View style={styles.card}>
@@ -196,5 +235,37 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.body,
     color: colors.teal,
     fontWeight: '600',
+  },
+  testSectionHeader: {
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+    fontWeight: '600',
+  },
+  testButton: {
+    borderColor: colors.teal,
+    borderWidth: 1,
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center' as const,
+  },
+  testButtonText: {
+    ...typography.body,
+    color: colors.teal,
+    fontWeight: '600',
+  },
+  testStatusText: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    textAlign: 'center' as const,
+    marginTop: 8,
+  },
+  testSeparator: {
+    height: 1,
+    backgroundColor: colors.background.secondary,
+    marginVertical: 24,
   },
 });

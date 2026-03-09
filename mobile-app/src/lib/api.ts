@@ -854,10 +854,21 @@ export async function deleteEvent(id: number) {
   return apiRequest(`/api/events/${id}`, { method: 'DELETE' });
 }
 
+// ==================== NUTRITION AI FEEDBACK ====================
+
+export async function getNutritionAIFeedback(date?: string): Promise<{ feedback: string | null; date: string }> {
+  const dateParam = date ?? new Date().toISOString().split('T')[0];
+  return apiRequest(`/api/nutrition/ai-feedback?date=${dateParam}`);
+}
+
 // ==================== PUSH NOTIFICATIONS ====================
 
 export async function registerPushToken(token: string) {
   return apiRequest('/api/push-token', { method: 'POST', data: { token } });
+}
+
+export async function sendTestPushNotification(): Promise<{ success: boolean; error?: string }> {
+  return apiRequest('/api/push-token/test', { method: 'POST' });
 }
 
 // Sprint Workout Logging

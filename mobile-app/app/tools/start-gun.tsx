@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { impactLight, impactMedium, impactHeavy, notificationWarning } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
@@ -19,6 +19,16 @@ type Phase = 'idle' | 'marks' | 'set' | 'bang' | 'done';
 const VOICE_FILES = {
   default: { marks: require('../../assets/audio/on-your-marks.mp3'), set: require('../../assets/audio/set.mp3') },
   custom: { marks: require('../../assets/audio/custom-on-your-marks.mp3'), set: require('../../assets/audio/custom-set.mp3') },
+};
+
+// Compensates for different recorded loudness levels across sound files
+const SOUND_VOLUME_MULTIPLIERS: Record<string, number> = {
+  'bang': 1.0,
+  'gun-shot': 1.0,
+  'gun-shot-reverb': 1.4,
+  'gun-shot-new': 1.0,
+  'starting-pistol': 1.2,
+  'custom-bang': 1.0,
 };
 
 const GUN_SOUND_FILES: Record<GunSoundOption, any> = {
@@ -58,7 +68,15 @@ export default function StartGunScreen() {
   const pulseOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
+      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+      shouldDuckAndroid: false,
+      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+      allowsRecordingIOS: false,
+      playThroughEarpieceAndroid: false,
+    });
     return () => {
       if (soundRef.current) soundRef.current.unloadAsync();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -89,9 +107,11 @@ export default function StartGunScreen() {
     }
   }, [phase, pulseAnim, pulseOpacity]);
 
-  const playSound = async (file: any): Promise<void> => {
+  const playSound = async (file: any, soundKey?: string): Promise<void> => {
     if (soundRef.current) await soundRef.current.unloadAsync();
-    const { sound } = await Audio.Sound.createAsync(file, { volume: settings.volume / 10 });
+    const multiplier = soundKey ? (SOUND_VOLUME_MULTIPLIERS[soundKey] ?? 1.0) : 1.0;
+    const finalVolume = Math.min(1.0, (settings.volume / 10) * multiplier);
+    const { sound } = await Audio.Sound.createAsync(file, { volume: finalVolume });
     soundRef.current = sound;
     await sound.playAsync();
   };
@@ -117,7 +137,7 @@ export default function StartGunScreen() {
         setPhase('bang');
         impactHeavy();
         if (settings.gunFlash) setFlash(true);
-        await playSound(GUN_SOUND_FILES[settings.gunSound]);
+        await playSound(GUN_SOUND_FILES[settings.gunSound], settings.gunSound);
         if (settings.gunFlash) setTimeout(() => setFlash(false), 150);
         setTimeout(() => setPhase('done'), 1000);
       }, delay);
@@ -175,17 +195,20 @@ export default function StartGunScreen() {
         </View>
 
         <Text style={[styles.phaseText, { color: PHASE_COLORS[phase] }]}>{getPhaseText()}</Text>
+        {phase === 'marks' && <View testID="tools.start_gun.state_marks" />}
+        {phase === 'set' && <View testID="tools.start_gun.state_set" />}
+        {phase === 'bang' && <View testID="tools.start_gun.state_bang" />}
 
         {showStartButton ? (
           <View style={styles.buttonWrapper}>
             <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulseAnim }], opacity: pulseOpacity }]} />
-            <TouchableOpacity style={styles.startButton} onPress={startSequence}>
+            <TouchableOpacity style={styles.startButton} onPress={startSequence} testID="tools.start_gun.start">
               <Ionicons name="play" size={40} color={colors.text.primary} />
               <Text style={styles.startText}>START</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.resetButton} onPress={resetSequence}>
+          <TouchableOpacity style={styles.resetButton} onPress={resetSequence} testID="tools.start_gun.stop">
             <Ionicons name="stop" size={32} color={colors.text.primary} />
             <Text style={styles.resetText}>RESET</Text>
           </TouchableOpacity>
