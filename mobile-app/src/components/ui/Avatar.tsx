@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Image } from 'react-native';
 import {
   Avatar as GSAvatar,
   AvatarFallbackText,
-  AvatarImage,
-  Spinner,
 } from '@gluestack-ui/themed';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getLocalProfileImageUri } from '../../lib/profileImageCache';
@@ -36,20 +34,17 @@ export const Avatar: React.FC<AvatarProps> = ({
   style,
 }) => {
   const colors = useColors();
-  const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const attemptedLocalFallback = useRef(false);
   const [effectiveUri, setEffectiveUri] = useState(uri || localUri);
 
   useEffect(() => {
     setHasError(false);
-    setIsLoading(false);
     attemptedLocalFallback.current = false;
     setEffectiveUri(uri || localUri);
   }, [uri, localUri]);
 
   const handleError = useCallback(() => {
-    setIsLoading(false);
     if (attemptedLocalFallback.current) {
       setHasError(true);
       return;
@@ -74,7 +69,6 @@ export const Avatar: React.FC<AvatarProps> = ({
   const containerSize = showGradientRing ? avatarSize + RING_WIDTH * 4 : avatarSize;
 
   const showPlaceholder = !effectiveUri || hasError;
-  const showSpinner = effectiveUri && isLoading && !hasError;
 
   if (showGradientRing) {
     return (
@@ -100,22 +94,11 @@ export const Avatar: React.FC<AvatarProps> = ({
                 <AvatarFallbackText>{fallbackText || 'AR'}</AvatarFallbackText>
               </GSAvatar>
             ) : (
-              <>
-                <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
-                  <AvatarImage
-                    source={{ uri: effectiveUri }}
-                    alt="Profile avatar"
-                    onLoadStart={() => setIsLoading(true)}
-                    onLoadEnd={() => setIsLoading(false)}
-                    onError={handleError}
-                  />
-                </GSAvatar>
-                {showSpinner ? (
-                  <View style={styles.loadingOverlay}>
-                    <Spinner size="small" color={colors.primary} />
-                  </View>
-                ) : null}
-              </>
+              <Image
+                source={{ uri: effectiveUri }}
+                style={[styles.avatar, { width: avatarSize, height: avatarSize }]}
+                onError={handleError}
+              />
             )}
           </View>
         </LinearGradient>
@@ -130,22 +113,11 @@ export const Avatar: React.FC<AvatarProps> = ({
           <AvatarFallbackText>{fallbackText || 'AR'}</AvatarFallbackText>
         </GSAvatar>
       ) : (
-        <>
-          <GSAvatar style={[styles.avatar, { width: avatarSize, height: avatarSize }]}>
-            <AvatarImage
-              source={{ uri: effectiveUri }}
-              alt="Profile avatar"
-              onLoadStart={() => setIsLoading(true)}
-              onLoadEnd={() => setIsLoading(false)}
-              onError={handleError}
-            />
-          </GSAvatar>
-          {showSpinner ? (
-            <View style={styles.loadingOverlay}>
-              <Spinner size="small" color={colors.primary} />
-            </View>
-          ) : null}
-        </>
+        <Image
+          source={{ uri: effectiveUri }}
+          style={[styles.avatar, { width: avatarSize, height: avatarSize }]}
+          onError={handleError}
+        />
       )}
     </View>
   );
@@ -167,13 +139,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatar: {
-    borderRadius: 9999,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: 9999,
   },
 });

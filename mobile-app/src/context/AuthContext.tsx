@@ -630,7 +630,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       const localPhotoUri = await saveProfileImageLocally(imageUri);
-      const optimisticProfile = { ...baseProfile, photoUrl: localPhotoUri } as UserProfile;
+      // Append a version timestamp so React Native's image cache treats this as a new
+      // image even though the underlying file path is always profile-image.jpg.
+      const cacheBustedUri = `${localPhotoUri}?v=${Date.now()}`;
+      const optimisticProfile = { ...baseProfile, photoUrl: cacheBustedUri } as UserProfile;
       setState((prev) => ({
         ...prev,
         profile: optimisticProfile,

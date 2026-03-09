@@ -52,6 +52,7 @@ function RootLayoutNav() {
     const inSettings = segments[0] === 'settings';
     const inTrainingLog = segments[0] === 'training-log';
     const inEvents = segments[0] === 'events';
+    const inNutritionLog = segments[0] === 'nutrition-log';
 
     if (!isAuthenticated && !inAuthGroup) {
       // Redirect to welcome screen if not authenticated
@@ -80,7 +81,8 @@ function RootLayoutNav() {
         !inAthleteInfo &&
         !inSettings &&
         !inTrainingLog &&
-        !inEvents
+        !inEvents &&
+        !inNutritionLog
       ) {
         // Redirect to dashboard if authenticated and onboarding is complete
         router.replace('/(tabs)/dashboard');
@@ -138,6 +140,7 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="training-log" options={{ headerShown: false }} />
       <Stack.Screen name="events" options={{ headerShown: false }} />
+      <Stack.Screen name="nutrition-log" options={{ headerShown: false }} />
     </Stack>
     </>
   );

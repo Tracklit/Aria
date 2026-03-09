@@ -17,7 +17,7 @@ export default function ProgramsScreen() {
   const styles = useThemedStyles(createStyles);
   const colors = useColors();
   const { hasValidToken, isLoading: isAuthLoading } = useAuth();
-  const { programs, isLoading, fetchPrograms, deleteProgram } = usePrograms();
+  const { programs, isLoading, fetchPrograms, deleteProgram, toggleProgramStatus, activateProgram } = usePrograms();
   const [filter, setFilter] = useState<string[]>(['all']);
 
   useEffect(() => {
@@ -54,6 +54,8 @@ export default function ProgramsScreen() {
               ]);
             }}
             onEdit={() => router.push(`/programs/${item.id}/edit` as any)}
+            onToggleStatus={() => toggleProgramStatus(item.id)}
+            onActivate={() => activateProgram(item.id)}
           />
         )}
         keyExtractor={(item) => item.id.toString()}

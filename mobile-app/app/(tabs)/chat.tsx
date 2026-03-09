@@ -530,7 +530,7 @@ export default function ChatScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <Text style={styles.headerAvatarText}>A</Text>
+              <Image source={require('../../assets/icon_transparent.png')} style={styles.headerAvatarLogo} />
             </LinearGradient>
             <Text style={styles.headerTitle}>ARIA</Text>
           </View>
@@ -571,7 +571,7 @@ export default function ChatScreen() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Text style={styles.drawerAvatarText}>A</Text>
+                  <Image source={require('../../assets/icon_transparent.png')} style={styles.drawerAvatarLogo} />
                 </LinearGradient>
                 <View>
                   <Text style={styles.drawerHeaderTitle}>Aria Coach</Text>
@@ -642,7 +642,7 @@ export default function ChatScreen() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Text style={styles.emptyAvatarText}>A</Text>
+                  <Image source={require('../../assets/icon_transparent.png')} style={styles.emptyAvatarLogo} />
                 </LinearGradient>
               </View>
               <Text style={styles.emptyTitle}>
@@ -837,10 +837,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerAvatarText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '700',
+  headerAvatarLogo: {
+    width: 22,
+    height: 22,
+    resizeMode: 'contain',
   },
   headerTitle: {
     color: colors.primary,
@@ -883,10 +883,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  drawerAvatarText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: '700',
+  drawerAvatarLogo: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
   },
   drawerHeaderTitle: {
     color: colors.text.primary,
@@ -1005,10 +1005,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyAvatarText: {
-    color: '#FFF',
-    fontSize: 32,
-    fontWeight: '700',
+  emptyAvatarLogo: {
+    width: 56,
+    height: 56,
+    resizeMode: 'contain',
   },
   emptyTitle: {
     color: colors.text.primary,

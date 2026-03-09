@@ -23,9 +23,10 @@ interface ProgramCardProps {
   onEdit?: () => void;
   onShare?: () => void;
   onToggleStatus?: () => void;
+  onActivate?: () => void;
 }
 
-export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, onDelete, onEdit, onShare, onToggleStatus }) => {
+export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, onDelete, onEdit, onShare, onToggleStatus, onActivate }) => {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const swipeableRef = React.useRef<Swipeable>(null);
@@ -142,6 +143,22 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, onDe
             <Text style={styles.statText}>{program.totalSessions} sessions</Text>
           </View>
         )}
+        {onActivate && !isArchived && (
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); onActivate(); }}
+            style={[styles.activateButton, isActive && styles.activateButtonActive]}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isActive ? 'checkmark-circle' : 'play-circle-outline'}
+              size={14}
+              color={isActive ? '#32D74B' : colors.text.tertiary}
+            />
+            <Text style={[styles.activateText, isActive && styles.activateTextActive]}>
+              {isActive ? 'Active' : 'Activate'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
     </Swipeable>
@@ -242,6 +259,29 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   statText: {
     ...typography.caption,
     color: colors.text.tertiary,
+  },
+  activateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+    borderWidth: 1,
+    borderColor: colors.background.secondary,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  activateButtonActive: {
+    borderColor: 'rgba(50, 215, 75, 0.3)',
+    backgroundColor: 'rgba(50, 215, 75, 0.08)',
+  },
+  activateText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+  },
+  activateTextActive: {
+    color: '#32D74B',
   },
   swipeActionsLeft: { flexDirection: 'row', marginBottom: spacing.md },
   swipeActionsRight: { flexDirection: 'row', marginBottom: spacing.md },

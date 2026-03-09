@@ -73,6 +73,7 @@ interface ProgramsContextType extends ProgramsState {
   generateProgram: (input: any) => Promise<Program>;
   saveProgramSessions: (programId: number, sessions: any[]) => Promise<ProgramSession[]>;
   toggleProgramStatus: (id: number) => Promise<void>;
+  activateProgram: (id: number) => Promise<void>;
   setActiveWeek: (programId: number, week: number) => Promise<void>;
 }
 
@@ -172,6 +173,16 @@ export const ProgramsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }));
   }, [state.programs]);
 
+  const activateProgram = useCallback(async (id: number) => {
+    const program = state.programs.find(p => p.id === id);
+    const newStatus = program?.status === 'active' ? 'inactive' : 'active';
+    const updated = await apiToggleStatus(id, newStatus) as Program;
+    setState(prev => ({
+      ...prev,
+      programs: prev.programs.map(p => p.id === id ? updated : p),
+    }));
+  }, [state.programs]);
+
   const setActiveWeek = useCallback(async (programId: number, week: number) => {
     const updated = await apiSetActiveWeek(programId, week) as Program;
     setState(prev => ({
@@ -181,7 +192,7 @@ export const ProgramsProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, []);
 
   return (
-    <ProgramsContext.Provider value={{ ...state, fetchPrograms, fetchProgramDetail, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram, saveProgramSessions, toggleProgramStatus, setActiveWeek }}>
+    <ProgramsContext.Provider value={{ ...state, fetchPrograms, fetchProgramDetail, createProgram, updateProgram, deleteProgram, uploadProgram, importSheet, generateProgram, saveProgramSessions, toggleProgramStatus, activateProgram, setActiveWeek }}>
       {children}
     </ProgramsContext.Provider>
   );
