@@ -525,7 +525,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <LinearGradient
-              colors={['#30D5C8', '#00E5FF']}
+              colors={['#ffffff', '#ffffff']}
               style={styles.headerAvatar}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -566,7 +566,7 @@ export default function ChatScreen() {
               {/* Drawer header */}
               <View style={styles.drawerHeader}>
                 <LinearGradient
-                  colors={['#30D5C8', '#00E5FF']}
+                  colors={['#ffffff', '#ffffff']}
                   style={styles.drawerAvatar}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -637,7 +637,7 @@ export default function ChatScreen() {
             <View style={styles.emptyState}>
               <View style={styles.emptyAvatarContainer}>
                 <LinearGradient
-                  colors={['#30D5C8', '#00E5FF']}
+                  colors={['#ffffff', '#ffffff']}
                   style={styles.emptyAvatar}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
