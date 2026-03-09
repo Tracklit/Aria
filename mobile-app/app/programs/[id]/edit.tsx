@@ -398,7 +398,7 @@ export default function ProgramEditorScreen() {
               <Switch
                 value={session.isRestDay}
                 onValueChange={() => dispatch({ type: 'TOGGLE_REST_DAY', dayNumber: session.dayNumber })}
-                trackColor={{ false: colors.background.secondary, true: colors.teal }}
+                trackColor={{ false: colors.background.secondary, true: colors.primary }}
                 thumbColor="#fff"
               />
             </View>
@@ -410,7 +410,7 @@ export default function ProgramEditorScreen() {
                   style={styles.addExerciseBtn}
                   onPress={() => { impactLight(); dispatch({ type: 'ADD_EXERCISE', dayNumber: session.dayNumber }); }}
                 >
-                  <Ionicons name="add" size={16} color={colors.teal} />
+                  <Ionicons name="add" size={16} color={colors.primary} />
                   <Text style={styles.addExerciseText}>Add Exercise</Text>
                 </TouchableOpacity>
               </>
@@ -425,7 +425,7 @@ export default function ProgramEditorScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.teal} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading program...</Text>
         </View>
       </SafeAreaView>
@@ -535,18 +535,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', flex: 1, textAlign: 'center', marginHorizontal: spacing.md },
-  saveBtn: { backgroundColor: colors.teal, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
+  saveBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
   saveBtnText: { ...typography.caption, color: '#fff', fontWeight: '600' },
   weekScroll: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   weekPill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 20, backgroundColor: colors.background.cardSolid, marginRight: spacing.xs },
-  weekPillActive: { backgroundColor: colors.teal },
+  weekPillActive: { backgroundColor: colors.primary },
   weekPillText: { ...typography.caption, color: colors.text.secondary },
   weekPillTextActive: { color: '#fff', fontWeight: '600' },
   modeCard: { marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.background.cardSolid, borderRadius: borderRadius.lg, padding: spacing.md, gap: spacing.xs },
   modeLabel: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
   modeToggleRow: { flexDirection: 'row', gap: spacing.xs },
   modeBtn: { flex: 1, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.text.tertiary + '25', paddingVertical: spacing.sm, alignItems: 'center', backgroundColor: colors.background.secondary },
-  modeBtnActive: { backgroundColor: colors.teal, borderColor: colors.teal },
+  modeBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   modeBtnText: { ...typography.caption, color: colors.text.secondary, fontWeight: '600' },
   modeBtnTextActive: { color: '#fff' },
   modeHint: { ...typography.caption, color: colors.text.tertiary },
@@ -561,7 +561,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dayBadgeTraining: { backgroundColor: 'rgba(48, 213, 200, 0.15)' },
   dayBadgeRest: { backgroundColor: 'rgba(142, 142, 147, 0.15)' },
   dayBadgeText: { ...typography.caption, fontWeight: '600' },
-  dayBadgeTextTraining: { color: colors.teal },
+  dayBadgeTextTraining: { color: colors.primary },
   dayBadgeTextRest: { color: colors.text.secondary },
   sessionTitleInput: { ...typography.body, color: colors.text.primary, backgroundColor: colors.background.secondary, borderRadius: borderRadius.md, padding: spacing.sm, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.text.tertiary + '25' },
   dayBody: { padding: spacing.md, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.background.secondary },
@@ -575,16 +575,16 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   restFieldHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, gap: spacing.xs },
   restUnitToggle: { flexDirection: 'row', backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, borderWidth: 1, borderColor: colors.text.tertiary + '20', overflow: 'hidden' },
   restUnitBtn: { paddingHorizontal: spacing.xs, paddingVertical: 2 },
-  restUnitBtnActive: { backgroundColor: colors.teal },
+  restUnitBtnActive: { backgroundColor: colors.primary },
   restUnitText: { ...typography.caption, color: colors.text.tertiary, fontSize: 10, fontWeight: '600' },
   restUnitTextActive: { color: '#fff' },
   exerciseFieldLabel: { ...typography.caption, color: colors.text.tertiary, fontSize: 10, marginBottom: 2 },
   exerciseFieldInput: { ...typography.caption, color: colors.text.primary, backgroundColor: colors.background.primary, borderRadius: borderRadius.sm, padding: spacing.xs, textAlign: 'center', borderWidth: 1, borderColor: colors.text.tertiary + '25' },
-  addExerciseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.sm, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.teal, borderStyle: 'dashed', gap: spacing.xs },
-  addExerciseText: { ...typography.caption, color: colors.teal },
+  addExerciseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.sm, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed', gap: spacing.xs },
+  addExerciseText: { ...typography.caption, color: colors.primary },
   summary: { ...typography.caption, color: colors.text.tertiary, marginTop: 2 },
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: spacing.lg, backgroundColor: colors.background.primary },
-  bottomSaveBtn: { backgroundColor: colors.teal, borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'center', justifyContent: 'center' },
+  bottomSaveBtn: { backgroundColor: colors.primary, borderRadius: borderRadius.lg, padding: spacing.md, alignItems: 'center', justifyContent: 'center' },
   bottomSaveText: { ...typography.body, color: '#fff', fontWeight: '600' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   loadingText: { ...typography.body, color: colors.text.secondary },

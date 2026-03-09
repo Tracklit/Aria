@@ -76,7 +76,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, onDe
 
   const getSourceIcon = (): { name: string; color: string } => {
     if (program.generatedBy === 'ai') return { name: 'sparkles', color: colors.primary };
-    if (program.isUploadedProgram) return { name: 'cloud-upload-outline', color: colors.teal };
+    if (program.isUploadedProgram) return { name: 'cloud-upload-outline', color: colors.primary };
     return { name: 'create-outline', color: colors.text.secondary };
   };
 
@@ -90,77 +90,77 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ program, onPress, onDe
       overshootLeft={false}
       overshootRight={false}
     >
-    <TouchableOpacity
-      style={[styles.container, isArchived && styles.containerArchived]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.title, isArchived && styles.titleArchived]} numberOfLines={1}>{program.title}</Text>
-        <View style={styles.headerRight}>
-          {isActive && (
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>ACTIVE</Text>
-            </View>
-          )}
-          {isArchived && (
-            <View style={styles.archivedBadge}>
-              <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
-            </View>
-          )}
-          <Ionicons name={source.name as any} size={16} color={source.color} />
+      <TouchableOpacity
+        style={[styles.container, isArchived && styles.containerArchived]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, isArchived && styles.titleArchived]} numberOfLines={1}>{program.title}</Text>
+          <View style={styles.headerRight}>
+            {isActive && (
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>ACTIVE</Text>
+              </View>
+            )}
+            {isArchived && (
+              <View style={styles.archivedBadge}>
+                <Text style={styles.archivedBadgeText}>ARCHIVED</Text>
+              </View>
+            )}
+            <Ionicons name={source.name as any} size={16} color={source.color} />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.metaRow}>
-        {program.category && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{program.category}</Text>
-          </View>
-        )}
-        {program.level && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{program.level}</Text>
-          </View>
-        )}
-        {isActive && program.activeWeek && (
-          <View style={styles.weekBadge}>
-            <Text style={styles.weekBadgeText}>Week {program.activeWeek}</Text>
-          </View>
-        )}
-      </View>
+        <View style={styles.metaRow}>
+          {program.category && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{program.category}</Text>
+            </View>
+          )}
+          {program.level && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{program.level}</Text>
+            </View>
+          )}
+          {isActive && program.activeWeek && (
+            <View style={styles.weekBadge}>
+              <Text style={styles.weekBadgeText}>Week {program.activeWeek}</Text>
+            </View>
+          )}
+        </View>
 
-      <View style={styles.statsRow}>
-        {program.duration && (
-          <View style={styles.stat}>
-            <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{program.duration} weeks</Text>
-          </View>
-        )}
-        {program.totalSessions && (
-          <View style={styles.stat}>
-            <Ionicons name="fitness-outline" size={14} color={colors.text.tertiary} />
-            <Text style={styles.statText}>{program.totalSessions} sessions</Text>
-          </View>
-        )}
-        {onActivate && !isArchived && (
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation(); onActivate(); }}
-            style={[styles.activateButton, isActive && styles.activateButtonActive]}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isActive ? 'checkmark-circle' : 'play-circle-outline'}
-              size={14}
-              color={isActive ? '#32D74B' : colors.text.tertiary}
-            />
-            <Text style={[styles.activateText, isActive && styles.activateTextActive]}>
-              {isActive ? 'Active' : 'Activate'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </TouchableOpacity>
+        <View style={styles.statsRow}>
+          {program.duration && (
+            <View style={styles.stat}>
+              <Ionicons name="calendar-outline" size={14} color={colors.text.tertiary} />
+              <Text style={styles.statText}>{program.duration} weeks</Text>
+            </View>
+          )}
+          {program.totalSessions && (
+            <View style={styles.stat}>
+              <Ionicons name="fitness-outline" size={14} color={colors.text.tertiary} />
+              <Text style={styles.statText}>{program.totalSessions} sessions</Text>
+            </View>
+          )}
+          {onActivate && !isArchived && (
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); onActivate(); }}
+              style={[styles.activateButton, isActive && styles.activateButtonActive]}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isActive ? 'checkmark-circle' : 'play-circle-outline'}
+                size={14}
+                color={isActive ? '#32D74B' : colors.text.tertiary}
+              />
+              <Text style={[styles.activateText, isActive && styles.activateTextActive]}>
+                {isActive ? 'Active' : 'Activate'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
     </Swipeable>
   );
 };
@@ -228,7 +228,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   weekBadgeText: {
     ...typography.caption,
-    color: colors.teal,
+    color: colors.primary,
     fontWeight: '600',
   },
   metaRow: {

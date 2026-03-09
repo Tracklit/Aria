@@ -77,9 +77,11 @@ export default function ProgramDetailScreen() {
   const handleDelete = () => {
     Alert.alert('Delete Program', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        if (program) { await deleteProgram(program.id); router.back(); }
-      }},
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          if (program) { await deleteProgram(program.id); router.back(); }
+        }
+      },
     ]);
   };
 
@@ -181,7 +183,7 @@ export default function ProgramDetailScreen() {
             <Ionicons
               name={isArchived ? 'refresh-outline' : 'archive-outline'}
               size={22}
-              color={isArchived ? colors.teal : colors.text.secondary}
+              color={isArchived ? colors.primary : colors.text.secondary}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push(`/programs/${id}/edit` as any)}>
@@ -407,7 +409,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   activeWeekNumber: {
     ...typography.bodyBold,
-    color: colors.teal,
+    color: colors.primary,
     fontSize: 18,
   },
   weekSection: { gap: spacing.sm },
@@ -423,11 +425,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: 2,
   },
   weekCardSelected: {
-    backgroundColor: colors.teal,
-    borderColor: colors.teal,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   weekCardActiveWeek: {
-    borderColor: colors.teal,
+    borderColor: colors.primary,
     borderWidth: 1.5,
   },
   weekCardHeader: {
@@ -454,7 +456,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   dayBadgeTraining: { backgroundColor: 'rgba(48, 213, 200, 0.15)' },
   dayBadgeRest: { backgroundColor: 'rgba(142, 142, 147, 0.15)' },
   dayBadgeText: { ...typography.caption, fontWeight: '600' },
-  dayBadgeTextTraining: { color: colors.teal },
+  dayBadgeTextTraining: { color: colors.primary },
   dayBadgeTextRest: { color: colors.text.secondary },
   sessionTitle: { ...typography.body, color: colors.text.primary },
   sessionBody: { padding: spacing.md, paddingTop: 0, borderTopWidth: 1, borderTopColor: colors.background.secondary },
@@ -467,7 +469,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.teal,
+    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
   },
