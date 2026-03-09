@@ -447,7 +447,7 @@ export default function ProgramEditorScreen() {
         </View>
 
         {/* Week Selector */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekScroll}>
+        <View style={styles.weekScroll}>
           {weekNumbers.map(w => (
             <TouchableOpacity
               key={w}
@@ -462,7 +462,7 @@ export default function ProgramEditorScreen() {
               <Text style={[styles.weekPillText, selectedWeek === w && styles.weekPillTextActive]}>Week {w}</Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
 
         <View style={styles.modeCard}>
           <Text style={styles.modeLabel}>Week Setup</Text>
@@ -537,7 +537,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   headerTitle: { ...typography.body, color: colors.text.primary, fontWeight: '600', flex: 1, textAlign: 'center', marginHorizontal: spacing.md },
   saveBtn: { backgroundColor: colors.teal, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.md },
   saveBtnText: { ...typography.caption, color: '#fff', fontWeight: '600' },
-  weekScroll: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  weekScroll: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   weekPill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 20, backgroundColor: colors.background.cardSolid, marginRight: spacing.xs },
   weekPillActive: { backgroundColor: colors.teal },
   weekPillText: { ...typography.caption, color: colors.text.secondary },
