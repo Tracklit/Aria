@@ -6,8 +6,8 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import { Platform } from 'react-native';
-import { apiRequest } from '../lib/api';
+import { Platform, AppState } from 'react-native';
+import { apiRequest, getHealthMetricsHistory } from '../lib/api';
 import { cacheHealthMetrics, getCachedHealthMetrics } from '../lib/healthDataCache';
 import * as AppleHealth from '../services/appleHealth';
 import { connectStrava } from '../services/stravaAuth';
@@ -45,6 +45,7 @@ export interface ReadinessData {
 interface HealthState {
   connectedDevices: ConnectedDevice[];
   healthMetrics: AppleHealth.HealthMetricsPayload | null;
+  healthHistory: AppleHealth.HealthMetricsPayload[];
   isSyncing: boolean;
   lastSyncAt: string | null;
   readiness: ReadinessData | null;
@@ -59,6 +60,7 @@ interface HealthContextType extends HealthState {
   getReadinessScore: () => Promise<ReadinessData | null>;
   refreshDevices: () => Promise<void>;
   isProviderConnected: (provider: IntegrationProvider) => boolean;
+  loadHealthHistory: (days?: number) => Promise<void>;
 }
 
 const HealthContext = createContext<HealthContextType | undefined>(undefined);
@@ -71,6 +73,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [state, setState] = useState<HealthState>({
     connectedDevices: [],
     healthMetrics: null,
+    healthHistory: [],
     isSyncing: false,
     lastSyncAt: null,
     readiness: null,
@@ -114,11 +117,17 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             return {};
           }
 
-          const available = await AppleHealth.isAvailable();
+          const { available, reason } = await AppleHealth.isAvailable();
           if (!available) {
+            const errorMessages: Record<string, string> = {
+              module_missing: 'HealthKit module not found — please rebuild the app',
+              healthkit_unavailable: 'HealthKit is not available on this device',
+              healthkit_error: 'HealthKit encountered an error — try restarting the app',
+              not_ios: 'Apple Health is only available on iOS',
+            };
             setState((prev) => ({
               ...prev,
-              error: 'HealthKit is not available on this device',
+              error: errorMessages[reason || 'healthkit_unavailable'] || 'HealthKit is not available on this device',
             }));
             return {};
           }
@@ -230,6 +239,10 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         lastSyncAt: syncTime,
         isSyncing: false,
       }));
+
+      // Auto-fetch readiness after successful sync
+      getReadinessScore();
+      loadHealthHistory();
     } catch (err: any) {
       if (__DEV__) {
         console.warn('[Health] Sync error:', err?.message);
@@ -256,6 +269,22 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         console.warn('[Health] Readiness error:', err?.message);
       }
       return null;
+    }
+  }, []);
+
+  const loadHealthHistory = useCallback(async (days: number = 14) => {
+    try {
+      const data = await getHealthMetricsHistory(days);
+      if (Array.isArray(data)) {
+        setState((prev) => ({
+          ...prev,
+          healthHistory: data.sort((a: any, b: any) => a.date.localeCompare(b.date)),
+        }));
+      }
+    } catch (err: any) {
+      if (__DEV__) {
+        console.warn('[Health] Failed to load health history:', err?.message);
+      }
     }
   }, []);
 
@@ -295,6 +324,25 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isAuthenticated, isDemoMode, state.connectedDevices]);
 
+  // Foreground sync: re-sync when app returns from background
+  useEffect(() => {
+    if (!isAuthenticated || isDemoMode) return;
+    if (Platform.OS !== 'ios') return;
+
+    const appleHealthConnected = state.connectedDevices.some(
+      (d) => d.provider === 'apple_health' && d.isActive
+    );
+    if (!appleHealthConnected) return;
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        syncHealthData();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isAuthenticated, isDemoMode, state.connectedDevices, syncHealthData]);
+
   // Load cached health data on mount
   useEffect(() => {
     if (!isAuthenticated || isDemoMode) return;
@@ -320,6 +368,7 @@ export const HealthProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         getReadinessScore,
         refreshDevices,
         isProviderConnected,
+        loadHealthHistory,
       }}
     >
       {children}

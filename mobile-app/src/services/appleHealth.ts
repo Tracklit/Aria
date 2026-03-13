@@ -100,14 +100,26 @@ function promisify<T>(fn: (options: any, cb: (err: string, result: T) => void) =
 
 // ==================== Public API ====================
 
-export async function isAvailable(): Promise<boolean> {
-  if (Platform.OS !== 'ios') return false;
+export async function isAvailable(): Promise<{ available: boolean; reason?: string }> {
+  if (Platform.OS !== 'ios') {
+    return { available: false, reason: 'not_ios' };
+  }
   const hk = getHealthKit();
-  if (!hk) return false;
+  if (!hk) {
+    console.warn('[AppleHealth] Native module not found — rebuild the app with native HealthKit support');
+    return { available: false, reason: 'module_missing' };
+  }
 
   return new Promise((resolve) => {
     hk.isAvailable((err: string, available: boolean) => {
-      resolve(!err && available);
+      if (err) {
+        console.warn('[AppleHealth] isAvailable error:', err);
+        resolve({ available: false, reason: 'healthkit_error' });
+      } else if (!available) {
+        resolve({ available: false, reason: 'healthkit_unavailable' });
+      } else {
+        resolve({ available: true });
+      }
     });
   });
 }
@@ -387,6 +399,20 @@ export async function aggregateHealthData(date: Date): Promise<HealthMetricsPayl
       }
     }
   } catch { /* VO2 Max may not be available on all devices */ }
+
+  // Active Energy Burned
+  try {
+    const hk = getHealthKit();
+    if (hk) {
+      const activeEnergy = await promisify<{ value: number }>(
+        hk.getActiveEnergyBurned.bind(hk),
+        { startDate: dayStart.toISOString(), endDate: dayEnd.toISOString() }
+      );
+      if (activeEnergy?.value) {
+        payload.caloriesBurned = Math.round(activeEnergy.value);
+      }
+    }
+  } catch { /* Active energy may not be available */ }
 
   return payload;
 }

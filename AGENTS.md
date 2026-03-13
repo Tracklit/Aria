@@ -162,3 +162,11 @@
 - **Test coverage added**: Tested end-to-end upload via curl to production endpoint — returns 200 with valid SAS URL.
 - **Deployment/runtime caveat**: No code changes needed. This is an infrastructure setting. If photo uploads break again, first check `az storage account show --name stariaprodhw63c3 --resource-group rg-aria-prod --query publicNetworkAccess`.
 - **Migration note (2026-03-08)**: Storage migrated from `stkvnx2h6p44qw4` (dev, `rg-tracklit-dev`) to `stariaprodhw63c3` (prod, `rg-aria-prod`). The MCAPS governance issue (`MCAPSGov-AutomationApp` disabling `publicNetworkAccess`) was specific to the dev subscription and does not affect the prod account. Blob storage is fully operational.
+
+## 19. HealthKit "Not Available" Error (2026-03-13)
+- **Symptom**: Connecting Apple Health on a physical iPhone shows "HealthKit is not available on this device" despite correct entitlements and plugin config
+- **Root cause**: `HealthKit.framework` was not linked in the Xcode project. `project.pbxproj` had zero HealthKit references. The `react-native-health` Expo plugin adds entitlements + Info.plist entries but does NOT link `HealthKit.framework` to the Xcode project target. The CocoaPods pod `RNAppleHealthKit` should handle framework linking transitively, but it wasn't happening.
+- **Exact fix**: Created custom Expo config plugin `plugins/withHealthKitFramework.js` using `withXcodeProject` mod to add `HealthKit.framework` to linked frameworks. Added plugin to `app.json` plugins array. Also improved diagnostic logging in `appleHealth.ts` `isAvailable()` to return structured `{ available, reason }` instead of bare boolean, and updated `HealthContext.tsx` error messages to distinguish between module_missing, healthkit_unavailable, healthkit_error, and not_ios.
+- **Prevention guardrail**: The custom config plugin runs on every `expo prebuild`, ensuring HealthKit.framework is always linked regardless of CocoaPods behavior. Diagnostic logging distinguishes root causes.
+- **Test coverage added**: TypeScript type check passes. Manual verification on physical device required.
+- **Deployment/runtime caveat**: Requires `npx expo prebuild --clean` followed by `cd ios && pod install` to regenerate the native project with the framework link.

@@ -4,3 +4,5 @@ export { default as NextMealCard } from './NextMealCard';
 export { default as LatestStatsRow } from './LatestStatsRow';
 export { default as StreakBadge } from './StreakBadge';
 export { default as AskAriaSection } from './AskAriaSection';
+export { default as HealthSummaryCard } from './HealthSummaryCard';
+export { default as PreWorkoutReadinessBar } from './PreWorkoutReadinessBar';

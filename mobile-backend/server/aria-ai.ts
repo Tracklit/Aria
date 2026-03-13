@@ -167,6 +167,7 @@ export interface UserContext {
   activePrograms: Program[];
   upcomingEvents: Event[];
   healthMetrics: HealthMetric | undefined;
+  healthHistory: HealthMetric[];
   connectedDevices: ConnectedDevice[];
 }
 
@@ -181,7 +182,11 @@ async function safeQuery<T>(query: Promise<T>, label: string, fallback: T): Prom
 }
 
 export async function buildUserContext(userId: number): Promise<UserContext> {
-  const [profile, preferences, activePlan, recentWorkouts, todaysPlannedWorkout, nutritionPlans, allPrograms, upcomingEvents, latestHealthMetrics, connectedDevices] = await Promise.all([
+  // Fetch health history (7 days) for trend analysis
+  const healthHistoryStart = new Date();
+  healthHistoryStart.setDate(healthHistoryStart.getDate() - 7);
+
+  const [profile, preferences, activePlan, recentWorkouts, todaysPlannedWorkout, nutritionPlans, allPrograms, upcomingEvents, latestHealthMetrics, connectedDevices, healthHistory] = await Promise.all([
     safeQuery(storage.getUserProfile(userId), 'profile', undefined),
     safeQuery(storage.getUserPreferences(userId), 'preferences', undefined),
     safeQuery(storage.getActiveTrainingPlan(userId), 'activePlan', undefined),
@@ -192,6 +197,7 @@ export async function buildUserContext(userId: number): Promise<UserContext> {
     safeQuery(storage.getUpcomingEvents(userId, 3), 'upcomingEvents', []),
     safeQuery(storage.getLatestHealthMetrics(userId), 'healthMetrics', undefined),
     safeQuery(storage.getConnectedDevices(userId), 'connectedDevices', []),
+    safeQuery(storage.getHealthMetrics(userId, healthHistoryStart, new Date()), 'healthHistory', []),
   ]);
 
   // Calculate weekly stats
@@ -219,6 +225,7 @@ export async function buildUserContext(userId: number): Promise<UserContext> {
     activePrograms,
     upcomingEvents,
     healthMetrics: latestHealthMetrics,
+    healthHistory,
     connectedDevices,
   };
 }
@@ -368,6 +375,46 @@ export function formatUserContextForAI(context: UserContext): string {
     }
     healthParts.push(`- Training Recommendation: ${recommendation}`);
 
+    // Add 7-day trend analysis from health history
+    if (context.healthHistory.length >= 3) {
+      const sorted = [...context.healthHistory].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const trendParts: string[] = [];
+
+      // HRV trend
+      const hrvValues = sorted.filter(m => m.hrvRmssd != null).map(m => m.hrvRmssd!);
+      if (hrvValues.length >= 3) {
+        const recentAvg = hrvValues.slice(-3).reduce((a, b) => a + b, 0) / 3;
+        const earlierAvg = hrvValues.slice(0, Math.min(3, hrvValues.length - 3)).reduce((a, b) => a + b, 0) / Math.min(3, hrvValues.length - 3);
+        if (earlierAvg > 0) {
+          const pctChange = ((recentAvg - earlierAvg) / earlierAvg * 100).toFixed(0);
+          trendParts.push(`HRV: ${Number(pctChange) >= 0 ? '+' : ''}${pctChange}% (${earlierAvg.toFixed(0)}→${recentAvg.toFixed(0)} ms)`);
+        }
+      }
+
+      // Resting HR trend
+      const rhrValues = sorted.filter(m => m.restingHeartRate != null).map(m => m.restingHeartRate!);
+      if (rhrValues.length >= 3) {
+        const recentAvg = rhrValues.slice(-3).reduce((a, b) => a + b, 0) / 3;
+        const earlierAvg = rhrValues.slice(0, Math.min(3, rhrValues.length - 3)).reduce((a, b) => a + b, 0) / Math.min(3, rhrValues.length - 3);
+        if (earlierAvg > 0) {
+          const pctChange = ((recentAvg - earlierAvg) / earlierAvg * 100).toFixed(0);
+          trendParts.push(`Resting HR: ${Number(pctChange) >= 0 ? '+' : ''}${pctChange}% (${earlierAvg.toFixed(0)}→${recentAvg.toFixed(0)} bpm)`);
+        }
+      }
+
+      // Sleep trend
+      const sleepValues = sorted.filter(m => m.sleepDurationSeconds != null).map(m => m.sleepDurationSeconds! / 3600);
+      if (sleepValues.length >= 3) {
+        const recentAvg = sleepValues.slice(-3).reduce((a, b) => a + b, 0) / 3;
+        const earlierAvg = sleepValues.slice(0, Math.min(3, sleepValues.length - 3)).reduce((a, b) => a + b, 0) / Math.min(3, sleepValues.length - 3);
+        trendParts.push(`Sleep: ${recentAvg.toFixed(1)}h avg (was ${earlierAvg.toFixed(1)}h)`);
+      }
+
+      if (trendParts.length > 0) {
+        healthParts.push(`- 7-Day Trends: ${trendParts.join(', ')}`);
+      }
+    }
+
     parts.push(`\nWEARABLE HEALTH DATA (${new Date(hm.date).toLocaleDateString()}):\n${healthParts.join('\n')}`);
   }
 
@@ -413,7 +460,7 @@ export function generateCoachingInsightFromHealth(healthMetrics: {
   restingHeartRate?: number;
   readinessScore?: number;
   vo2Max?: number;
-}, streak: number, trainingLoad: number): CoachingInsight {
+}, streak: number, trainingLoad: number, healthHistory?: Array<{ hrvRmssd?: number | null; restingHeartRate?: number | null }>): CoachingInsight {
   // Check for high training load first
   if (trainingLoad > 800) {
     return {
@@ -459,6 +506,23 @@ export function generateCoachingInsightFromHealth(healthMetrics: {
       summary: 'Elevated resting heart rate',
       details: `Your resting heart rate of ${healthMetrics.restingHeartRate} bpm is elevated. This can indicate fatigue, stress, or illness. Listen to your body today.`,
     };
+  }
+
+  // Check HRV trend (declining HRV suggests overtraining)
+  if (healthHistory && healthHistory.length >= 5) {
+    const hrvValues = healthHistory.filter(m => m.hrvRmssd != null).map(m => m.hrvRmssd!);
+    if (hrvValues.length >= 5) {
+      const recentAvg = hrvValues.slice(-3).reduce((a, b) => a + b, 0) / 3;
+      const earlierAvg = hrvValues.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+      const pctDrop = ((earlierAvg - recentAvg) / earlierAvg) * 100;
+      if (pctDrop > 15) {
+        return {
+          type: 'warning',
+          summary: 'HRV declining',
+          details: `Your HRV has dropped ${Math.round(pctDrop)}% over the past week (${earlierAvg.toFixed(0)}ms → ${recentAvg.toFixed(0)}ms), suggesting accumulated fatigue. Consider a recovery day or lighter training.`,
+        };
+      }
+    }
   }
 
   // Positive: great streak with good readiness

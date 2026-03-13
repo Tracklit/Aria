@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutrition, NutritionPlan } from '../../src/context/NutritionContext';
+import { useHealth } from '../../src/context';
 import { NutritionPlanCard } from '../../src/components/features/NutritionPlanCard';
+import EnergyBalanceCard from '../../src/components/features/EnergyBalanceCard';
 import { impactLight, impactMedium, notificationSuccess } from '../../src/utils/haptics';
 import { useThemedStyles, useColors, typography, spacing, borderRadius } from '../../src/theme';
 import { ThemeColors } from '../../src/theme/colors';
@@ -16,6 +18,7 @@ export default function NutritionScreen() {
   const colors = useColors();
   const styles = useThemedStyles(createStyles);
   const { plans, activePlan, isLoading, fetchPlans, deletePlan, updatePlan, activatePlan } = useNutrition();
+  const { healthMetrics, connectedDevices } = useHealth();
   const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
 
   useEffect(() => {
@@ -105,6 +108,14 @@ export default function NutritionScreen() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          connectedDevices.length > 0 && healthMetrics?.caloriesBurned ? (
+            <EnergyBalanceCard
+              caloriesBurned={healthMetrics.caloriesBurned}
+              calorieTarget={activePlan?.calorieTarget ?? null}
+            />
+          ) : null
+        }
         ListEmptyComponent={!isLoading ? renderEmpty : null}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={colors.primary} />}
       />
